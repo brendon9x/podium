@@ -31,6 +31,25 @@ defmodule Podium.Chart.ChartDataTest do
     end
   end
 
+  describe "add_series/3 validation" do
+    test "rejects non-numeric values" do
+      assert_raise ArgumentError, ~r/must be numbers/, fn ->
+        ChartData.new() |> ChartData.add_series("Bad", ["a", "b"])
+      end
+    end
+
+    test "rejects more than 25 series" do
+      data =
+        Enum.reduce(1..25, ChartData.new(), fn i, acc ->
+          ChartData.add_series(acc, "S#{i}", [i])
+        end)
+
+      assert_raise ArgumentError, ~r/maximum of 25/, fn ->
+        ChartData.add_series(data, "S26", [26])
+      end
+    end
+  end
+
   describe "cell references" do
     setup do
       data =

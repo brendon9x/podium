@@ -152,6 +152,108 @@ defmodule Podium.Chart.IntegrationTest do
       assert parts["ppt/charts/chart2.xml"] =~ "c:lineChart"
     end
 
+    test "creates pptx with multiple charts on the same slide" do
+      chart_data1 =
+        ChartData.new()
+        |> ChartData.add_categories(["A", "B"])
+        |> ChartData.add_series("S1", [10, 20])
+
+      chart_data2 =
+        ChartData.new()
+        |> ChartData.add_categories(["X", "Y"])
+        |> ChartData.add_series("S2", [30, 40])
+
+      prs = Podium.new()
+      {prs, slide} = Podium.add_slide(prs)
+
+      {prs, slide} =
+        Podium.add_chart(prs, slide, :column_clustered, chart_data1,
+          x: {0.5, :inches},
+          y: {1, :inches},
+          width: {4, :inches},
+          height: {4, :inches}
+        )
+
+      {prs, slide} =
+        Podium.add_chart(prs, slide, :pie, chart_data2,
+          x: {5, :inches},
+          y: {1, :inches},
+          width: {4, :inches},
+          height: {4, :inches}
+        )
+
+      prs = Podium.put_slide(prs, slide)
+      {:ok, binary} = Podium.save_to_memory(prs)
+
+      parts = PptxHelpers.unzip_pptx_binary(binary)
+
+      # Both charts on one slide
+      assert Map.has_key?(parts, "ppt/charts/chart1.xml")
+      assert Map.has_key?(parts, "ppt/charts/chart2.xml")
+
+      # Slide rels should reference both charts
+      slide_rels = parts["ppt/slides/_rels/slide1.xml.rels"]
+      assert slide_rels =~ "chart1.xml"
+      assert slide_rels =~ "chart2.xml"
+
+      # Slide XML should have two graphic frames
+      slide_xml = parts["ppt/slides/slide1.xml"]
+      graphic_frame_count = length(Regex.scan(~r/<p:graphicFrame /, slide_xml))
+      assert graphic_frame_count == 2
+    end
+
+    test "stacked column chart includes overlap element" do
+      chart_data =
+        ChartData.new()
+        |> ChartData.add_categories(["A", "B"])
+        |> ChartData.add_series("S1", [10, 20])
+        |> ChartData.add_series("S2", [30, 40])
+
+      prs = Podium.new()
+      {prs, slide} = Podium.add_slide(prs)
+
+      {prs, _slide} =
+        Podium.add_chart(prs, slide, :column_stacked, chart_data,
+          x: {1, :inches},
+          y: {1, :inches},
+          width: {8, :inches},
+          height: {5, :inches}
+        )
+
+      {:ok, binary} = Podium.save_to_memory(prs)
+      parts = PptxHelpers.unzip_pptx_binary(binary)
+
+      chart_xml = parts["ppt/charts/chart1.xml"]
+      assert chart_xml =~ ~s(c:grouping val="stacked")
+      assert chart_xml =~ ~s(c:overlap val="100")
+    end
+
+    test "add_chart auto-updates slide in presentation" do
+      chart_data =
+        ChartData.new()
+        |> ChartData.add_categories(["A"])
+        |> ChartData.add_series("S1", [10])
+
+      prs = Podium.new()
+      {prs, slide} = Podium.add_slide(prs)
+
+      # add_chart should auto-update the slide inside prs
+      {prs, _slide} =
+        Podium.add_chart(prs, slide, :pie, chart_data,
+          x: {1, :inches},
+          y: {1, :inches},
+          width: {6, :inches},
+          height: {4, :inches}
+        )
+
+      # Save WITHOUT calling put_slide — should still work
+      {:ok, binary} = Podium.save_to_memory(prs)
+      parts = PptxHelpers.unzip_pptx_binary(binary)
+
+      assert Map.has_key?(parts, "ppt/charts/chart1.xml")
+      assert parts["ppt/slides/slide1.xml"] =~ "p:graphicFrame"
+    end
+
     test "matches the target API from the plan" do
       chart_data =
         ChartData.new()

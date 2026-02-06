@@ -2,18 +2,19 @@ defmodule Podium.Shape do
   @moduledoc false
 
   alias Podium.OPC.Constants
-  alias Podium.Units
+  alias Podium.{Drawing, Text, Units}
 
   defstruct [
+    :type,
     :id,
     :name,
     :x,
     :y,
     :width,
     :height,
-    :text,
-    :font_size,
-    to_xml: nil
+    :paragraphs,
+    :fill,
+    :line
   ]
 
   @doc """
@@ -24,35 +25,31 @@ defmodule Podium.Shape do
     y = Units.to_emu(Keyword.fetch!(opts, :y))
     width = Units.to_emu(Keyword.fetch!(opts, :width))
     height = Units.to_emu(Keyword.fetch!(opts, :height))
-    font_size = Keyword.get(opts, :font_size)
+
+    paragraphs = Text.normalize(text, opts)
 
     %__MODULE__{
+      type: :text_box,
       id: id,
       name: "TextBox #{id - 1}",
       x: x,
       y: y,
       width: width,
       height: height,
-      text: text,
-      font_size: font_size,
-      to_xml: &text_box_xml/1
+      paragraphs: paragraphs,
+      fill: Keyword.get(opts, :fill),
+      line: Keyword.get(opts, :line)
     }
   end
 
-  defp text_box_xml(%__MODULE__{} = shape) do
+  @doc """
+  Generates XML for a shape.
+  """
+  def to_xml(%__MODULE__{type: :text_box} = shape) do
     ns_a = Constants.ns(:a)
     ns_p = Constants.ns(:p)
 
-    escaped_text = Podium.XML.Builder.escape(shape.text)
-
-    run_props =
-      if shape.font_size do
-        # Font size in OOXML is in hundredths of a point
-        sz = shape.font_size * 100
-        ~s(<a:rPr lang="en-US" sz="#{sz}" dirty="0"/>)
-      else
-        ~s(<a:rPr lang="en-US" dirty="0"/>)
-      end
+    body_xml = Text.paragraphs_xml(shape.paragraphs)
 
     ~s(<p:sp xmlns:a="#{ns_a}" xmlns:p="#{ns_p}">) <>
       ~s(<p:nvSpPr>) <>
@@ -66,12 +63,13 @@ defmodule Podium.Shape do
       ~s(<a:ext cx="#{shape.width}" cy="#{shape.height}"/>) <>
       ~s(</a:xfrm>) <>
       ~s(<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>) <>
-      ~s(<a:noFill/>) <>
+      Drawing.fill_xml(shape.fill) <>
+      Drawing.line_xml(shape.line) <>
       ~s(</p:spPr>) <>
       ~s(<p:txBody>) <>
       ~s(<a:bodyPr wrap="square" rtlCol="0"/>) <>
       ~s(<a:lstStyle/>) <>
-      ~s(<a:p><a:r>#{run_props}<a:t>#{escaped_text}</a:t></a:r></a:p>) <>
+      body_xml <>
       ~s(</p:txBody>) <>
       ~s(</p:sp>)
   end

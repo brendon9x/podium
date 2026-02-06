@@ -3,11 +3,41 @@ defmodule PodiumTest do
 
   alias Podium.Test.PptxHelpers
 
-  describe "new/0" do
-    test "creates a presentation" do
+  describe "new/1" do
+    test "creates a presentation with default 16:9 dimensions" do
       prs = Podium.new()
       assert %Podium.Presentation{} = prs
       assert prs.slides == []
+      assert prs.slide_width == 12_192_000
+      assert prs.slide_height == 6_858_000
+    end
+
+    test "accepts custom slide dimensions" do
+      prs = Podium.new(slide_width: {10, :inches}, slide_height: {7.5, :inches})
+      assert prs.slide_width == 9_144_000
+      assert prs.slide_height == 6_858_000
+    end
+
+    test "dimensions appear in presentation XML" do
+      prs = Podium.new()
+      {prs, _} = Podium.add_slide(prs)
+      {:ok, binary} = Podium.save_to_memory(prs)
+      parts = PptxHelpers.unzip_pptx_binary(binary)
+      pres_xml = parts["ppt/presentation.xml"]
+
+      assert pres_xml =~ ~s(cx="12192000")
+      assert pres_xml =~ ~s(cy="6858000")
+    end
+
+    test "4:3 dimensions in presentation XML" do
+      prs = Podium.new(slide_width: 9_144_000, slide_height: 6_858_000)
+      {prs, _} = Podium.add_slide(prs)
+      {:ok, binary} = Podium.save_to_memory(prs)
+      parts = PptxHelpers.unzip_pptx_binary(binary)
+      pres_xml = parts["ppt/presentation.xml"]
+
+      assert pres_xml =~ ~s(cx="9144000")
+      assert pres_xml =~ ~s(cy="6858000")
     end
   end
 

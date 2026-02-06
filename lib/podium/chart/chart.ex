@@ -11,7 +11,12 @@ defmodule Podium.Chart do
     :x,
     :y,
     :width,
-    :height
+    :height,
+    :title,
+    :legend,
+    data_labels: [],
+    category_axis: [],
+    value_axis: []
   ]
 
   @doc """
@@ -25,7 +30,12 @@ defmodule Podium.Chart do
       x: Units.to_emu(Keyword.fetch!(opts, :x)),
       y: Units.to_emu(Keyword.fetch!(opts, :y)),
       width: Units.to_emu(Keyword.fetch!(opts, :width)),
-      height: Units.to_emu(Keyword.fetch!(opts, :height))
+      height: Units.to_emu(Keyword.fetch!(opts, :height)),
+      title: Keyword.get(opts, :title),
+      legend: Keyword.get(opts, :legend),
+      data_labels: Keyword.get(opts, :data_labels, []),
+      category_axis: Keyword.get(opts, :category_axis, []),
+      value_axis: Keyword.get(opts, :value_axis, [])
     }
   end
 

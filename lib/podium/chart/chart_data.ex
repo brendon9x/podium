@@ -5,7 +5,7 @@ defmodule Podium.Chart.ChartData do
 
   defmodule Series do
     @moduledoc false
-    defstruct [:name, :index, values: []]
+    defstruct [:name, :index, :color, values: []]
   end
 
   @doc """
@@ -21,10 +21,24 @@ defmodule Podium.Chart.ChartData do
   end
 
   @doc """
-  Adds a series with a name and values.
+  Adds a series with a name and numeric values.
   """
-  def add_series(%__MODULE__{} = data, name, values) when is_list(values) do
-    series = %Series{name: name, index: length(data.series), values: values}
+  def add_series(%__MODULE__{} = data, name, values, opts \\ []) when is_list(values) do
+    unless Enum.all?(values, &is_number/1) do
+      raise ArgumentError, "chart series values must be numbers, got: #{inspect(values)}"
+    end
+
+    if length(data.series) >= 25 do
+      raise ArgumentError, "maximum of 25 series supported (columns B through Z)"
+    end
+
+    series = %Series{
+      name: name,
+      index: length(data.series),
+      values: values,
+      color: Keyword.get(opts, :color)
+    }
+
     %{data | series: data.series ++ [series]}
   end
 
@@ -60,7 +74,7 @@ defmodule Podium.Chart.ChartData do
   Converts a 1-based column number to an Excel column letter.
   1 -> "B", 2 -> "C", etc. (offset by 1 because column A is categories)
   """
-  def column_letter(series_index) do
+  def column_letter(series_index) when series_index >= 1 and series_index <= 25 do
     # Column A (index 0) is categories, series start at B
     col_num = series_index + 1
     <<?A + col_num - 1>>

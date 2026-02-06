@@ -3,8 +3,13 @@ defmodule Podium.Presentation do
 
   alias Podium.Chart
   alias Podium.Chart.{XlsxWriter, XmlWriter}
+  alias Podium.{Image, Slide, Units}
   alias Podium.OPC.{Constants, ContentTypes, Package, Relationships}
-  alias Podium.Slide
+
+  @blank_layout_index 7
+
+  @default_slide_width 12_192_000
+  @default_slide_height 6_858_000
 
   defstruct [
     :template_parts,
@@ -12,13 +17,16 @@ defmodule Podium.Presentation do
     slides: [],
     next_slide_index: 1,
     next_chart_index: 1,
-    pres_rels: nil
+    next_image_index: 1,
+    pres_rels: nil,
+    slide_width: @default_slide_width,
+    slide_height: @default_slide_height
   ]
 
   @doc """
   Creates a new presentation from the default template.
   """
-  def new do
+  def new(opts \\ []) do
     {:ok, parts} = Package.read_template()
 
     pres_rels =
@@ -31,10 +39,15 @@ defmodule Podium.Presentation do
         {"rId6", Constants.rt(:table_styles), "tableStyles.xml"}
       ])
 
+    slide_width = Units.to_emu(Keyword.get(opts, :slide_width, @default_slide_width))
+    slide_height = Units.to_emu(Keyword.get(opts, :slide_height, @default_slide_height))
+
     %__MODULE__{
       template_parts: parts,
       content_types: ContentTypes.from_template(),
-      pres_rels: pres_rels
+      pres_rels: pres_rels,
+      slide_width: slide_width,
+      slide_height: slide_height
     }
   end
 
@@ -42,13 +55,22 @@ defmodule Podium.Presentation do
   Adds a new blank slide and returns the updated presentation with the slide.
   """
   def add_slide(%__MODULE__{} = prs, opts \\ []) do
-    layout_index = Keyword.get(opts, :layout_index, 7)
+    layout =
+      cond do
+        Keyword.has_key?(opts, :layout) -> Keyword.get(opts, :layout)
+        Keyword.has_key?(opts, :layout_index) -> Keyword.get(opts, :layout_index)
+        true -> @blank_layout_index
+      end
+
+    layout_index = resolve_layout_index(layout)
     slide_index = prs.next_slide_index
 
-    slide = Slide.new(index: slide_index, layout_index: layout_index)
-
-    {pres_rels, _rid} =
+    # Add slide relationship to presentation — store the assigned rId
+    {pres_rels, rid} =
       Relationships.add(prs.pres_rels, Constants.rt(:slide), "slides/slide#{slide_index}.xml")
+
+    slide = Slide.new(index: slide_index, layout_index: layout_index)
+    slide = %{slide | pres_rid: rid}
 
     content_types =
       ContentTypes.add_override(
@@ -70,21 +92,49 @@ defmodule Podium.Presentation do
 
   @doc """
   Adds a chart to a slide and returns the updated {presentation, slide}.
+  The slide is automatically updated within the presentation.
   """
   def add_chart(%__MODULE__{} = prs, %Slide{} = slide, chart_type, chart_data, opts) do
     chart_index = prs.next_chart_index
 
     slide = Slide.add_chart(slide, chart_type, chart_data, chart_index, opts)
 
-    # Register chart and xlsx content types
     content_types =
       prs.content_types
       |> ContentTypes.add_override("/ppt/charts/chart#{chart_index}.xml", Constants.ct(:chart))
       |> ContentTypes.add_default("xlsx", Constants.ct(:xlsx))
 
+    # Auto-update the slide within prs.slides
+    slides = replace_slide(prs.slides, slide)
+
     prs = %{
       prs
-      | next_chart_index: chart_index + 1,
+      | slides: slides,
+        next_chart_index: chart_index + 1,
+        content_types: content_types
+    }
+
+    {prs, slide}
+  end
+
+  @doc """
+  Adds an image to a slide. Returns `{presentation, slide}`.
+  """
+  def add_image(%__MODULE__{} = prs, %Slide{} = slide, binary, opts) do
+    image_index = prs.next_image_index
+    image = Image.new(binary, image_index, opts)
+
+    slide = Slide.add_image(slide, image)
+
+    content_types =
+      ContentTypes.add_default(prs.content_types, image.extension, content_type(image.extension))
+
+    slides = replace_slide(prs.slides, slide)
+
+    prs = %{
+      prs
+      | slides: slides,
+        next_image_index: image_index + 1,
         content_types: content_types
     }
 
@@ -95,12 +145,7 @@ defmodule Podium.Presentation do
   Replaces a slide in the presentation (by matching slide index).
   """
   def put_slide(%__MODULE__{} = prs, %Slide{} = slide) do
-    slides =
-      Enum.map(prs.slides, fn existing ->
-        if existing.index == slide.index, do: slide, else: existing
-      end)
-
-    %{prs | slides: slides}
+    %{prs | slides: replace_slide(prs.slides, slide)}
   end
 
   @doc """
@@ -119,10 +164,24 @@ defmodule Podium.Presentation do
     Package.write_to_memory(parts)
   end
 
+  defp content_type("png"), do: Constants.ct(:png)
+  defp content_type("jpeg"), do: Constants.ct(:jpeg)
+
+  defp resolve_layout_index(:title_slide), do: 1
+  defp resolve_layout_index(:title_content), do: 2
+  defp resolve_layout_index(:blank), do: @blank_layout_index
+  defp resolve_layout_index(index) when is_integer(index), do: index
+
+  defp replace_slide(slides, %Slide{} = slide) do
+    Enum.map(slides, fn existing ->
+      if existing.index == slide.index, do: slide, else: existing
+    end)
+  end
+
   defp build_parts(%__MODULE__{} = prs) do
     parts = prs.template_parts
 
-    # Process each slide: generate slide XML, slide rels, chart parts
+    # Process each slide: generate slide XML, slide rels, chart parts, image parts
     parts =
       Enum.reduce(prs.slides, parts, fn slide, acc ->
         build_slide_parts(slide, acc)
@@ -160,7 +219,7 @@ defmodule Podium.Presentation do
           Relationships.add(rels, Constants.rt(:chart), "../charts/chart#{chart.chart_index}.xml")
 
         # Generate chart XML
-        chart_xml = XmlWriter.to_xml(chart.chart_type, chart.chart_data)
+        chart_xml = XmlWriter.to_xml(chart)
         acc = Map.put(acc, Chart.partname(chart), chart_xml)
 
         # Generate chart rels (chart -> embedded xlsx)
@@ -182,8 +241,23 @@ defmodule Podium.Presentation do
         {rels, rids ++ [{chart, chart_rid}], acc}
       end)
 
-    # Generate slide XML with chart relationship IDs
-    parts = Map.put(parts, Slide.partname(slide), Slide.to_xml(slide, chart_rids))
+    # Add image relationships and store image binaries
+    {slide_rels, image_rids, parts} =
+      Enum.reduce(slide.images, {slide_rels, [], parts}, fn image, {rels, rids, acc} ->
+        {rels, image_rid} =
+          Relationships.add(
+            rels,
+            Constants.rt(:image),
+            "../media/image#{image.image_index}.#{image.extension}"
+          )
+
+        acc = Map.put(acc, Image.partname(image), image.binary)
+
+        {rels, rids ++ [{image, image_rid}], acc}
+      end)
+
+    # Generate slide XML with chart and image relationship IDs
+    parts = Map.put(parts, Slide.partname(slide), Slide.to_xml(slide, chart_rids, image_rids))
     parts = Map.put(parts, Slide.rels_partname(slide), Relationships.to_xml(slide_rels))
 
     parts
@@ -203,8 +277,7 @@ defmodule Podium.Presentation do
           |> Enum.with_index()
           |> Enum.map(fn {slide, idx} ->
             slide_id = 256 + idx
-            rid = "rId#{6 + slide.index}"
-            ~s(<p:sldId id="#{slide_id}" r:id="#{rid}"/>)
+            ~s(<p:sldId id="#{slide_id}" r:id="#{slide.pres_rid}"/>)
           end)
           |> Enum.join()
 
@@ -215,8 +288,8 @@ defmodule Podium.Presentation do
       ~s(<p:presentation xmlns:a="#{ns_a}" xmlns:r="#{ns_r}" xmlns:p="#{ns_p}" saveSubsetFonts="1" autoCompressPictures="0">) <>
       ~s(<p:sldMasterIdLst><p:sldMasterId id="2147483648" r:id="rId1"/></p:sldMasterIdLst>) <>
       slide_id_list <>
-      ~s(<p:sldSz cx="9144000" cy="6858000" type="screen4x3"/>) <>
-      ~s(<p:notesSz cx="6858000" cy="9144000"/>) <>
+      ~s(<p:sldSz cx="#{prs.slide_width}" cy="#{prs.slide_height}"/>) <>
+      ~s(<p:notesSz cx="#{prs.slide_height}" cy="#{prs.slide_width}"/>) <>
       default_text_style_xml() <>
       ~s(</p:presentation>)
   end
