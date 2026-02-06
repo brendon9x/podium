@@ -21,3 +21,9 @@ podium-*.tar
 
 # Temporary files, for example, from tests.
 /tmp/
+
+# Generated demo output
+demos/*.pptx
+
+# Claude Code local settings
+.claude/
