@@ -220,6 +220,38 @@ defmodule Podium.ShapeTest do
       assert xml =~ ~s(<a:ln w="25400">)
     end
 
+    test "rich text with bullets, spacing, strikethrough, and superscript" do
+      {_prs, slide} = Podium.new() |> Podium.add_slide()
+
+      slide =
+        Podium.add_text_box(
+          slide,
+          [
+            {[{"Strikethrough", strikethrough: true}], space_after: 6},
+            {[{"E=mc", font_size: 18}, {"2", font_size: 12, superscript: true}],
+             line_spacing: 1.5},
+            {["Bullet one"], bullet: true},
+            {["Sub-bullet"], bullet: true, level: 1},
+            {["Step 1"], bullet: :number}
+          ],
+          x: {1, :inches},
+          y: {1, :inches},
+          width: {8, :inches},
+          height: {4, :inches}
+        )
+
+      shape = hd(slide.shapes)
+      xml = Podium.Shape.to_xml(shape)
+
+      assert xml =~ ~s(strike="sngStrike")
+      assert xml =~ ~s(baseline="30000")
+      assert xml =~ ~s(<a:spcAft><a:spcPts val="600"/></a:spcAft>)
+      assert xml =~ ~s(<a:lnSpc><a:spcPct val="150000"/></a:lnSpc>)
+      assert xml =~ ~s(<a:buChar char="&#x2022;"/>)
+      assert xml =~ ~s(lvl="1")
+      assert xml =~ ~s(<a:buAutoNum type="arabicPeriod"/>)
+    end
+
     test "underline and font options" do
       {_prs, slide} = Podium.new() |> Podium.add_slide()
 

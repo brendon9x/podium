@@ -44,8 +44,64 @@ slide2 =
 
 prs = Podium.put_slide(prs, slide2)
 
-# --- Slide 3: Revenue chart with title, legend, data labels, axis customization ---
+# --- Slide 3: Rich text — bullets, spacing, strikethrough, super/subscript ---
 {prs, slide3} = Podium.add_slide(prs)
+
+slide3 =
+  slide3
+  |> Podium.add_text_box(
+    [
+      {[{"Text Formatting Features", bold: true, font_size: 28, color: "003366"}],
+       alignment: :center, space_after: 12}
+    ],
+    x: {0.5, :inches},
+    y: {0.3, :inches},
+    width: {11, :inches},
+    height: {0.7, :inches},
+    fill: "E8EDF2"
+  )
+  |> Podium.add_text_box(
+    [
+      {[{"Strikethrough: ", font_size: 16},
+        {"old price $99", font_size: 16, strikethrough: true, color: "CC0000"},
+        {" → new price $79", font_size: 16, bold: true, color: "228B22"}],
+       space_after: 6},
+      {[{"Superscript: E = mc", font_size: 16},
+        {"2", font_size: 12, superscript: true}],
+       space_after: 6},
+      {[{"Subscript: H", font_size: 16},
+        {"2", font_size: 12, subscript: true},
+        {"O", font_size: 16}],
+       space_after: 12, line_spacing: 1.5}
+    ],
+    x: {0.5, :inches},
+    y: {1.2, :inches},
+    width: {11, :inches},
+    height: {2, :inches}
+  )
+  |> Podium.add_text_box(
+    [
+      {[{"Bullet Lists", bold: true, font_size: 20}], space_after: 6},
+      {["Revenue up 35% year-over-year"], bullet: true},
+      {["North America grew fastest"], bullet: true, level: 1},
+      {["APAC close behind"], bullet: true, level: 1},
+      {["Customer satisfaction at all-time high"], bullet: true},
+      {["Custom bullet: hiring plan on track"], bullet: "–"},
+      {[{"Numbered Steps", bold: true, font_size: 20}], space_before: 12, space_after: 6},
+      {["Review quarterly data"], bullet: :number},
+      {["Identify growth opportunities"], bullet: :number},
+      {["Present to board"], bullet: :number}
+    ],
+    x: {0.5, :inches},
+    y: {3.2, :inches},
+    width: {11, :inches},
+    height: {4, :inches}
+  )
+
+prs = Podium.put_slide(prs, slide3)
+
+# --- Slide 4: Revenue chart with title, legend, data labels, axis customization ---
+{prs, slide4} = Podium.add_slide(prs)
 
 revenue_data =
   ChartData.new()
@@ -54,8 +110,8 @@ revenue_data =
   |> ChartData.add_series("Expenses", [10_000, 11_300, 12_500, 13_000], color: "ED7D31")
   |> ChartData.add_series("Net Profit", [2_500, 3_300, 2_656, 5_167], color: "70AD47")
 
-{prs, _slide3} =
-  Podium.add_chart(prs, slide3, :column_clustered, revenue_data,
+{prs, _slide4} =
+  Podium.add_chart(prs, slide4, :column_clustered, revenue_data,
     x: {0.5, :inches},
     y: {0.5, :inches},
     width: {11, :inches},
@@ -74,16 +130,16 @@ revenue_data =
     ]
   )
 
-# --- Slide 4: Pie chart with data labels ---
-{prs, slide4} = Podium.add_slide(prs)
+# --- Slide 5: Pie chart with data labels ---
+{prs, slide5} = Podium.add_slide(prs)
 
 market_data =
   ChartData.new()
   |> ChartData.add_categories(["North America", "Europe", "Asia Pacific", "Latin America", "MEA"])
   |> ChartData.add_series("Market Share", [42, 28, 18, 8, 4])
 
-{prs, _slide4} =
-  Podium.add_chart(prs, slide4, :pie, market_data,
+{prs, _slide5} =
+  Podium.add_chart(prs, slide5, :pie, market_data,
     x: {1.5, :inches},
     y: {0.5, :inches},
     width: {9, :inches},
@@ -93,8 +149,8 @@ market_data =
     data_labels: [:category, :percent]
   )
 
-# --- Slide 5: Line chart with series colors ---
-{prs, slide5} = Podium.add_slide(prs)
+# --- Slide 6: Line chart with series colors ---
+{prs, slide6} = Podium.add_slide(prs)
 
 trend_data =
   ChartData.new()
@@ -104,8 +160,8 @@ trend_data =
   |> ChartData.add_series("Mobile", [30, 35, 38, 42, 50, 55, 62, 68, 71, 75, 80, 92], color: "ED7D31")
   |> ChartData.add_series("API", [10, 12, 14, 15, 18, 20, 22, 25, 28, 30, 33, 38], color: "70AD47")
 
-{prs, _slide5} =
-  Podium.add_chart(prs, slide5, :line_markers, trend_data,
+{prs, _slide6} =
+  Podium.add_chart(prs, slide6, :line_markers, trend_data,
     x: {0.5, :inches},
     y: {0.5, :inches},
     width: {11, :inches},
@@ -115,11 +171,11 @@ trend_data =
     value_axis: [title: "Users (thousands)", major_gridlines: true]
   )
 
-# --- Slide 6: Table ---
-{prs, slide6} = Podium.add_slide(prs)
+# --- Slide 7: Table ---
+{prs, slide7} = Podium.add_slide(prs)
 
-slide6 =
-  slide6
+slide7 =
+  slide7
   |> Podium.add_text_box("Department Summary",
     x: {0.5, :inches},
     y: {0.3, :inches},
@@ -143,13 +199,13 @@ slide6 =
     height: {4.5, :inches}
   )
 
-prs = Podium.put_slide(prs, slide6)
+prs = Podium.put_slide(prs, slide7)
 
-# --- Slide 7: Image (create a minimal PNG programmatically) ---
-{prs, slide7} = Podium.add_slide(prs)
+# --- Slide 8: Image ---
+{prs, slide8} = Podium.add_slide(prs)
 
-slide7 =
-  Podium.add_text_box(slide7, "Image Support Demo",
+slide8 =
+  Podium.add_text_box(slide8, "Image Support Demo",
     x: {0.5, :inches},
     y: {0.3, :inches},
     width: {11, :inches},
@@ -160,18 +216,18 @@ slide7 =
 
 image_binary = File.read!(Path.join(__DIR__, "acme.jpg"))
 
-{prs, slide7} =
-  Podium.add_image(prs, slide7, image_binary,
+{prs, slide8} =
+  Podium.add_image(prs, slide8, image_binary,
     x: {3, :inches},
     y: {1.5, :inches},
     width: {6, :inches},
     height: {4.5, :inches}
   )
 
-prs = Podium.put_slide(prs, slide7)
+prs = Podium.put_slide(prs, slide8)
 
-# --- Slide 8: Stacked bar with formatting ---
-{prs, slide8} = Podium.add_slide(prs)
+# --- Slide 9: Stacked bar with formatting ---
+{prs, slide9} = Podium.add_slide(prs)
 
 tickets_data =
   ChartData.new()
@@ -181,8 +237,8 @@ tickets_data =
   |> ChartData.add_series("Phone", [100, 95, 90, 85, 80, 75], color: "A5A5A5")
   |> ChartData.add_series("Self-Service", [50, 80, 120, 160, 200, 250], color: "70AD47")
 
-{prs, _slide8} =
-  Podium.add_chart(prs, slide8, :bar_stacked, tickets_data,
+{prs, _slide9} =
+  Podium.add_chart(prs, slide9, :bar_stacked, tickets_data,
     x: {0.5, :inches},
     y: {0.5, :inches},
     width: {11, :inches},
@@ -193,11 +249,11 @@ tickets_data =
     value_axis: [title: "Tickets", major_gridlines: false]
   )
 
-# --- Slide 9: Title + Content layout with placeholder ---
-{prs, slide9} = Podium.add_slide(prs, layout: :title_content)
+# --- Slide 10: Title + Content layout with placeholder ---
+{prs, slide10} = Podium.add_slide(prs, layout: :title_content)
 
-slide9 =
-  slide9
+slide10 =
+  slide10
   |> Podium.set_placeholder(:title, "Next Steps")
   |> Podium.set_placeholder(:body, [
     [{"Continue expanding into Asia Pacific market"}],
@@ -205,13 +261,13 @@ slide9 =
     [{"Target 95% customer satisfaction by Q4 2026"}]
   ])
 
-prs = Podium.put_slide(prs, slide9)
+prs = Podium.put_slide(prs, slide10)
 
-# --- Slide 10: 4:3 presentation note + closing ---
-{prs, slide10} = Podium.add_slide(prs)
+# --- Slide 11: Closing ---
+{prs, slide11} = Podium.add_slide(prs)
 
-slide10 =
-  slide10
+slide11 =
+  slide11
   |> Podium.add_text_box(
     [
       {[{"Thank You", bold: true, font_size: 44, color: "003366"}], alignment: :center},
@@ -223,7 +279,7 @@ slide10 =
     height: {3, :inches}
   )
 
-prs = Podium.put_slide(prs, slide10)
+prs = Podium.put_slide(prs, slide11)
 
 # --- Save ---
 path = Path.join(__DIR__, "basics.pptx")

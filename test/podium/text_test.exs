@@ -75,5 +75,70 @@ defmodule Podium.TextTest do
       xml = Text.paragraphs_xml(paragraphs)
       assert xml =~ ~s(<a:latin typeface="Calibri"/>)
     end
+
+    test "includes strikethrough" do
+      paragraphs = Text.normalize([[{"Struck", strikethrough: true}]])
+      xml = Text.paragraphs_xml(paragraphs)
+      assert xml =~ ~s(strike="sngStrike")
+    end
+
+    test "includes superscript baseline" do
+      paragraphs = Text.normalize([[{"2", superscript: true}]])
+      xml = Text.paragraphs_xml(paragraphs)
+      assert xml =~ ~s(baseline="30000")
+    end
+
+    test "includes subscript baseline" do
+      paragraphs = Text.normalize([[{"2", subscript: true}]])
+      xml = Text.paragraphs_xml(paragraphs)
+      assert xml =~ ~s(baseline="-25000")
+    end
+
+    test "paragraph line spacing" do
+      paragraphs = Text.normalize([{["Spaced"], line_spacing: 1.5}])
+      xml = Text.paragraphs_xml(paragraphs)
+      assert xml =~ ~s(<a:lnSpc><a:spcPct val="150000"/></a:lnSpc>)
+    end
+
+    test "paragraph space before and after" do
+      paragraphs = Text.normalize([{["Text"], space_before: 6, space_after: 12}])
+      xml = Text.paragraphs_xml(paragraphs)
+      assert xml =~ ~s(<a:spcBef><a:spcPts val="600"/></a:spcBef>)
+      assert xml =~ ~s(<a:spcAft><a:spcPts val="1200"/></a:spcAft>)
+    end
+
+    test "default bullet character" do
+      paragraphs = Text.normalize([{["Item"], bullet: true}])
+      xml = Text.paragraphs_xml(paragraphs)
+      assert xml =~ ~s(marL="457200")
+      assert xml =~ ~s(indent="-228600")
+      assert xml =~ ~s(<a:buChar char="&#x2022;"/>)
+    end
+
+    test "custom bullet character" do
+      paragraphs = Text.normalize([{["Item"], bullet: "–"}])
+      xml = Text.paragraphs_xml(paragraphs)
+      assert xml =~ ~s(<a:buChar char="–"/>)
+    end
+
+    test "numbered bullet" do
+      paragraphs = Text.normalize([{["Step one"], bullet: :number}])
+      xml = Text.paragraphs_xml(paragraphs)
+      assert xml =~ ~s(<a:buAutoNum type="arabicPeriod"/>)
+    end
+
+    test "bullet with indent level" do
+      paragraphs = Text.normalize([{["Sub-item"], bullet: true, level: 1}])
+      xml = Text.paragraphs_xml(paragraphs)
+      assert xml =~ ~s(lvl="1")
+      assert xml =~ ~s(marL="914400")
+      assert xml =~ ~s(indent="-228600")
+    end
+
+    test "no pPr emitted when no paragraph properties" do
+      paragraphs = Text.normalize([["Plain text"]])
+      xml = Text.paragraphs_xml(paragraphs)
+      refute xml =~ "<a:pPr"
+    end
   end
 end
