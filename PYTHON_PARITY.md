@@ -30,7 +30,7 @@ All Tier 1 features have basic implementations. The remaining gaps within each a
 
 | Feature | python-pptx | Podium | Gap |
 |---------|-------------|--------|-----|
-| **Rich text** | spacing, bullets, superscript, strikethrough, language | bold, italic, underline, color, font, alignment | Bullets, spacing, superscript, strikethrough |
+| **Rich text** | spacing, bullets, superscript, strikethrough, language | bold, italic, underline, strikethrough, superscript, subscript, color, font, alignment, bullets, line spacing, space before/after | Language |
 | **Images** | BMP, GIF, TIFF, EMF, WMF, cropping, deduplication | PNG, JPEG | More formats, cropping, dedup |
 | **Tables** | merge, borders, fills, padding, vertical anchor | Rows/cols with rich text cells | Cell merge, borders, fills, padding |
 | **Chart titles & legends** | Font formatting on titles/legends | Title text, legend position | Font formatting |
@@ -65,6 +65,5 @@ All Tier 1 features have basic implementations. The remaining gaps within each a
 | Shadow/3D effects | Partial | No | Medium-Large |
 | Text auto-size/fit to shape | Yes (font metrics) | No | Medium |
 | Gradient/pattern fills | Yes | No | Medium |
-| Bullet/numbered lists | Yes | No | Small-Medium |
 | Slide master/layout editing | Yes | No | Large |
 | Slide reorder/delete/duplicate | Yes | No | Small-Medium |

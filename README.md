@@ -6,7 +6,7 @@ Podium creates well-formed OOXML presentations from scratch. Charts embed real E
 
 ## Features
 
-- **Rich text** — bold, italic, underline, color, font, alignment, multiple paragraphs and runs
+- **Rich text** — bold, italic, underline, strikethrough, superscript, subscript, color, font, alignment, bullets, paragraph spacing
 - **Charts** — column (clustered/stacked), bar (clustered/stacked), line, line with markers, pie — all fully editable
 - **Chart formatting** — titles, legends, data labels, axis customization (min/max, gridlines, number format), per-series colors
 - **Images** — PNG and JPEG with automatic format detection
@@ -98,7 +98,24 @@ slide = Podium.add_text_box(slide, [
 ], x: {1, :inches}, y: {1, :inches}, width: {8, :inches}, height: {2, :inches})
 ```
 
-Run options: `bold`, `italic`, `underline`, `font_size`, `color` (hex RGB), `font`.
+Run options: `bold`, `italic`, `underline`, `strikethrough`, `superscript`, `subscript`, `font_size`, `color` (hex RGB), `font`.
+
+### Paragraph spacing and bullets
+
+Paragraph-level options go in the tuple form `{runs, opts}`:
+
+```elixir
+slide = Podium.add_text_box(slide, [
+  {[{"Spaced heading", bold: true}], line_spacing: 1.5, space_after: 12},
+  {["Bullet item one"], bullet: true},
+  {["Sub-item"], bullet: true, level: 1},
+  {["Custom bullet"], bullet: "–"},
+  {["Step one"], bullet: :number},
+  {[{"E=mc", font_size: 16}, {"2", font_size: 12, superscript: true}], space_before: 6}
+], x: {1, :inches}, y: {1, :inches}, width: {8, :inches}, height: {4, :inches})
+```
+
+Paragraph options: `alignment`, `line_spacing` (multiplier, e.g. `1.5`), `space_before` / `space_after` (points), `bullet` (`true`, a custom character, or `:number`), `level` (0-based indent).
 
 ### Shape fills and lines
 
@@ -198,7 +215,7 @@ All position and size values accept `{number, unit}` tuples or raw EMU integers:
 
 ## Demo
 
-See [`demos/basics.exs`](demos/basics.exs) for a complete 10-slide presentation exercising every feature.
+See [`demos/basics.exs`](demos/basics.exs) for a complete 11-slide presentation exercising every feature.
 
 ```bash
 mix run demos/basics.exs
