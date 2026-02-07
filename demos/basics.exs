@@ -27,14 +27,20 @@ slide2 =
     y: {0.3, :inches},
     width: {11, :inches},
     height: {0.8, :inches},
-    fill: "003366",
-    line: "001133"
+    fill: {:gradient, [{0, "001133"}, {100_000, "004488"}], angle: 5_400_000},
+    line: [color: "001133", width: {1.5, :pt}, dash_style: :dash]
   )
   |> Podium.add_text_box(
     [
       [{"Revenue grew ", font_size: 18}, {"35%", bold: true, font_size: 18, color: "228B22"}],
-      [{"Customer satisfaction at ", font_size: 18}, {"88%", bold: true, font_size: 18, color: "4472C4"}],
-      {[{"All metrics trending upward", italic: true, font_size: 16, color: "666666"}], alignment: :right}
+      [
+        {"Customer satisfaction at ", font_size: 18},
+        {"88%", bold: true, font_size: 18, color: "4472C4"}
+      ],
+      {[
+         {"All metrics trending upward",
+          italic: true, font_size: 16, color: "666666", underline: true, font: "Georgia"}
+       ], alignment: :right}
     ],
     x: {1, :inches},
     y: {1.5, :inches},
@@ -58,21 +64,22 @@ slide3 =
     y: {0.3, :inches},
     width: {11, :inches},
     height: {0.7, :inches},
-    fill: "E8EDF2"
+    fill: {:pattern, :lt_horz, foreground: "003366", background: "E8EDF2"}
   )
   |> Podium.add_text_box(
     [
-      {[{"Strikethrough: ", font_size: 16},
-        {"old price $99", font_size: 16, strikethrough: true, color: "CC0000"},
-        {" → new price $79", font_size: 16, bold: true, color: "228B22"}],
+      {[
+         {"Strikethrough: ", font_size: 16},
+         {"old price $99", font_size: 16, strikethrough: true, color: "CC0000"},
+         {" → new price $79", font_size: 16, bold: true, color: "228B22"}
+       ], space_after: 6},
+      {[{"Superscript: E = mc", font_size: 16}, {"2", font_size: 12, superscript: true}],
        space_after: 6},
-      {[{"Superscript: E = mc", font_size: 16},
-        {"2", font_size: 12, superscript: true}],
-       space_after: 6},
-      {[{"Subscript: H", font_size: 16},
-        {"2", font_size: 12, subscript: true},
-        {"O", font_size: 16}],
-       space_after: 12, line_spacing: 1.5}
+      {[
+         {"Subscript: H", font_size: 16},
+         {"2", font_size: 12, subscript: true},
+         {"O", font_size: 16}
+       ], space_after: 12, line_spacing: 1.5}
     ],
     x: {0.5, :inches},
     y: {1.2, :inches},
@@ -116,10 +123,10 @@ revenue_data =
     y: {0.5, :inches},
     width: {11, :inches},
     height: {6, :inches},
-    title: "Quarterly Revenue vs Expenses",
-    legend: :bottom,
-    data_labels: [:value],
-    category_axis: [title: "Quarter"],
+    title: [text: "Quarterly Revenue vs Expenses", font_size: 18, bold: true, color: "003366"],
+    legend: [position: :bottom, font_size: 10, font: "Arial"],
+    data_labels: [show: [:value], position: :outside_end, number_format: "$#,##0"],
+    category_axis: [title: "Quarter", label_rotation: -45],
     value_axis: [
       title: "Amount ($)",
       number_format: "$#,##0",
@@ -136,7 +143,9 @@ revenue_data =
 market_data =
   ChartData.new()
   |> ChartData.add_categories(["North America", "Europe", "Asia Pacific", "Latin America", "MEA"])
-  |> ChartData.add_series("Market Share", [42, 28, 18, 8, 4])
+  |> ChartData.add_series("Market Share", [42, 28, 18, 8, 4],
+    point_colors: %{0 => "2E75B6", 1 => "BDD7EE", 2 => "ED7D31", 3 => "FBE5D6", 4 => "A5A5A5"}
+  )
 
 {prs, _slide5} =
   Podium.add_chart(prs, slide5, :pie, market_data,
@@ -154,11 +163,29 @@ market_data =
 
 trend_data =
   ChartData.new()
-  |> ChartData.add_categories(["Jan", "Feb", "Mar", "Apr", "May", "Jun",
-                                "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"])
-  |> ChartData.add_series("Web", [45, 48, 52, 55, 60, 63, 68, 72, 70, 74, 78, 85], color: "4472C4")
-  |> ChartData.add_series("Mobile", [30, 35, 38, 42, 50, 55, 62, 68, 71, 75, 80, 92], color: "ED7D31")
-  |> ChartData.add_series("API", [10, 12, 14, 15, 18, 20, 22, 25, 28, 30, 33, 38], color: "70AD47")
+  |> ChartData.add_categories([
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec"
+  ])
+  |> ChartData.add_series("Web", [45, 48, 52, 55, 60, 63, 68, 72, 70, 74, 78, 85],
+    color: "4472C4"
+  )
+  |> ChartData.add_series("Mobile", [30, 35, 38, 42, 50, 55, 62, 68, 71, 75, 80, 92],
+    color: "ED7D31"
+  )
+  |> ChartData.add_series("API", [10, 12, 14, 15, 18, 20, 22, 25, 28, 30, 33, 38],
+    color: "70AD47"
+  )
 
 {prs, _slide6} =
   Podium.add_chart(prs, slide6, :line_markers, trend_data,
@@ -186,12 +213,34 @@ slide7 =
   )
   |> Podium.add_table(
     [
-      ["Department", "Headcount", "Budget ($K)", "Satisfaction"],
-      ["Engineering", "230", "$4,200", "92%"],
-      ["Marketing", "85", "$2,100", "87%"],
-      ["Sales", "120", "$3,500", "84%"],
-      ["Operations", "65", "$1,800", "89%"],
-      ["HR", "40", "$900", "91%"]
+      # Header row: merged title spanning all columns
+      [
+        {"Department Summary — 2025",
+         col_span: 4, fill: "003366", anchor: :middle, padding: [left: {0.1, :inches}]},
+        :merge,
+        :merge,
+        :merge
+      ],
+      # Column headers with fill and borders
+      [
+        {"Department", fill: "4472C4", borders: [bottom: [color: "003366", width: {2, :pt}]]},
+        {"Headcount", fill: "4472C4", borders: [bottom: [color: "003366", width: {2, :pt}]]},
+        {"Budget ($K)", fill: "4472C4", borders: [bottom: [color: "003366", width: {2, :pt}]]},
+        {"Satisfaction", fill: "4472C4", borders: [bottom: [color: "003366", width: {2, :pt}]]}
+      ],
+      # Engineering spans 2 rows vertically with rich text
+      [
+        {[[{"Engineering", bold: true, color: "003366"}]],
+         row_span: 2, anchor: :middle, fill: "D6E4F0", padding: [left: {0.1, :inches}]},
+        "230",
+        "$4,200",
+        {[[{"92%", bold: true, color: "228B22"}]], anchor: :middle}
+      ],
+      # Merged from Engineering row above
+      [:merge, "180", "$3,800", {[[{"94%", bold: true, color: "228B22"}]], anchor: :middle}],
+      # Regular rows
+      ["Marketing", "85", "$2,100", {"87%", borders: [bottom: "CCCCCC"]}],
+      ["Sales", "120", "$3,500", {"84%", borders: [bottom: "CCCCCC"]}]
     ],
     x: {0.5, :inches},
     y: {1.3, :inches},
@@ -221,7 +270,8 @@ image_binary = File.read!(Path.join(__DIR__, "acme.jpg"))
     x: {3, :inches},
     y: {1.5, :inches},
     width: {6, :inches},
-    height: {4.5, :inches}
+    height: {4.5, :inches},
+    crop: [top: 5000, bottom: 5000]
   )
 
 prs = Podium.put_slide(prs, slide8)
@@ -232,7 +282,9 @@ prs = Podium.put_slide(prs, slide8)
 tickets_data =
   ChartData.new()
   |> ChartData.add_categories(["Jan", "Feb", "Mar", "Apr", "May", "Jun"])
-  |> ChartData.add_series("Email", [250, 230, 210, 200, 185, 170], color: "4472C4")
+  |> ChartData.add_series("Email", [250, 230, 210, 200, 185, 170],
+    pattern: [type: :dn_diag, foreground: "4472C4", background: "FFFFFF"]
+  )
   |> ChartData.add_series("Chat", [180, 200, 220, 250, 280, 310], color: "ED7D31")
   |> ChartData.add_series("Phone", [100, 95, 90, 85, 80, 75], color: "A5A5A5")
   |> ChartData.add_series("Self-Service", [50, 80, 120, 160, 200, 250], color: "70AD47")
@@ -246,7 +298,7 @@ tickets_data =
     title: "Support Tickets by Channel",
     legend: :right,
     category_axis: [title: "Month"],
-    value_axis: [title: "Tickets", major_gridlines: false]
+    value_axis: [title: "Tickets", major_gridlines: false, label_rotation: -45, crosses: :max]
   )
 
 # --- Slide 10: Title + Content layout with placeholder ---
@@ -271,7 +323,8 @@ slide11 =
   |> Podium.add_text_box(
     [
       {[{"Thank You", bold: true, font_size: 44, color: "003366"}], alignment: :center},
-      {[{"Questions? strategy@acme.example.com", font_size: 18, color: "666666"}], alignment: :center}
+      {[{"Questions? strategy@acme.example.com", font_size: 18, color: "666666"}],
+       alignment: :center}
     ],
     x: {2, :inches},
     y: {2, :inches},

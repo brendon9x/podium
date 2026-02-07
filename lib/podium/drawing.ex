@@ -1,7 +1,7 @@
 defmodule Podium.Drawing do
   @moduledoc false
 
-  alias Podium.Units
+  alias Podium.{Pattern, Units}
 
   @doc """
   Generates fill XML for shape properties.
@@ -34,7 +34,7 @@ defmodule Podium.Drawing do
   def fill_xml({:pattern, preset, opts}) when is_atom(preset) do
     fg = Keyword.get(opts, :foreground, "000000")
     bg = Keyword.get(opts, :background, "FFFFFF")
-    prst = pattern_preset(preset)
+    prst = Pattern.preset(preset)
 
     ~s(<a:pattFill prst="#{prst}">) <>
       ~s(<a:fgClr><a:srgbClr val="#{fg}"/></a:fgClr>) <>
@@ -80,29 +80,4 @@ defmodule Podium.Drawing do
   defp dash_value(:sys_dash), do: "sysDash"
   defp dash_value(:sys_dash_dot), do: "sysDashDot"
   defp dash_value(:sys_dash_dot_dot), do: "sysDashDotDot"
-
-  defp pattern_preset(:dn_diag), do: "dnDiag"
-  defp pattern_preset(:up_diag), do: "upDiag"
-  defp pattern_preset(:lt_horz), do: "ltHorz"
-  defp pattern_preset(:lt_vert), do: "ltVert"
-  defp pattern_preset(:dk_dn_diag), do: "dkDnDiag"
-  defp pattern_preset(:dk_up_diag), do: "dkUpDiag"
-  defp pattern_preset(:dk_horz), do: "dkHorz"
-  defp pattern_preset(:dk_vert), do: "dkVert"
-  defp pattern_preset(:sm_grid), do: "smGrid"
-  defp pattern_preset(:lg_grid), do: "lgGrid"
-  defp pattern_preset(:cross), do: "cross"
-  defp pattern_preset(:diag_cross), do: "diagCross"
-  defp pattern_preset(:pct_5), do: "pct5"
-  defp pattern_preset(:pct_10), do: "pct10"
-  defp pattern_preset(:pct_20), do: "pct20"
-  defp pattern_preset(:pct_25), do: "pct25"
-  defp pattern_preset(:pct_30), do: "pct30"
-  defp pattern_preset(:pct_40), do: "pct40"
-  defp pattern_preset(:pct_50), do: "pct50"
-  defp pattern_preset(:pct_60), do: "pct60"
-  defp pattern_preset(:pct_70), do: "pct70"
-  defp pattern_preset(:pct_75), do: "pct75"
-  defp pattern_preset(:pct_80), do: "pct80"
-  defp pattern_preset(:pct_90), do: "pct90"
 end
