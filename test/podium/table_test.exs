@@ -187,6 +187,100 @@ defmodule Podium.TableTest do
       assert xml =~ ~s(vMerge="1")
     end
 
+    test "cell with gradient fill" do
+      {_prs, slide} = Podium.new() |> Podium.add_slide()
+
+      slide =
+        Podium.add_table(
+          slide,
+          [
+            [
+              {"Gradient",
+               fill: {:gradient, [{0, "FF0000"}, {100_000, "0000FF"}], angle: 5_400_000}},
+              "Plain"
+            ]
+          ],
+          x: {1, :inches},
+          y: {1, :inches},
+          width: {6, :inches},
+          height: {2, :inches}
+        )
+
+      table = hd(slide.tables)
+      xml = Podium.Table.to_xml(table)
+
+      assert xml =~ ~s(<a:gradFill rotWithShape="1">)
+      assert xml =~ ~s(<a:gs pos="0"><a:srgbClr val="FF0000"/></a:gs>)
+      assert xml =~ ~s(<a:gs pos="100000"><a:srgbClr val="0000FF"/></a:gs>)
+    end
+
+    test "cell with pattern fill" do
+      {_prs, slide} = Podium.new() |> Podium.add_slide()
+
+      slide =
+        Podium.add_table(
+          slide,
+          [
+            [
+              {"Pattern", fill: {:pattern, :dn_diag, foreground: "FF0000", background: "FFFFFF"}},
+              "Plain"
+            ]
+          ],
+          x: {1, :inches},
+          y: {1, :inches},
+          width: {6, :inches},
+          height: {2, :inches}
+        )
+
+      table = hd(slide.tables)
+      xml = Podium.Table.to_xml(table)
+
+      assert xml =~ ~s(<a:pattFill prst="dnDiag">)
+      assert xml =~ ~s(<a:fgClr><a:srgbClr val="FF0000"/></a:fgClr>)
+    end
+
+    test "default banding flags" do
+      {_prs, slide} = Podium.new() |> Podium.add_slide()
+
+      slide =
+        Podium.add_table(
+          slide,
+          [["A", "B"]],
+          x: {1, :inches},
+          y: {1, :inches},
+          width: {4, :inches},
+          height: {1, :inches}
+        )
+
+      table = hd(slide.tables)
+      xml = Podium.Table.to_xml(table)
+
+      assert xml =~ ~s(<a:tblPr firstRow="1" bandRow="1"/>)
+    end
+
+    test "custom banding flags" do
+      {_prs, slide} = Podium.new() |> Podium.add_slide()
+
+      slide =
+        Podium.add_table(
+          slide,
+          [["A", "B"]],
+          x: {1, :inches},
+          y: {1, :inches},
+          width: {4, :inches},
+          height: {1, :inches},
+          table_style: [first_row: false, band_row: false, band_col: true, last_row: true]
+        )
+
+      table = hd(slide.tables)
+      xml = Podium.Table.to_xml(table)
+
+      refute xml =~ ~s(firstRow="1")
+      refute xml =~ ~s(bandRow="1")
+      assert xml =~ ~s(bandCol="1")
+      assert xml =~ ~s(lastRow="1")
+    end
+
     test "distributes column widths evenly" do
       {_prs, slide} = Podium.new() |> Podium.add_slide()
 

@@ -28,6 +28,11 @@ defmodule Podium.Image do
     extension = detect_extension(binary)
     sha1 = :crypto.hash(:sha, binary) |> Base.encode16(case: :lower)
 
+    width_opt = Keyword.get(opts, :width)
+    height_opt = Keyword.get(opts, :height)
+
+    {width, height} = resolve_size(binary, extension, width_opt, height_opt)
+
     %__MODULE__{
       image_index: image_index,
       binary: binary,
@@ -35,8 +40,8 @@ defmodule Podium.Image do
       sha1: sha1,
       x: Units.to_emu(Keyword.fetch!(opts, :x)),
       y: Units.to_emu(Keyword.fetch!(opts, :y)),
-      width: Units.to_emu(Keyword.fetch!(opts, :width)),
-      height: Units.to_emu(Keyword.fetch!(opts, :height)),
+      width: width,
+      height: height,
       crop: Keyword.get(opts, :crop),
       rotation: Keyword.get(opts, :rotation)
     }
@@ -105,6 +110,148 @@ defmodule Podium.Image do
   defp rotation_attr(nil), do: ""
   defp rotation_attr(degrees), do: ~s( rot="#{round(degrees * 60_000)}")
 
+  @default_dpi 72
+
+  defp resolve_size(_binary, _ext, width_opt, height_opt)
+       when not is_nil(width_opt) and not is_nil(height_opt) do
+    {Units.to_emu(width_opt), Units.to_emu(height_opt)}
+  end
+
+  defp resolve_size(binary, ext, width_opt, height_opt) do
+    if ext in ["emf", "wmf", "tiff"] do
+      raise ArgumentError,
+            "explicit :width and :height are required for #{String.upcase(ext)} images"
+    end
+
+    {native_w, native_h, horz_dpi, vert_dpi} = native_size(binary, ext)
+    scale(width_opt, height_opt, native_w, native_h, horz_dpi, vert_dpi)
+  end
+
+  defp scale(nil, nil, native_w, native_h, horz_dpi, vert_dpi) do
+    {round(914_400 * native_w / horz_dpi), round(914_400 * native_h / vert_dpi)}
+  end
+
+  defp scale(width_opt, nil, native_w, native_h, _horz_dpi, _vert_dpi) do
+    w = Units.to_emu(width_opt)
+    h = round(w * native_h / native_w)
+    {w, h}
+  end
+
+  defp scale(nil, height_opt, native_w, native_h, _horz_dpi, _vert_dpi) do
+    h = Units.to_emu(height_opt)
+    w = round(h * native_w / native_h)
+    {w, h}
+  end
+
+  # PNG: IHDR at offset 16 (width 4 bytes BE, height 4 bytes BE)
+  # Optional pHYs chunk for DPI
+  defp native_size(binary, "png") do
+    <<_header::binary-size(16), width::32-big, height::32-big, _rest::binary>> = binary
+    {horz_dpi, vert_dpi} = png_dpi(binary)
+    {width, height, horz_dpi, vert_dpi}
+  end
+
+  # JPEG: scan for SOF marker (FF C0, FF C1, FF C2)
+  defp native_size(binary, "jpeg") do
+    {width, height} = jpeg_dimensions(binary, 2)
+    {horz_dpi, vert_dpi} = jpeg_dpi(binary)
+    {width, height, horz_dpi, vert_dpi}
+  end
+
+  # BMP: width at 18-21 (LE int32), height at 22-25 (LE int32)
+  defp native_size(binary, "bmp") do
+    <<_header::binary-size(18), width::32-little-signed, height::32-little-signed, _rest::binary>> =
+      binary
+
+    height = abs(height)
+    {horz_dpi, vert_dpi} = bmp_dpi(binary)
+    {width, height, horz_dpi, vert_dpi}
+  end
+
+  # GIF: width at 6-7 (LE uint16), height at 8-9 (LE uint16)
+  defp native_size(binary, "gif") do
+    <<_header::binary-size(6), width::16-little, height::16-little, _rest::binary>> = binary
+    {width, height, @default_dpi, @default_dpi}
+  end
+
+  defp png_dpi(binary) do
+    case :binary.match(binary, <<0x70, 0x48, 0x59, 0x73>>) do
+      {pos, 4} ->
+        # pHYs chunk data starts 4 bytes after the type
+        data_start = pos + 4
+        <<_::binary-size(data_start), ppm_x::32-big, ppm_y::32-big, unit::8, _::binary>> = binary
+
+        if unit == 1 do
+          {ppm_to_dpi(ppm_x), ppm_to_dpi(ppm_y)}
+        else
+          {@default_dpi, @default_dpi}
+        end
+
+      :nomatch ->
+        {@default_dpi, @default_dpi}
+    end
+  end
+
+  defp ppm_to_dpi(ppm), do: round(ppm / 39.3701)
+
+  defp jpeg_dimensions(binary, offset) when offset < byte_size(binary) - 1 do
+    <<_::binary-size(offset), rest::binary>> = binary
+
+    case rest do
+      <<0xFF, marker, _::binary>> when marker in [0xC0, 0xC1, 0xC2] ->
+        <<_::binary-size(offset), 0xFF, _marker, _len::16, _precision::8, height::16-big,
+          width::16-big, _rest2::binary>> = binary
+
+        {width, height}
+
+      <<0xFF, _marker, len::16-big, _::binary>> ->
+        jpeg_dimensions(binary, offset + 2 + len)
+
+      _ ->
+        jpeg_dimensions(binary, offset + 1)
+    end
+  end
+
+  defp jpeg_dimensions(_binary, _offset), do: {1, 1}
+
+  defp jpeg_dpi(binary) do
+    # Check for JFIF APP0 marker (FF E0)
+    case :binary.match(binary, <<0xFF, 0xE0>>) do
+      {pos, 2} ->
+        data_start = pos + 4
+
+        if data_start + 10 <= byte_size(binary) do
+          <<_::binary-size(data_start), _jfif_header::binary-size(5), unit::8, x_density::16-big,
+            y_density::16-big, _::binary>> = binary
+
+          case unit do
+            1 -> {x_density, y_density}
+            2 -> {round(x_density * 2.54), round(y_density * 2.54)}
+            _ -> {@default_dpi, @default_dpi}
+          end
+        else
+          {@default_dpi, @default_dpi}
+        end
+
+      :nomatch ->
+        {@default_dpi, @default_dpi}
+    end
+  end
+
+  defp bmp_dpi(binary) do
+    if byte_size(binary) >= 46 do
+      <<_::binary-size(38), ppm_x::32-little, ppm_y::32-little, _::binary>> = binary
+
+      if ppm_x > 0 and ppm_y > 0 do
+        {ppm_to_dpi(ppm_x), ppm_to_dpi(ppm_y)}
+      else
+        {@default_dpi, @default_dpi}
+      end
+    else
+      {@default_dpi, @default_dpi}
+    end
+  end
+
   defp detect_extension(<<0x89, 0x50, 0x4E, 0x47, _rest::binary>>), do: "png"
   defp detect_extension(<<0xFF, 0xD8, _rest::binary>>), do: "jpeg"
   defp detect_extension(<<0x42, 0x4D, _rest::binary>>), do: "bmp"
@@ -114,6 +261,30 @@ defmodule Podium.Image do
   # TIFF big-endian
   defp detect_extension(<<0x4D, 0x4D, 0x00, 0x2A, _rest::binary>>), do: "tiff"
 
+  # EMF: starts with 01 00 00 00 (record type 1 = EMR_HEADER)
+  defp detect_extension(<<0x01, 0x00, 0x00, 0x00, _rest::binary>> = binary)
+       when byte_size(binary) >= 44 do
+    <<_::binary-size(40), signature::32-little, _::binary>> = binary
+
+    if signature == 0x464D4520 do
+      "emf"
+    else
+      raise ArgumentError,
+            "unsupported image format (expected PNG, JPEG, BMP, GIF, TIFF, EMF, or WMF)"
+    end
+  end
+
+  # WMF: placeable metafile key 0xD7CDC69A (little-endian)
+  defp detect_extension(<<0x9A, 0xC6, 0xCD, 0xD7, _rest::binary>>), do: "wmf"
+  # WMF: standard metafile header (type 1 or 2, header size 9)
+  defp detect_extension(<<type::16-little, 0x09, 0x00, _rest::binary>>)
+       when type in [1, 2],
+       do: "wmf"
+
   defp detect_extension(_binary),
-    do: raise(ArgumentError, "unsupported image format (expected PNG, JPEG, BMP, GIF, or TIFF)")
+    do:
+      raise(
+        ArgumentError,
+        "unsupported image format (expected PNG, JPEG, BMP, GIF, TIFF, EMF, or WMF)"
+      )
 end

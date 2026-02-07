@@ -2,7 +2,7 @@ defmodule Podium.Table do
   @moduledoc false
 
   alias Podium.OPC.Constants
-  alias Podium.{Text, Units}
+  alias Podium.{Drawing, Text, Units}
 
   defstruct [
     :id,
@@ -10,7 +10,8 @@ defmodule Podium.Table do
     :y,
     :width,
     :height,
-    :rows
+    :rows,
+    table_style: []
   ]
 
   @doc """
@@ -29,7 +30,8 @@ defmodule Podium.Table do
       y: Units.to_emu(Keyword.fetch!(opts, :y)),
       width: Units.to_emu(Keyword.fetch!(opts, :width)),
       height: Units.to_emu(Keyword.fetch!(opts, :height)),
-      rows: rows
+      rows: rows,
+      table_style: Keyword.get(opts, :table_style, [])
     }
   end
 
@@ -72,7 +74,7 @@ defmodule Podium.Table do
       ~s(<a:graphic>) <>
       ~s(<a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/table">) <>
       ~s(<a:tbl>) <>
-      ~s(<a:tblPr firstRow="1" bandRow="1"/>) <>
+      tbl_pr_xml(table.table_style) <>
       ~s(<a:tblGrid>#{grid_cols}</a:tblGrid>) <>
       rows_xml <>
       ~s(</a:tbl>) <>
@@ -185,9 +187,7 @@ defmodule Podium.Table do
   defp anchor_attr(:bottom), do: ~s( anchor="b")
 
   defp cell_fill_xml(nil), do: ""
-
-  defp cell_fill_xml(color) when is_binary(color),
-    do: ~s(<a:solidFill><a:srgbClr val="#{color}"/></a:solidFill>)
+  defp cell_fill_xml(fill), do: Drawing.fill_xml(fill)
 
   defp border_children_xml(nil), do: ""
 
@@ -265,4 +265,15 @@ defmodule Podium.Table do
   end
 
   defp mark_merged_cells(acc, _origin_row, _origin_col, _row_span, _col_span), do: acc
+
+  defp tbl_pr_xml(style) do
+    first_row = if Keyword.get(style, :first_row, true), do: ~s( firstRow="1"), else: ""
+    last_row = if Keyword.get(style, :last_row, false), do: ~s( lastRow="1"), else: ""
+    first_col = if Keyword.get(style, :first_col, false), do: ~s( firstCol="1"), else: ""
+    last_col = if Keyword.get(style, :last_col, false), do: ~s( lastCol="1"), else: ""
+    band_row = if Keyword.get(style, :band_row, true), do: ~s( bandRow="1"), else: ""
+    band_col = if Keyword.get(style, :band_col, false), do: ~s( bandCol="1"), else: ""
+
+    ~s(<a:tblPr#{first_row}#{last_row}#{first_col}#{last_col}#{band_row}#{band_col}/>)
+  end
 end

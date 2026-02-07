@@ -56,11 +56,18 @@ defmodule Podium.Drawing do
   end
 
   def line_xml(opts) when is_list(opts) do
-    color = Keyword.fetch!(opts, :color)
+    fill = Keyword.get(opts, :fill)
+    color = Keyword.get(opts, :color)
     width_attr = line_width_attr(Keyword.get(opts, :width))
     dash_xml = dash_style_xml(Keyword.get(opts, :dash_style))
 
-    ~s(<a:ln#{width_attr}><a:solidFill><a:srgbClr val="#{color}"/></a:solidFill>#{dash_xml}</a:ln>)
+    fill_content =
+      cond do
+        fill -> fill_xml(fill)
+        color -> fill_xml(color)
+      end
+
+    ~s(<a:ln#{width_attr}>#{fill_content}#{dash_xml}</a:ln>)
   end
 
   defp line_width_attr(nil), do: ""

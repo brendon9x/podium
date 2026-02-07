@@ -23,6 +23,15 @@ defmodule Podium.ImageTest do
   # Minimal TIFF header (little-endian)
   @tiff_binary <<0x49, 0x49, 0x2A, 0x00, 0x08, 0x00, 0x00, 0x00>>
 
+  # EMF: minimal valid header (record type 1 = EMR_HEADER, then padding to get signature at offset 40)
+  @emf_binary <<0x01, 0x00, 0x00, 0x00>> <>
+                :binary.copy(<<0x00>>, 36) <>
+                <<0x20, 0x45, 0x4D, 0x46>> <>
+                :binary.copy(<<0x00>>, 20)
+
+  # WMF: placeable metafile key
+  @wmf_binary <<0x9A, 0xC6, 0xCD, 0xD7, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00>>
+
   describe "add_image/4" do
     test "adds a PNG image to a slide" do
       prs = Podium.new()
@@ -217,6 +226,130 @@ defmodule Podium.ImageTest do
 
       assert Map.has_key?(parts, "ppt/media/image1.png")
       assert Map.has_key?(parts, "ppt/media/image2.jpeg")
+    end
+
+    test "PNG auto-scale uses native size at 72 DPI" do
+      # Our test PNG is 1x1 pixel with no pHYs chunk, so 72 DPI default
+      # 914400 * 1 / 72 = 12700 EMU
+      prs = Podium.new()
+      {prs, slide} = Podium.add_slide(prs)
+
+      {prs, _slide} =
+        Podium.add_image(prs, slide, @png_binary,
+          x: {1, :inches},
+          y: {1, :inches}
+        )
+
+      {:ok, binary} = Podium.save_to_memory(prs)
+      parts = PptxHelpers.unzip_pptx_binary(binary)
+      slide_xml = parts["ppt/slides/slide1.xml"]
+
+      assert slide_xml =~ ~s(cx="12700")
+      assert slide_xml =~ ~s(cy="12700")
+    end
+
+    test "width-only auto-calculates height preserving aspect ratio" do
+      prs = Podium.new()
+      {prs, slide} = Podium.add_slide(prs)
+
+      # 1x1 pixel, so width = height when preserving aspect ratio
+      {prs, _slide} =
+        Podium.add_image(prs, slide, @png_binary,
+          x: {1, :inches},
+          y: {1, :inches},
+          width: {2, :inches}
+        )
+
+      {:ok, binary} = Podium.save_to_memory(prs)
+      parts = PptxHelpers.unzip_pptx_binary(binary)
+      slide_xml = parts["ppt/slides/slide1.xml"]
+
+      # 2 inches = 1828800 EMU
+      assert slide_xml =~ ~s(cx="1828800")
+      # 1:1 aspect ratio, so height should also be 1828800
+      assert slide_xml =~ ~s(cy="1828800")
+    end
+
+    test "height-only auto-calculates width preserving aspect ratio" do
+      prs = Podium.new()
+      {prs, slide} = Podium.add_slide(prs)
+
+      {prs, _slide} =
+        Podium.add_image(prs, slide, @png_binary,
+          x: {1, :inches},
+          y: {1, :inches},
+          height: {3, :inches}
+        )
+
+      {:ok, binary} = Podium.save_to_memory(prs)
+      parts = PptxHelpers.unzip_pptx_binary(binary)
+      slide_xml = parts["ppt/slides/slide1.xml"]
+
+      # 3 inches = 2743200 EMU
+      assert slide_xml =~ ~s(cy="2743200")
+      assert slide_xml =~ ~s(cx="2743200")
+    end
+
+    test "EMF format detection" do
+      prs = Podium.new()
+      {prs, slide} = Podium.add_slide(prs)
+
+      {prs, _slide} =
+        Podium.add_image(prs, slide, @emf_binary,
+          x: {1, :inches},
+          y: {1, :inches},
+          width: {3, :inches},
+          height: {2, :inches}
+        )
+
+      {:ok, binary} = Podium.save_to_memory(prs)
+      parts = PptxHelpers.unzip_pptx_binary(binary)
+
+      assert Map.has_key?(parts, "ppt/media/image1.emf")
+      assert parts["[Content_Types].xml"] =~ "image/x-emf"
+    end
+
+    test "WMF format detection" do
+      prs = Podium.new()
+      {prs, slide} = Podium.add_slide(prs)
+
+      {prs, _slide} =
+        Podium.add_image(prs, slide, @wmf_binary,
+          x: {1, :inches},
+          y: {1, :inches},
+          width: {3, :inches},
+          height: {2, :inches}
+        )
+
+      {:ok, binary} = Podium.save_to_memory(prs)
+      parts = PptxHelpers.unzip_pptx_binary(binary)
+
+      assert Map.has_key?(parts, "ppt/media/image1.wmf")
+      assert parts["[Content_Types].xml"] =~ "image/x-wmf"
+    end
+
+    test "TIFF without explicit size raises" do
+      prs = Podium.new()
+      {_prs, slide} = Podium.add_slide(prs)
+
+      assert_raise ArgumentError, ~r/explicit :width and :height are required for TIFF/, fn ->
+        Podium.add_image(prs, slide, @tiff_binary,
+          x: {1, :inches},
+          y: {1, :inches}
+        )
+      end
+    end
+
+    test "EMF without explicit size raises" do
+      prs = Podium.new()
+      {_prs, slide} = Podium.add_slide(prs)
+
+      assert_raise ArgumentError, ~r/explicit :width and :height are required for EMF/, fn ->
+        Podium.add_image(prs, slide, @emf_binary,
+          x: {1, :inches},
+          y: {1, :inches}
+        )
+      end
     end
 
     test "duplicate images are deduplicated" do
