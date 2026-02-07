@@ -21,8 +21,14 @@ defmodule Podium do
   Returns `{presentation, slide}`.
 
   ## Options
-    * `:layout` - layout atom (`:title_slide`, `:title_content`, `:blank`) or integer index
+    * `:layout` - layout atom or integer index (1..11)
     * `:layout_index` - integer layout index (legacy, prefer `:layout`)
+
+  ## Available layouts
+    * `:title_slide` (1), `:title_content` (2), `:section_header` (3),
+      `:two_content` (4), `:comparison` (5), `:title_only` (6),
+      `:blank` (7), `:content_caption` (8), `:picture_caption` (9),
+      `:title_vertical_text` (10), `:vertical_title_text` (11)
   """
   def add_slide(prs, opts \\ []) do
     Presentation.add_slide(prs, opts)
@@ -79,10 +85,42 @@ defmodule Podium do
     %{slide | placeholders: slide.placeholders ++ [ph]}
   end
 
+  @doc """
+  Sets a picture placeholder on a slide. Returns `{presentation, slide}`.
+
+  Only works on layouts with picture placeholders (e.g. `:picture_caption`).
+  """
+  def set_picture_placeholder(prs, slide, name, binary) do
+    Presentation.set_picture_placeholder(prs, slide, name, binary)
+  end
+
+  @doc """
+  Sets presentation-level footer, date, and slide number.
+
+  ## Options
+    * `:footer` - footer text string
+    * `:date` - date text string
+    * `:slide_number` - boolean, whether to show slide numbers
+  """
+  def set_footer(prs, opts) do
+    Presentation.set_footer(prs, opts)
+  end
+
   defp layout_atom(1), do: :title_slide
   defp layout_atom(2), do: :title_content
+  defp layout_atom(3), do: :section_header
+  defp layout_atom(4), do: :two_content
+  defp layout_atom(5), do: :comparison
+  defp layout_atom(6), do: :title_only
   defp layout_atom(7), do: :blank
-  defp layout_atom(n) when is_integer(n), do: :blank
+  defp layout_atom(8), do: :content_caption
+  defp layout_atom(9), do: :picture_caption
+  defp layout_atom(10), do: :title_vertical_text
+  defp layout_atom(11), do: :vertical_title_text
+
+  defp layout_atom(n) when is_integer(n) do
+    raise ArgumentError, "unknown layout index #{n}; expected 1..11"
+  end
 
   @doc """
   Sets core document properties (Dublin Core metadata).

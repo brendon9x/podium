@@ -16,6 +16,7 @@ defmodule Podium.Slide do
     images: [],
     tables: [],
     placeholders: [],
+    picture_placeholders: [],
     fill_images: [],
     next_shape_id: 2
   ]
