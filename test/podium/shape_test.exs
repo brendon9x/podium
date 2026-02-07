@@ -331,5 +331,86 @@ defmodule Podium.ShapeTest do
       assert xml =~ ~s(u="sng")
       assert xml =~ ~s(typeface="Arial")
     end
+
+    test "text frame margins" do
+      {_prs, slide} = Podium.new() |> Podium.add_slide()
+
+      slide =
+        Podium.add_text_box(slide, "Margins",
+          x: {1, :inches},
+          y: {1, :inches},
+          width: {4, :inches},
+          height: {1, :inches},
+          margin_left: {0.5, :inches},
+          margin_right: {0.5, :inches},
+          margin_top: {0.25, :inches},
+          margin_bottom: {0.25, :inches}
+        )
+
+      shape = hd(slide.shapes)
+      xml = Podium.Shape.to_xml(shape)
+
+      assert xml =~ ~s(lIns="457200")
+      assert xml =~ ~s(rIns="457200")
+      assert xml =~ ~s(tIns="228600")
+      assert xml =~ ~s(bIns="228600")
+    end
+
+    test "omitted margins use no attrs" do
+      {_prs, slide} = Podium.new() |> Podium.add_slide()
+
+      slide =
+        Podium.add_text_box(slide, "No margins",
+          x: {1, :inches},
+          y: {1, :inches},
+          width: {4, :inches},
+          height: {1, :inches}
+        )
+
+      shape = hd(slide.shapes)
+      xml = Podium.Shape.to_xml(shape)
+
+      assert xml =~ ~s(<a:bodyPr wrap="square" rtlCol="0"/>)
+      refute xml =~ "lIns"
+      refute xml =~ "rIns"
+      refute xml =~ "tIns"
+      refute xml =~ "bIns"
+    end
+
+    test "45 degree rotation" do
+      {_prs, slide} = Podium.new() |> Podium.add_slide()
+
+      slide =
+        Podium.add_text_box(slide, "Rotated",
+          x: {1, :inches},
+          y: {1, :inches},
+          width: {4, :inches},
+          height: {1, :inches},
+          rotation: 45
+        )
+
+      shape = hd(slide.shapes)
+      xml = Podium.Shape.to_xml(shape)
+
+      assert xml =~ ~s(rot="2700000")
+    end
+
+    test "no rotation when not specified" do
+      {_prs, slide} = Podium.new() |> Podium.add_slide()
+
+      slide =
+        Podium.add_text_box(slide, "No rotation",
+          x: {1, :inches},
+          y: {1, :inches},
+          width: {4, :inches},
+          height: {1, :inches}
+        )
+
+      shape = hd(slide.shapes)
+      xml = Podium.Shape.to_xml(shape)
+
+      assert xml =~ "<a:xfrm>"
+      refute xml =~ "rot="
+    end
   end
 end

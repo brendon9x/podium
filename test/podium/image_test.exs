@@ -158,6 +158,26 @@ defmodule Podium.ImageTest do
       assert slide_xml =~ ~s(b="25000")
     end
 
+    test "90 degree rotation" do
+      prs = Podium.new()
+      {prs, slide} = Podium.add_slide(prs)
+
+      {prs, _slide} =
+        Podium.add_image(prs, slide, @png_binary,
+          x: {1, :inches},
+          y: {1, :inches},
+          width: {3, :inches},
+          height: {2, :inches},
+          rotation: 90
+        )
+
+      {:ok, binary} = Podium.save_to_memory(prs)
+      parts = PptxHelpers.unzip_pptx_binary(binary)
+      slide_xml = parts["ppt/slides/slide1.xml"]
+
+      assert slide_xml =~ ~s(rot="5400000")
+    end
+
     test "rejects unsupported format" do
       prs = Podium.new()
       {_prs, slide} = Podium.add_slide(prs)

@@ -13,7 +13,8 @@ defmodule Podium.Image do
     :y,
     :width,
     :height,
-    :crop
+    :crop,
+    :rotation
   ]
 
   @doc """
@@ -36,7 +37,8 @@ defmodule Podium.Image do
       y: Units.to_emu(Keyword.fetch!(opts, :y)),
       width: Units.to_emu(Keyword.fetch!(opts, :width)),
       height: Units.to_emu(Keyword.fetch!(opts, :height)),
-      crop: Keyword.get(opts, :crop)
+      crop: Keyword.get(opts, :crop),
+      rotation: Keyword.get(opts, :rotation)
     }
   end
 
@@ -56,6 +58,8 @@ defmodule Podium.Image do
 
     crop_xml = src_rect_xml(image.crop)
 
+    rot_attr = rotation_attr(image.rotation)
+
     ~s(<p:pic xmlns:a="#{ns_a}" xmlns:p="#{ns_p}" xmlns:r="#{ns_r}">) <>
       ~s(<p:nvPicPr>) <>
       ~s(<p:cNvPr id="#{shape_id}" name="Image #{image.image_index}"/>) <>
@@ -68,7 +72,7 @@ defmodule Podium.Image do
       ~s(<a:stretch><a:fillRect/></a:stretch>) <>
       ~s(</p:blipFill>) <>
       ~s(<p:spPr>) <>
-      ~s(<a:xfrm>) <>
+      ~s(<a:xfrm#{rot_attr}>) <>
       ~s(<a:off x="#{image.x}" y="#{image.y}"/>) <>
       ~s(<a:ext cx="#{image.width}" cy="#{image.height}"/>) <>
       ~s(</a:xfrm>) <>
@@ -97,6 +101,9 @@ defmodule Podium.Image do
   defp crop_attr(:top), do: "t"
   defp crop_attr(:right), do: "r"
   defp crop_attr(:bottom), do: "b"
+
+  defp rotation_attr(nil), do: ""
+  defp rotation_attr(degrees), do: ~s( rot="#{round(degrees * 60_000)}")
 
   defp detect_extension(<<0x89, 0x50, 0x4E, 0x47, _rest::binary>>), do: "png"
   defp detect_extension(<<0xFF, 0xD8, _rest::binary>>), do: "jpeg"

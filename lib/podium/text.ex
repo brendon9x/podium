@@ -64,6 +64,7 @@ defmodule Podium.Text do
     }
   end
 
+  defp normalize_run(:line_break), do: %{text: :line_break, opts: []}
   defp normalize_run(text) when is_binary(text), do: %{text: text, opts: []}
   defp normalize_run({text}) when is_binary(text), do: %{text: text, opts: []}
   defp normalize_run({text, opts}) when is_binary(text), do: %{text: text, opts: opts}
@@ -149,10 +150,46 @@ defmodule Podium.Text do
   defp alignment_value(:right), do: "r"
   defp alignment_value(:justify), do: "just"
 
-  defp run_xml(%{text: text, opts: opts}) do
+  defp underline_value(true), do: "sng"
+  defp underline_value(:single), do: "sng"
+  defp underline_value(:double), do: "dbl"
+  defp underline_value(:heavy), do: "heavy"
+  defp underline_value(:dotted), do: "dotted"
+  defp underline_value(:dotted_heavy), do: "dottedHeavy"
+  defp underline_value(:dash), do: "dash"
+  defp underline_value(:dash_heavy), do: "dashHeavy"
+  defp underline_value(:dash_long), do: "dashLong"
+  defp underline_value(:dash_long_heavy), do: "dashLongHeavy"
+  defp underline_value(:dot_dash), do: "dotDash"
+  defp underline_value(:dot_dash_heavy), do: "dotDashHeavy"
+  defp underline_value(:dot_dot_dash), do: "dotDotDash"
+  defp underline_value(:dot_dot_dash_heavy), do: "dotDotDashHeavy"
+  defp underline_value(:wavy), do: "wavy"
+  defp underline_value(:wavy_heavy), do: "wavyHeavy"
+  defp underline_value(:wavy_double), do: "wavyDbl"
+  defp underline_value(:words), do: "words"
+
+  defp run_xml(%{text: :line_break, opts: _opts}) do
+    "<a:br/>"
+  end
+
+  defp run_xml(%{text: text, opts: opts}) when is_binary(text) do
     rpr = run_properties_xml(opts)
-    escaped_text = Builder.escape(text)
-    "<a:r>#{rpr}<a:t>#{escaped_text}</a:t></a:r>"
+
+    case String.split(text, "\n") do
+      [single] ->
+        escaped_text = Builder.escape(single)
+        "<a:r>#{rpr}<a:t>#{escaped_text}</a:t></a:r>"
+
+      segments ->
+        segments
+        |> Enum.map(fn segment ->
+          escaped = Builder.escape(segment)
+          "<a:r>#{rpr}<a:t>#{escaped}</a:t></a:r>"
+        end)
+        |> Enum.intersperse("<a:br/>")
+        |> Enum.join()
+    end
   end
 
   defp run_properties_xml([]), do: ~s(<a:rPr lang="en-US" dirty="0"/>)
@@ -181,7 +218,13 @@ defmodule Podium.Text do
 
     attrs = if Keyword.get(opts, :bold), do: attrs ++ [~s(b="1")], else: attrs
     attrs = if Keyword.get(opts, :italic), do: attrs ++ [~s(i="1")], else: attrs
-    attrs = if Keyword.get(opts, :underline), do: attrs ++ [~s(u="sng")], else: attrs
+
+    attrs =
+      case Keyword.get(opts, :underline) do
+        nil -> attrs
+        false -> attrs
+        value -> attrs ++ [~s(u="#{underline_value(value)}")]
+      end
 
     attrs =
       if Keyword.get(opts, :strikethrough), do: attrs ++ [~s(strike="sngStrike")], else: attrs

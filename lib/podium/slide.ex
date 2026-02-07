@@ -2,7 +2,7 @@ defmodule Podium.Slide do
   @moduledoc false
 
   alias Podium.OPC.Constants
-  alias Podium.{Image, Shape, Table}
+  alias Podium.{Drawing, Image, Shape, Table}
 
   @blank_layout_index 7
 
@@ -10,6 +10,7 @@ defmodule Podium.Slide do
     :index,
     :layout_index,
     :pres_rid,
+    background: nil,
     shapes: [],
     charts: [],
     images: [],
@@ -122,7 +123,9 @@ defmodule Podium.Slide do
 
     Podium.XML.Builder.xml_declaration() <>
       ~s(<p:sld xmlns:a="#{Constants.ns(:a)}" xmlns:p="#{Constants.ns(:p)}" xmlns:r="#{Constants.ns(:r)}">) <>
-      ~s(<p:cSld><p:spTree>) <>
+      ~s(<p:cSld>) <>
+      background_xml(slide.background) <>
+      ~s(<p:spTree>) <>
       ~s(<p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr>) <>
       ~s(<p:grpSpPr/>) <>
       placeholders_xml <>
@@ -133,5 +136,11 @@ defmodule Podium.Slide do
       ~s(</p:spTree></p:cSld>) <>
       ~s(<p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr>) <>
       ~s(</p:sld>)
+  end
+
+  defp background_xml(nil), do: ""
+
+  defp background_xml(fill) do
+    ~s(<p:bg><p:bgPr>#{Drawing.fill_xml(fill)}<a:effectLst/></p:bgPr></p:bg>)
   end
 end
