@@ -16,6 +16,7 @@ defmodule Podium.Slide do
     images: [],
     tables: [],
     placeholders: [],
+    fill_images: [],
     next_shape_id: 2
   ]
 
@@ -48,6 +49,37 @@ defmodule Podium.Slide do
 
     %{slide | shapes: slide.shapes ++ [shape], next_shape_id: slide.next_shape_id + 1}
   end
+
+  @doc """
+  Adds a text box with a picture fill. The image binary is stored for packaging.
+  """
+  def add_picture_fill_text_box(%__MODULE__{} = slide, text, image_binary, opts) do
+    extension = detect_fill_extension(image_binary)
+    fill_mode = Keyword.get(opts, :fill_mode, :stretch)
+
+    # Create the shape with a placeholder fill marker
+    shape_id = slide.next_shape_id
+    fill_index = length(slide.fill_images)
+    shape_opts = Keyword.put(opts, :fill, {:picture_fill, fill_index})
+
+    shape = Shape.text_box(shape_id, text, shape_opts)
+    shape = %{shape | fill_opts: [mode: fill_mode]}
+
+    fill_entry = {shape_id, image_binary, extension}
+
+    %{
+      slide
+      | shapes: slide.shapes ++ [shape],
+        fill_images: slide.fill_images ++ [fill_entry],
+        next_shape_id: slide.next_shape_id + 1
+    }
+  end
+
+  defp detect_fill_extension(<<0x89, 0x50, 0x4E, 0x47, _::binary>>), do: "png"
+  defp detect_fill_extension(<<0xFF, 0xD8, _::binary>>), do: "jpeg"
+  defp detect_fill_extension(<<0x42, 0x4D, _::binary>>), do: "bmp"
+  defp detect_fill_extension(<<0x47, 0x49, 0x46, _::binary>>), do: "gif"
+  defp detect_fill_extension(_), do: "png"
 
   @doc """
   Adds a chart to the slide. Returns the updated slide.
@@ -86,8 +118,12 @@ defmodule Podium.Slide do
   `chart_rids` is a list of {chart, rId} tuples.
   `image_rids` is a list of {image, rId} tuples.
   """
-  def to_xml(%__MODULE__{} = slide, chart_rids \\ [], image_rids \\ []) do
-    shapes_xml = Enum.map(slide.shapes, &Shape.to_xml/1) |> Enum.join()
+  def to_xml(%__MODULE__{} = slide, chart_rids \\ [], image_rids \\ [], fill_rids \\ %{}) do
+    shapes_xml =
+      Enum.map(slide.shapes, fn shape ->
+        Shape.to_xml(shape, Map.get(fill_rids, shape.id))
+      end)
+      |> Enum.join()
 
     charts_xml =
       chart_rids

@@ -631,6 +631,188 @@ defmodule Podium.Chart.XmlWriterTest do
     end
   end
 
+  describe "per-point line format" do
+    test "per-point line color via point_formats" do
+      chart_data =
+        ChartData.new()
+        |> ChartData.add_categories(["A", "B", "C"])
+        |> ChartData.add_series("S1", [10, 20, 30],
+          point_formats: %{0 => [fill: "FF0000", line: "000000"], 2 => [line: "0000FF"]}
+        )
+
+      chart = %Chart{chart_type: :pie, chart_data: chart_data}
+      xml = XmlWriter.to_xml(chart)
+
+      # Point 0 has both fill and line
+      assert xml =~ ~s(<c:dPt>)
+      assert xml =~ ~s(<c:idx val="0"/>)
+      assert xml =~ ~s(val="FF0000")
+      assert xml =~ ~s(<a:ln><a:solidFill><a:srgbClr val="000000"/></a:solidFill></a:ln>)
+
+      # Point 2 has line only
+      assert xml =~ ~s(<c:idx val="2"/>)
+      assert xml =~ ~s(val="0000FF")
+    end
+
+    test "per-point line with width opts" do
+      chart_data =
+        ChartData.new()
+        |> ChartData.add_categories(["A", "B"])
+        |> ChartData.add_series("S1", [10, 20],
+          point_formats: %{
+            0 => [fill: "FF0000", line: [color: "000000", width: {2, :pt}]]
+          }
+        )
+
+      chart = %Chart{chart_type: :column_clustered, chart_data: chart_data}
+      xml = XmlWriter.to_xml(chart)
+
+      assert xml =~ ~s(<a:ln w="25400">)
+      assert xml =~ ~s(val="000000")
+    end
+
+    test "point_colors backwards compatibility with point_formats" do
+      chart_data =
+        ChartData.new()
+        |> ChartData.add_categories(["A", "B", "C"])
+        |> ChartData.add_series("S1", [10, 20, 30],
+          point_colors: %{0 => "FF0000"},
+          point_formats: %{1 => [line: "0000FF"]}
+        )
+
+      chart = %Chart{chart_type: :pie, chart_data: chart_data}
+      xml = XmlWriter.to_xml(chart)
+
+      # Point 0 from point_colors → fill
+      assert xml =~ ~s(<c:idx val="0"/>)
+      assert xml =~ ~s(val="FF0000")
+
+      # Point 1 from point_formats → line
+      assert xml =~ ~s(<c:idx val="1"/>)
+      assert xml =~ ~s(val="0000FF")
+    end
+  end
+
+  describe "date axis type" do
+    test "date axis generates dateAx element", %{chart_data: chart_data} do
+      chart = %Chart{
+        chart_type: :column_clustered,
+        chart_data: chart_data,
+        category_axis: [
+          type: :date,
+          base_time_unit: :days,
+          major_time_unit: :months,
+          minor_time_unit: :days
+        ]
+      }
+
+      xml = XmlWriter.to_xml(chart)
+
+      assert xml =~ "<c:dateAx>"
+      assert xml =~ "</c:dateAx>"
+      assert xml =~ ~s(<c:baseTimeUnit val="days"/>)
+      assert xml =~ ~s(<c:majorTimeUnit val="months"/>)
+      assert xml =~ ~s(<c:minorTimeUnit val="days"/>)
+      refute xml =~ "<c:catAx>"
+    end
+
+    test "date axis with units", %{chart_data: chart_data} do
+      chart = %Chart{
+        chart_type: :column_clustered,
+        chart_data: chart_data,
+        category_axis: [
+          type: :date,
+          base_time_unit: :months,
+          major_unit: 3,
+          minor_unit: 1
+        ]
+      }
+
+      xml = XmlWriter.to_xml(chart)
+
+      assert xml =~ ~s(<c:majorUnit val="3"/>)
+      assert xml =~ ~s(<c:minorUnit val="1"/>)
+    end
+
+    test "default category axis still uses catAx", %{chart_data: chart_data} do
+      xml = XmlWriter.to_xml(:column_clustered, chart_data)
+
+      assert xml =~ "<c:catAx>"
+      refute xml =~ "<c:dateAx>"
+    end
+
+    test "explicit type: :category uses catAx", %{chart_data: chart_data} do
+      chart = %Chart{
+        chart_type: :column_clustered,
+        chart_data: chart_data,
+        category_axis: [type: :category, title: "Quarter"]
+      }
+
+      xml = XmlWriter.to_xml(chart)
+
+      assert xml =~ "<c:catAx>"
+      assert xml =~ "Quarter"
+      refute xml =~ "<c:dateAx>"
+    end
+  end
+
+  describe "per-point data label overrides" do
+    test "series-level data labels with per-point overrides" do
+      chart_data =
+        ChartData.new()
+        |> ChartData.add_categories(["A", "B", "C"])
+        |> ChartData.add_series("S1", [10, 20, 30],
+          data_labels: %{
+            0 => [show: [:value], position: :center],
+            2 => [show: [:value, :category], number_format: "0%"]
+          }
+        )
+
+      chart = %Chart{chart_type: :column_clustered, chart_data: chart_data}
+      xml = XmlWriter.to_xml(chart)
+
+      # Should have series-level <c:dLbls> with <c:dLbl> entries
+      assert xml =~ "<c:dLbls>"
+      assert xml =~ "<c:dLbl>"
+
+      # Point 0 label
+      assert xml =~ ~s(<c:idx val="0"/>)
+      assert xml =~ ~s(<c:dLblPos val="ctr"/>)
+
+      # Point 2 label with number format and category
+      assert xml =~ ~s(<c:idx val="2"/>)
+      assert xml =~ ~s(formatCode="0%")
+      assert xml =~ ~s(<c:showCatName val="1"/>)
+    end
+
+    test "series without data_labels has no series dLbls" do
+      chart_data =
+        ChartData.new()
+        |> ChartData.add_categories(["A", "B"])
+        |> ChartData.add_series("S1", [10, 20])
+
+      chart = %Chart{chart_type: :column_clustered, chart_data: chart_data}
+      xml = XmlWriter.to_xml(chart)
+
+      # No <c:dLbls> within <c:ser> (there could be a chart-wide one, but not series-level)
+      refute xml =~ "<c:dLbl>"
+    end
+
+    test "per-point label with show empty hides label" do
+      chart_data =
+        ChartData.new()
+        |> ChartData.add_categories(["A", "B"])
+        |> ChartData.add_series("S1", [10, 20], data_labels: %{0 => [show: []]})
+
+      chart = %Chart{chart_type: :column_clustered, chart_data: chart_data}
+      xml = XmlWriter.to_xml(chart)
+
+      assert xml =~ "<c:dLbl>"
+      assert xml =~ ~s(<c:showVal val="0"/>)
+      assert xml =~ ~s(<c:showCatName val="0"/>)
+    end
+  end
+
   describe "legend font typeface" do
     test "legend with custom font", %{chart_data: chart_data} do
       chart = %Chart{

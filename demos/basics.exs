@@ -539,11 +539,125 @@ image_binary = File.read!(Path.join(__DIR__, "acme.jpg"))
 
 prs = Podium.put_slide(prs, slide15)
 
-# --- Slide 16: Closing ---
+# --- Slide 16: New Tier 1 features ---
 {prs, slide16} = Podium.add_slide(prs)
 
 slide16 =
-  slide16
+  Podium.add_text_box(slide16, "Tier 1 Feature Showcase",
+    x: {0.5, :inches},
+    y: {0.2, :inches},
+    width: {11, :inches},
+    height: {0.6, :inches},
+    font_size: 28,
+    alignment: :center
+  )
+
+# Image masking — ellipse shape
+{prs, slide16} =
+  Podium.add_image(prs, slide16, image_binary,
+    x: {0.5, :inches},
+    y: {1, :inches},
+    width: {3, :inches},
+    height: {3, :inches},
+    shape: :ellipse
+  )
+
+# Image masking — diamond shape
+{prs, slide16} =
+  Podium.add_image(prs, slide16, image_binary,
+    x: {4, :inches},
+    y: {1, :inches},
+    width: {3, :inches},
+    height: {3, :inches},
+    shape: :diamond
+  )
+
+# Image masking — rounded rectangle
+{prs, slide16} =
+  Podium.add_image(prs, slide16, image_binary,
+    x: {7.5, :inches},
+    y: {1, :inches},
+    width: {3, :inches},
+    height: {3, :inches},
+    shape: :round_rect
+  )
+
+# Picture fill text box
+{prs, slide16} =
+  Podium.add_picture_fill_text_box(
+    prs,
+    slide16,
+    [[{"Picture Fill!", bold: true, font_size: 24, color: "FFFFFF"}]],
+    image_binary,
+    x: {0.5, :inches},
+    y: {4.5, :inches},
+    width: {5, :inches},
+    height: {2, :inches},
+    alignment: :center,
+    fill_mode: :stretch
+  )
+
+prs = Podium.put_slide(prs, slide16)
+
+# --- Slide 17: Per-point line + per-point data labels ---
+{prs, slide17} = Podium.add_slide(prs)
+
+highlight_data =
+  ChartData.new()
+  |> ChartData.add_categories(["Acme", "BetaCo", "Gamma", "Delta", "Echo"])
+  |> ChartData.add_series("Revenue ($K)", [42, 28, 18, 35, 22],
+    point_colors: %{0 => "2E75B6", 3 => "ED7D31"},
+    point_formats: %{
+      0 => [line: [color: "001133", width: {2, :pt}]],
+      3 => [line: [color: "7F3300", width: {2, :pt}]]
+    },
+    data_labels: %{
+      0 => [show: [:value], position: :outside_end, number_format: "$#,##0K"],
+      3 => [show: [:value], position: :outside_end, number_format: "$#,##0K"]
+    }
+  )
+
+{prs, _slide17} =
+  Podium.add_chart(prs, slide17, :column_clustered, highlight_data,
+    x: {0.5, :inches},
+    y: {0.5, :inches},
+    width: {11, :inches},
+    height: {6, :inches},
+    title: "Per-Point Lines & Data Label Overrides",
+    value_axis: [title: "Revenue ($K)", major_gridlines: true]
+  )
+
+# --- Slide 18: Date axis demo ---
+{prs, slide18} = Podium.add_slide(prs)
+
+date_data =
+  ChartData.new()
+  |> ChartData.add_categories(["2025-01", "2025-04", "2025-07", "2025-10", "2026-01"])
+  |> ChartData.add_series("Sales", [120, 145, 190, 210, 250], color: "4472C4")
+
+{prs, _slide18} =
+  Podium.add_chart(prs, slide18, :line_markers, date_data,
+    x: {0.5, :inches},
+    y: {0.5, :inches},
+    width: {11, :inches},
+    height: {6, :inches},
+    title: "Quarterly Sales (Date Axis)",
+    legend: :bottom,
+    category_axis: [
+      type: :date,
+      title: "Date",
+      base_time_unit: :months,
+      major_time_unit: :months,
+      major_unit: 3
+    ],
+    value_axis: [title: "Sales ($K)", major_gridlines: true]
+  )
+
+# --- Slide 19: Closing ---
+{prs, slide19} = Podium.add_slide(prs)
+
+slide19 =
+  slide19
   |> Podium.add_text_box(
     [
       {[{"Thank You", bold: true, font_size: 44, color: "003366"}], alignment: :center},
@@ -556,7 +670,7 @@ slide16 =
     height: {3, :inches}
   )
 
-prs = Podium.put_slide(prs, slide16)
+prs = Podium.put_slide(prs, slide19)
 
 # --- Save ---
 path = Path.join(__DIR__, "basics.pptx")

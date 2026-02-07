@@ -437,6 +437,101 @@ defmodule Podium.ShapeTest do
       assert xml =~ ~s(rot="2700000")
     end
 
+    test "picture fill generates blipFill XML" do
+      shape =
+        Podium.Shape.text_box(2, "Over Image",
+          x: {1, :inches},
+          y: {1, :inches},
+          width: {4, :inches},
+          height: {2, :inches},
+          fill: {:picture_fill, 0}
+        )
+
+      shape = %{shape | fill_opts: [mode: :stretch]}
+      xml = Podium.Shape.to_xml(shape, "rId5")
+
+      assert xml =~ ~s(<a:blipFill rotWithShape="1">)
+      assert xml =~ ~s(r:embed="rId5")
+      assert xml =~ ~s(<a:stretch><a:fillRect/></a:stretch>)
+      assert xml =~ ~s(</a:blipFill>)
+    end
+
+    test "picture fill with tile mode" do
+      shape =
+        Podium.Shape.text_box(2, "Tiled",
+          x: {1, :inches},
+          y: {1, :inches},
+          width: {4, :inches},
+          height: {2, :inches},
+          fill: {:picture_fill, 0}
+        )
+
+      shape = %{shape | fill_opts: [mode: :tile]}
+      xml = Podium.Shape.to_xml(shape, "rId3")
+
+      assert xml =~ ~s(<a:blipFill rotWithShape="1">)
+      assert xml =~ ~s(<a:tile tx="0" ty="0" sx="100000" sy="100000"/>)
+    end
+
+    test "picture fill without fill_rid falls back to noFill" do
+      shape =
+        Podium.Shape.text_box(2, "No RID",
+          x: {1, :inches},
+          y: {1, :inches},
+          width: {4, :inches},
+          height: {2, :inches},
+          fill: {:picture_fill, 0}
+        )
+
+      shape = %{shape | fill_opts: [mode: :stretch]}
+      xml = Podium.Shape.to_xml(shape)
+
+      # Without a fill_rid, should not generate blipFill — falls through to Drawing.fill_xml
+      refute xml =~ "a:blipFill"
+    end
+
+    test "picture fill end-to-end packaging" do
+      # Minimal valid PNG
+      png_binary =
+        <<0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D, 0x49, 0x48,
+          0x44, 0x52, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x08, 0x06, 0x00, 0x00,
+          0x00, 0x1F, 0x15, 0xC4, 0x89, 0x00, 0x00, 0x00, 0x0A, 0x49, 0x44, 0x41, 0x54, 0x78,
+          0x9C, 0x62, 0x00, 0x00, 0x00, 0x02, 0x00, 0x01, 0xE5, 0x27, 0xDE, 0xFC, 0x00, 0x00,
+          0x00, 0x00, 0x49, 0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82>>
+
+      prs = Podium.new()
+      {prs, slide} = Podium.add_slide(prs)
+
+      {prs, slide} =
+        Podium.add_picture_fill_text_box(prs, slide, "Over Image", png_binary,
+          x: {1, :inches},
+          y: {1, :inches},
+          width: {4, :inches},
+          height: {2, :inches},
+          fill_mode: :stretch
+        )
+
+      prs = Podium.put_slide(prs, slide)
+      {:ok, binary} = Podium.save_to_memory(prs)
+      parts = PptxHelpers.unzip_pptx_binary(binary)
+
+      # Fill image media file exists
+      assert Enum.any?(Map.keys(parts), &String.contains?(&1, "fill_image"))
+
+      # Slide XML has blipFill
+      slide_xml = parts["ppt/slides/slide1.xml"]
+      assert slide_xml =~ "a:blipFill"
+      assert slide_xml =~ "r:embed="
+
+      # Slide rels reference the fill image
+      slide_rels = parts["ppt/slides/_rels/slide1.xml.rels"]
+      assert slide_rels =~ "fill_image"
+
+      # Content types include png
+      ct_xml = parts["[Content_Types].xml"]
+      assert ct_xml =~ "image/png"
+    end
+
     test "no rotation when not specified" do
       {_prs, slide} = Podium.new() |> Podium.add_slide()
 

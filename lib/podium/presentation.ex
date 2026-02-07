@@ -174,6 +174,28 @@ defmodule Podium.Presentation do
   end
 
   @doc """
+  Adds a text box with a picture fill to a slide. Returns `{presentation, slide}`.
+  """
+  def add_picture_fill_text_box(%__MODULE__{} = prs, %Slide{} = slide, text, image_binary, opts) do
+    extension = detect_fill_extension(image_binary)
+
+    content_types =
+      ContentTypes.add_default(prs.content_types, extension, content_type(extension))
+
+    slide = Slide.add_picture_fill_text_box(slide, text, image_binary, opts)
+    slides = replace_slide(prs.slides, slide)
+
+    prs = %{prs | slides: slides, content_types: content_types}
+    {prs, slide}
+  end
+
+  defp detect_fill_extension(<<0x89, 0x50, 0x4E, 0x47, _::binary>>), do: "png"
+  defp detect_fill_extension(<<0xFF, 0xD8, _::binary>>), do: "jpeg"
+  defp detect_fill_extension(<<0x42, 0x4D, _::binary>>), do: "bmp"
+  defp detect_fill_extension(<<0x47, 0x49, 0x46, _::binary>>), do: "gif"
+  defp detect_fill_extension(_), do: "png"
+
+  @doc """
   Sets core document properties (Dublin Core metadata).
   """
   def set_core_properties(%__MODULE__{} = prs, opts) when is_list(opts) do
@@ -308,8 +330,30 @@ defmodule Podium.Presentation do
         {rels, rids ++ [{image, image_rid}], acc}
       end)
 
-    # Generate slide XML with chart and image relationship IDs
-    parts = Map.put(parts, Slide.partname(slide), Slide.to_xml(slide, chart_rids, image_rids))
+    # Add fill image relationships and store fill image binaries
+    {slide_rels, fill_rids, parts} =
+      Enum.reduce(slide.fill_images, {slide_rels, %{}, parts}, fn {shape_id, binary, ext},
+                                                                  {rels, rids, acc} ->
+        fill_index = map_size(rids) + 1
+        fill_media_name = "fill_image#{slide.index}_#{fill_index}.#{ext}"
+
+        {rels, fill_rid} =
+          Relationships.add(rels, Constants.rt(:image), "../media/#{fill_media_name}")
+
+        acc = Map.put(acc, "ppt/media/#{fill_media_name}", binary)
+        rids = Map.put(rids, shape_id, fill_rid)
+
+        {rels, rids, acc}
+      end)
+
+    # Generate slide XML with chart, image, and fill relationship IDs
+    parts =
+      Map.put(
+        parts,
+        Slide.partname(slide),
+        Slide.to_xml(slide, chart_rids, image_rids, fill_rids)
+      )
+
     parts = Map.put(parts, Slide.rels_partname(slide), Relationships.to_xml(slide_rels))
 
     parts

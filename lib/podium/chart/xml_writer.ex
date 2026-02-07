@@ -280,6 +280,7 @@ defmodule Podium.Chart.XmlWriter do
 
     color_xml = series_color_xml(config, series)
     dpt_xml = data_points_xml(series)
+    series_dlbls_xml = series_data_labels_xml(series.data_labels)
 
     ~s(<c:ser>) <>
       ~s(<c:idx val="#{series.index}"/>) <>
@@ -289,6 +290,7 @@ defmodule Podium.Chart.XmlWriter do
       invert_xml <>
       marker_xml <>
       dpt_xml <>
+      series_dlbls_xml <>
       cat_xml(chart_data) <>
       val_xml(chart_data, series) <>
       smooth_xml <>
@@ -320,18 +322,90 @@ defmodule Podium.Chart.XmlWriter do
 
   # -- Per-point formatting --
 
-  defp data_points_xml(%{point_colors: pc}) when pc == %{}, do: ""
+  defp data_points_xml(%{point_colors: pc, point_formats: pf})
+       when pc == %{} and pf == %{},
+       do: ""
 
-  defp data_points_xml(%{point_colors: point_colors}) do
-    point_colors
+  defp data_points_xml(%{point_colors: point_colors, point_formats: point_formats}) do
+    # Merge point_colors (shorthand) and point_formats into a unified map
+    merged =
+      Enum.reduce(point_colors, %{}, fn {idx, color}, acc ->
+        Map.put(acc, idx, Keyword.merge(Map.get(acc, idx, []), fill: color))
+      end)
+
+    merged =
+      Enum.reduce(point_formats, merged, fn {idx, fmt}, acc ->
+        Map.update(acc, idx, fmt, fn existing -> Keyword.merge(existing, fmt) end)
+      end)
+
+    merged
     |> Enum.sort_by(fn {idx, _} -> idx end)
-    |> Enum.map(fn {idx, color} ->
+    |> Enum.map(fn {idx, opts} ->
+      fill_val = Keyword.get(opts, :fill)
+      line_val = Keyword.get(opts, :line)
+
+      fill_xml = if fill_val, do: Drawing.fill_xml(fill_val), else: ""
+      line_xml = if line_val, do: Drawing.line_xml(line_val), else: ""
+
       ~s(<c:dPt>) <>
         ~s(<c:idx val="#{idx}"/>) <>
-        ~s(<c:spPr><a:solidFill><a:srgbClr val="#{color}"/></a:solidFill></c:spPr>) <>
+        ~s(<c:spPr>#{fill_xml}#{line_xml}</c:spPr>) <>
         ~s(</c:dPt>)
     end)
     |> Enum.join()
+  end
+
+  # -- Per-point data label overrides --
+
+  defp series_data_labels_xml(nil), do: ""
+  defp series_data_labels_xml(dl) when dl == %{}, do: ""
+
+  defp series_data_labels_xml(data_labels) when is_map(data_labels) do
+    entries =
+      data_labels
+      |> Enum.sort_by(fn {idx, _} -> idx end)
+      |> Enum.map(fn {idx, opts} -> single_dlbl_xml(idx, opts) end)
+      |> Enum.join()
+
+    ~s(<c:dLbls>#{entries}</c:dLbls>)
+  end
+
+  defp single_dlbl_xml(idx, opts) do
+    show_atoms = Keyword.get(opts, :show, [])
+    position = Keyword.get(opts, :position)
+    number_format = Keyword.get(opts, :number_format)
+
+    num_fmt_xml = dlbl_num_fmt_xml(number_format)
+    pos_xml = dlbl_position_xml(position)
+
+    show_val =
+      if :value in show_atoms, do: ~s(<c:showVal val="1"/>), else: ~s(<c:showVal val="0"/>)
+
+    show_cat =
+      if :category in show_atoms,
+        do: ~s(<c:showCatName val="1"/>),
+        else: ~s(<c:showCatName val="0"/>)
+
+    show_ser =
+      if :series in show_atoms,
+        do: ~s(<c:showSerName val="1"/>),
+        else: ~s(<c:showSerName val="0"/>)
+
+    show_pct =
+      if :percent in show_atoms,
+        do: ~s(<c:showPercent val="1"/>),
+        else: ~s(<c:showPercent val="0"/>)
+
+    ~s(<c:dLbl>) <>
+      ~s(<c:idx val="#{idx}"/>) <>
+      num_fmt_xml <>
+      pos_xml <>
+      show_val <>
+      show_cat <>
+      show_ser <>
+      show_pct <>
+      ~s(<c:showLegendKey val="0"/>) <>
+      ~s(</c:dLbl>)
   end
 
   defp tx_xml(chart_data, series) do
@@ -401,13 +475,23 @@ defmodule Podium.Chart.XmlWriter do
   defp axes_xml(_chart, %{has_axes: false}), do: ""
 
   defp axes_xml(chart, %{element: "c:lineChart"}) do
-    cat_ax_xml(chart, @line_cat_ax_id, @line_val_ax_id) <>
+    cat_axis_xml(chart, @line_cat_ax_id, @line_val_ax_id) <>
       val_ax_xml(chart, @line_val_ax_id, @line_cat_ax_id)
   end
 
   defp axes_xml(chart, _config) do
-    cat_ax_xml(chart, @cat_ax_id, @val_ax_id) <>
+    cat_axis_xml(chart, @cat_ax_id, @val_ax_id) <>
       val_ax_xml(chart, @val_ax_id, @cat_ax_id)
+  end
+
+  # Dispatch between catAx and dateAx based on category_axis[:type]
+  defp cat_axis_xml(chart, ax_id, cross_ax_id) do
+    axis_opts = chart.category_axis || []
+
+    case Keyword.get(axis_opts, :type) do
+      :date -> date_ax_xml(chart, ax_id, cross_ax_id)
+      _ -> cat_ax_xml(chart, ax_id, cross_ax_id)
+    end
   end
 
   defp cat_ax_xml(chart, ax_id, cross_ax_id) do
@@ -442,6 +526,67 @@ defmodule Podium.Chart.XmlWriter do
       label_rotation_xml(label_rotation) <>
       ~s(</c:catAx>)
   end
+
+  defp date_ax_xml(chart, ax_id, cross_ax_id) do
+    pos = ChartType.cat_ax_pos(chart.chart_type)
+    axis_opts = chart.category_axis || []
+    axis_title = Keyword.get(axis_opts, :title)
+    crosses = Keyword.get(axis_opts, :crosses, :auto_zero)
+    label_rotation = Keyword.get(axis_opts, :label_rotation)
+    reverse = Keyword.get(axis_opts, :reverse, false)
+    visible = Keyword.get(axis_opts, :visible, true)
+    major_tick = Keyword.get(axis_opts, :major_tick_mark, :out)
+    minor_tick = Keyword.get(axis_opts, :minor_tick_mark, :none)
+    base_time_unit = Keyword.get(axis_opts, :base_time_unit)
+    major_time_unit = Keyword.get(axis_opts, :major_time_unit)
+    minor_time_unit = Keyword.get(axis_opts, :minor_time_unit)
+    major_unit = Keyword.get(axis_opts, :major_unit)
+    minor_unit = Keyword.get(axis_opts, :minor_unit)
+
+    orientation = if reverse, do: "maxMin", else: "minMax"
+    delete_val = if visible, do: "0", else: "1"
+
+    base_xml =
+      if base_time_unit,
+        do: ~s(<c:baseTimeUnit val="#{time_unit_value(base_time_unit)}"/>),
+        else: ""
+
+    major_time_xml =
+      if major_time_unit,
+        do: ~s(<c:majorTimeUnit val="#{time_unit_value(major_time_unit)}"/>),
+        else: ""
+
+    minor_time_xml =
+      if minor_time_unit,
+        do: ~s(<c:minorTimeUnit val="#{time_unit_value(minor_time_unit)}"/>),
+        else: ""
+
+    major_unit_xml = if major_unit, do: ~s(<c:majorUnit val="#{major_unit}"/>), else: ""
+    minor_unit_xml = if minor_unit, do: ~s(<c:minorUnit val="#{minor_unit}"/>), else: ""
+
+    ~s(<c:dateAx>) <>
+      ~s(<c:axId val="#{ax_id}"/>) <>
+      ~s(<c:scaling><c:orientation val="#{orientation}"/></c:scaling>) <>
+      ~s(<c:delete val="#{delete_val}"/>) <>
+      ~s(<c:axPos val="#{pos}"/>) <>
+      axis_title_xml(axis_title) <>
+      ~s(<c:majorTickMark val="#{tick_mark_value(major_tick)}"/>) <>
+      ~s(<c:minorTickMark val="#{tick_mark_value(minor_tick)}"/>) <>
+      ~s(<c:tickLblPos val="nextTo"/>) <>
+      ~s(<c:crossAx val="#{cross_ax_id}"/>) <>
+      crosses_xml(crosses) <>
+      base_xml <>
+      major_unit_xml <>
+      major_time_xml <>
+      minor_unit_xml <>
+      minor_time_xml <>
+      label_rotation_xml(label_rotation) <>
+      ~s(</c:dateAx>)
+  end
+
+  defp time_unit_value(:days), do: "days"
+  defp time_unit_value(:months), do: "months"
+  defp time_unit_value(:years), do: "years"
 
   defp val_ax_xml(chart, ax_id, cross_ax_id) do
     pos = ChartType.val_ax_pos(chart.chart_type)

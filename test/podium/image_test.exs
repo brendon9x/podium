@@ -352,6 +352,66 @@ defmodule Podium.ImageTest do
       end
     end
 
+    test "image masking with ellipse shape" do
+      prs = Podium.new()
+      {prs, slide} = Podium.add_slide(prs)
+
+      {prs, _slide} =
+        Podium.add_image(prs, slide, @png_binary,
+          x: {1, :inches},
+          y: {1, :inches},
+          width: {3, :inches},
+          height: {3, :inches},
+          shape: :ellipse
+        )
+
+      {:ok, binary} = Podium.save_to_memory(prs)
+      parts = PptxHelpers.unzip_pptx_binary(binary)
+      slide_xml = parts["ppt/slides/slide1.xml"]
+
+      assert slide_xml =~ ~s(prstGeom prst="ellipse")
+      refute slide_xml =~ ~s(prstGeom prst="rect")
+    end
+
+    test "image masking defaults to rect" do
+      prs = Podium.new()
+      {prs, slide} = Podium.add_slide(prs)
+
+      {prs, _slide} =
+        Podium.add_image(prs, slide, @png_binary,
+          x: {1, :inches},
+          y: {1, :inches},
+          width: {3, :inches},
+          height: {3, :inches}
+        )
+
+      {:ok, binary} = Podium.save_to_memory(prs)
+      parts = PptxHelpers.unzip_pptx_binary(binary)
+      slide_xml = parts["ppt/slides/slide1.xml"]
+
+      assert slide_xml =~ ~s(prstGeom prst="rect")
+    end
+
+    test "image masking with raw string preset" do
+      prs = Podium.new()
+      {prs, slide} = Podium.add_slide(prs)
+
+      {prs, _slide} =
+        Podium.add_image(prs, slide, @png_binary,
+          x: {1, :inches},
+          y: {1, :inches},
+          width: {3, :inches},
+          height: {3, :inches},
+          shape: "star5"
+        )
+
+      {:ok, binary} = Podium.save_to_memory(prs)
+      parts = PptxHelpers.unzip_pptx_binary(binary)
+      slide_xml = parts["ppt/slides/slide1.xml"]
+
+      assert slide_xml =~ ~s(prstGeom prst="star5")
+    end
+
     test "duplicate images are deduplicated" do
       prs = Podium.new()
       {prs, slide} = Podium.add_slide(prs)
