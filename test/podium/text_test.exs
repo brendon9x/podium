@@ -135,6 +135,12 @@ defmodule Podium.TextTest do
       assert xml =~ ~s(indent="-228600")
     end
 
+    test "language tag on run" do
+      paragraphs = Text.normalize([[{"Polish text", lang: "pl-PL"}]])
+      xml = Text.paragraphs_xml(paragraphs)
+      assert xml =~ ~s(lang="pl-PL")
+    end
+
     test "no pPr emitted when no paragraph properties" do
       paragraphs = Text.normalize([["Plain text"]])
       xml = Text.paragraphs_xml(paragraphs)

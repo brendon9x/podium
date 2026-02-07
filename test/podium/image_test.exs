@@ -14,6 +14,15 @@ defmodule Podium.ImageTest do
   # Minimal JPEG (just the header bytes + padding)
   @jpeg_binary <<0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10, 0x4A, 0x46, 0x49, 0x46, 0x00>>
 
+  # Minimal BMP header
+  @bmp_binary <<0x42, 0x4D, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00>>
+
+  # Minimal GIF header
+  @gif_binary <<0x47, 0x49, 0x46, 0x38, 0x39, 0x61, 0x00, 0x00, 0x00, 0x00>>
+
+  # Minimal TIFF header (little-endian)
+  @tiff_binary <<0x49, 0x49, 0x2A, 0x00, 0x08, 0x00, 0x00, 0x00>>
+
   describe "add_image/4" do
     test "adds a PNG image to a slide" do
       prs = Podium.new()
@@ -71,6 +80,84 @@ defmodule Podium.ImageTest do
       assert Map.has_key?(parts, "ppt/media/image1.jpeg")
     end
 
+    test "detects BMP format" do
+      prs = Podium.new()
+      {prs, slide} = Podium.add_slide(prs)
+
+      {prs, _slide} =
+        Podium.add_image(prs, slide, @bmp_binary,
+          x: {1, :inches},
+          y: {1, :inches},
+          width: {3, :inches},
+          height: {2, :inches}
+        )
+
+      {:ok, binary} = Podium.save_to_memory(prs)
+      parts = PptxHelpers.unzip_pptx_binary(binary)
+      assert Map.has_key?(parts, "ppt/media/image1.bmp")
+      assert parts["[Content_Types].xml"] =~ "image/bmp"
+    end
+
+    test "detects GIF format" do
+      prs = Podium.new()
+      {prs, slide} = Podium.add_slide(prs)
+
+      {prs, _slide} =
+        Podium.add_image(prs, slide, @gif_binary,
+          x: {1, :inches},
+          y: {1, :inches},
+          width: {3, :inches},
+          height: {2, :inches}
+        )
+
+      {:ok, binary} = Podium.save_to_memory(prs)
+      parts = PptxHelpers.unzip_pptx_binary(binary)
+      assert Map.has_key?(parts, "ppt/media/image1.gif")
+      assert parts["[Content_Types].xml"] =~ "image/gif"
+    end
+
+    test "detects TIFF format" do
+      prs = Podium.new()
+      {prs, slide} = Podium.add_slide(prs)
+
+      {prs, _slide} =
+        Podium.add_image(prs, slide, @tiff_binary,
+          x: {1, :inches},
+          y: {1, :inches},
+          width: {3, :inches},
+          height: {2, :inches}
+        )
+
+      {:ok, binary} = Podium.save_to_memory(prs)
+      parts = PptxHelpers.unzip_pptx_binary(binary)
+      assert Map.has_key?(parts, "ppt/media/image1.tiff")
+      assert parts["[Content_Types].xml"] =~ "image/tiff"
+    end
+
+    test "image cropping" do
+      prs = Podium.new()
+      {prs, slide} = Podium.add_slide(prs)
+
+      {prs, _slide} =
+        Podium.add_image(prs, slide, @png_binary,
+          x: {1, :inches},
+          y: {1, :inches},
+          width: {3, :inches},
+          height: {2, :inches},
+          crop: [left: 10_000, top: 15_000, right: 20_000, bottom: 25_000]
+        )
+
+      {:ok, binary} = Podium.save_to_memory(prs)
+      parts = PptxHelpers.unzip_pptx_binary(binary)
+      slide_xml = parts["ppt/slides/slide1.xml"]
+
+      assert slide_xml =~ ~s(a:srcRect)
+      assert slide_xml =~ ~s(l="10000")
+      assert slide_xml =~ ~s(t="15000")
+      assert slide_xml =~ ~s(r="20000")
+      assert slide_xml =~ ~s(b="25000")
+    end
+
     test "rejects unsupported format" do
       prs = Podium.new()
       {_prs, slide} = Podium.add_slide(prs)
@@ -85,7 +172,34 @@ defmodule Podium.ImageTest do
       end
     end
 
-    test "multiple images get incrementing indices" do
+    test "different images get incrementing indices" do
+      prs = Podium.new()
+      {prs, slide} = Podium.add_slide(prs)
+
+      {prs, slide} =
+        Podium.add_image(prs, slide, @png_binary,
+          x: {1, :inches},
+          y: {1, :inches},
+          width: {2, :inches},
+          height: {2, :inches}
+        )
+
+      {prs, _slide} =
+        Podium.add_image(prs, slide, @jpeg_binary,
+          x: {5, :inches},
+          y: {1, :inches},
+          width: {2, :inches},
+          height: {2, :inches}
+        )
+
+      {:ok, binary} = Podium.save_to_memory(prs)
+      parts = PptxHelpers.unzip_pptx_binary(binary)
+
+      assert Map.has_key?(parts, "ppt/media/image1.png")
+      assert Map.has_key?(parts, "ppt/media/image2.jpeg")
+    end
+
+    test "duplicate images are deduplicated" do
       prs = Podium.new()
       {prs, slide} = Podium.add_slide(prs)
 
@@ -105,11 +219,20 @@ defmodule Podium.ImageTest do
           height: {2, :inches}
         )
 
+      # next_image_index should NOT have incremented for the dup
+      assert prs.next_image_index == 2
+
       {:ok, binary} = Podium.save_to_memory(prs)
       parts = PptxHelpers.unzip_pptx_binary(binary)
 
+      # Only one media file, both references point to image1
       assert Map.has_key?(parts, "ppt/media/image1.png")
-      assert Map.has_key?(parts, "ppt/media/image2.png")
+      refute Map.has_key?(parts, "ppt/media/image2.png")
+
+      # Both images still render on the slide (two <p:pic> opening tags)
+      slide_xml = parts["ppt/slides/slide1.xml"]
+      pic_count = length(Regex.scan(~r/<p:pic\s/, slide_xml))
+      assert pic_count == 2
     end
   end
 end

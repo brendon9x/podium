@@ -169,7 +169,8 @@ defmodule Podium.Text do
   end
 
   defp base_run_attrs(opts) do
-    attrs = [~s(lang="en-US")]
+    lang = Keyword.get(opts, :lang, "en-US")
+    attrs = [~s(lang="#{lang}")]
 
     attrs =
       if font_size = Keyword.get(opts, :font_size) do
