@@ -495,6 +495,238 @@ defmodule Podium.PlaceholderTest do
     end
   end
 
+  describe "chart placeholder" do
+    test "chart in :content on :title_content has correct position" do
+      prs = Podium.new()
+      {prs, slide} = Podium.add_slide(prs, layout: :title_content)
+
+      chart_data =
+        Podium.Chart.ChartData.new()
+        |> Podium.Chart.ChartData.add_categories(["A", "B", "C"])
+        |> Podium.Chart.ChartData.add_series("S1", [1, 2, 3])
+
+      {prs, _slide} =
+        Podium.set_chart_placeholder(prs, slide, :content, :column_clustered, chart_data)
+
+      {:ok, binary} = Podium.save_to_memory(prs)
+      parts = PptxHelpers.unzip_pptx_binary(binary)
+      slide_xml = parts["ppt/slides/slide1.xml"]
+
+      # Chart should be present as graphicFrame
+      assert slide_xml =~ "<p:graphicFrame"
+      # Position comes from master body placeholder, scaled to 16:9
+      # Master body: x=457200 y=1600200 cx=8229600 cy=4525963
+      # Scale factor: 12_192_000 / 9_144_000 = 1.333...
+      # Scaled x: round(457200 * 1.333...) = 609600
+      # Scaled cx: round(8229600 * 1.333...) = 10972800
+      assert slide_xml =~ ~s(x="609600")
+      assert slide_xml =~ ~s(y="1600200")
+      assert slide_xml =~ ~s(cx="10972800")
+      assert slide_xml =~ ~s(cy="4525963")
+    end
+
+    test "chart in :left_content and :right_content on :two_content have different positions" do
+      prs = Podium.new()
+      {prs, slide} = Podium.add_slide(prs, layout: :two_content)
+
+      chart_data =
+        Podium.Chart.ChartData.new()
+        |> Podium.Chart.ChartData.add_categories(["A", "B"])
+        |> Podium.Chart.ChartData.add_series("S1", [1, 2])
+
+      {prs, slide} =
+        Podium.set_chart_placeholder(prs, slide, :left_content, :column_clustered, chart_data)
+
+      {prs, _slide} =
+        Podium.set_chart_placeholder(prs, slide, :right_content, :column_clustered, chart_data)
+
+      {:ok, binary} = Podium.save_to_memory(prs)
+      parts = PptxHelpers.unzip_pptx_binary(binary)
+      slide_xml = parts["ppt/slides/slide1.xml"]
+
+      # Both charts should be present
+      assert length(Regex.scan(~r/<p:graphicFrame/, slide_xml)) == 2
+
+      # Left content: x=457200 -> scaled to 609600, cx=4038600 -> scaled to 5384800
+      assert slide_xml =~ ~s(x="609600")
+      # Right content: x=4648200 -> scaled to 6197600, cx=4038600 -> scaled to 5384800
+      assert slide_xml =~ ~s(x="6197600")
+    end
+
+    test "chart opts pass through to chart XML" do
+      prs = Podium.new()
+      {prs, slide} = Podium.add_slide(prs, layout: :title_content)
+
+      chart_data =
+        Podium.Chart.ChartData.new()
+        |> Podium.Chart.ChartData.add_categories(["A", "B"])
+        |> Podium.Chart.ChartData.add_series("S1", [1, 2])
+
+      {prs, _slide} =
+        Podium.set_chart_placeholder(prs, slide, :content, :column_clustered, chart_data,
+          title: "Revenue",
+          legend: :bottom
+        )
+
+      {:ok, binary} = Podium.save_to_memory(prs)
+      parts = PptxHelpers.unzip_pptx_binary(binary)
+      chart_xml = parts["ppt/charts/chart1.xml"]
+
+      assert chart_xml =~ "Revenue"
+      assert chart_xml =~ ~s(val="b")
+    end
+
+    test "user-supplied x/y/width/height in opts are silently dropped" do
+      prs = Podium.new()
+      {prs, slide} = Podium.add_slide(prs, layout: :title_content)
+
+      chart_data =
+        Podium.Chart.ChartData.new()
+        |> Podium.Chart.ChartData.add_categories(["A"])
+        |> Podium.Chart.ChartData.add_series("S1", [1])
+
+      # These explicit coordinates should be ignored
+      {prs, _slide} =
+        Podium.set_chart_placeholder(prs, slide, :content, :column_clustered, chart_data,
+          x: {1, :inches},
+          y: {1, :inches},
+          width: {2, :inches},
+          height: {2, :inches}
+        )
+
+      {:ok, binary} = Podium.save_to_memory(prs)
+      parts = PptxHelpers.unzip_pptx_binary(binary)
+      slide_xml = parts["ppt/slides/slide1.xml"]
+
+      # Should use placeholder position, not user-supplied
+      assert slide_xml =~ ~s(x="609600")
+      assert slide_xml =~ ~s(y="1600200")
+    end
+  end
+
+  describe "table placeholder" do
+    test "table in :content on :title_content has correct position" do
+      prs = Podium.new()
+      {prs, slide} = Podium.add_slide(prs, layout: :title_content)
+
+      rows = [["Header A", "Header B"], ["Cell 1", "Cell 2"]]
+
+      {prs, _slide} = Podium.set_table_placeholder(prs, slide, :content, rows)
+
+      {:ok, binary} = Podium.save_to_memory(prs)
+      parts = PptxHelpers.unzip_pptx_binary(binary)
+      slide_xml = parts["ppt/slides/slide1.xml"]
+
+      assert slide_xml =~ "<p:graphicFrame"
+      assert slide_xml =~ "Header A"
+      assert slide_xml =~ "Cell 2"
+      # Same position as chart placeholder test
+      assert slide_xml =~ ~s(x="609600")
+      assert slide_xml =~ ~s(y="1600200")
+      assert slide_xml =~ ~s(cx="10972800")
+      assert slide_xml =~ ~s(cy="4525963")
+    end
+
+    test "table opts (table_style) pass through" do
+      prs = Podium.new()
+      {prs, slide} = Podium.add_slide(prs, layout: :title_content)
+
+      rows = [["A", "B"]]
+
+      {prs, _slide} =
+        Podium.set_table_placeholder(prs, slide, :content, rows,
+          table_style: [first_row: true, band_row: true]
+        )
+
+      {:ok, binary} = Podium.save_to_memory(prs)
+      parts = PptxHelpers.unzip_pptx_binary(binary)
+      slide_xml = parts["ppt/slides/slide1.xml"]
+
+      assert slide_xml =~ ~s(firstRow="1")
+      assert slide_xml =~ ~s(bandRow="1")
+    end
+  end
+
+  describe "chart/table placeholder errors" do
+    test "raises on non-content placeholder :title" do
+      prs = Podium.new()
+      {prs, slide} = Podium.add_slide(prs, layout: :title_content)
+
+      chart_data =
+        Podium.Chart.ChartData.new()
+        |> Podium.Chart.ChartData.add_categories(["A"])
+        |> Podium.Chart.ChartData.add_series("S1", [1])
+
+      assert_raise ArgumentError, ~r/has type "title".*only content placeholders/, fn ->
+        Podium.set_chart_placeholder(prs, slide, :title, :column_clustered, chart_data)
+      end
+    end
+
+    test "raises on non-content placeholder :body" do
+      prs = Podium.new()
+      {prs, slide} = Podium.add_slide(prs, layout: :section_header)
+
+      rows = [["A"]]
+
+      assert_raise ArgumentError, ~r/has type "body".*only content placeholders/, fn ->
+        Podium.set_table_placeholder(prs, slide, :body, rows)
+      end
+    end
+
+    test "raises on unknown placeholder name" do
+      prs = Podium.new()
+      {prs, slide} = Podium.add_slide(prs, layout: :title_content)
+
+      chart_data =
+        Podium.Chart.ChartData.new()
+        |> Podium.Chart.ChartData.add_categories(["A"])
+        |> Podium.Chart.ChartData.add_series("S1", [1])
+
+      assert_raise ArgumentError, ~r/unknown placeholder :foo for layout :title_content/, fn ->
+        Podium.set_chart_placeholder(prs, slide, :foo, :column_clustered, chart_data)
+      end
+    end
+
+    test "raises on layout without content placeholders (:blank)" do
+      prs = Podium.new()
+      {prs, slide} = Podium.add_slide(prs, layout: :blank)
+
+      chart_data =
+        Podium.Chart.ChartData.new()
+        |> Podium.Chart.ChartData.add_categories(["A"])
+        |> Podium.Chart.ChartData.add_series("S1", [1])
+
+      assert_raise ArgumentError, ~r/unknown placeholder/, fn ->
+        Podium.set_chart_placeholder(prs, slide, :content, :column_clustered, chart_data)
+      end
+    end
+  end
+
+  describe "chart/table placeholder with 4:3 aspect" do
+    test "4:3 uses raw positions without scaling" do
+      prs = Podium.new(slide_width: 9_144_000, slide_height: 6_858_000)
+      {prs, slide} = Podium.add_slide(prs, layout: :title_content)
+
+      chart_data =
+        Podium.Chart.ChartData.new()
+        |> Podium.Chart.ChartData.add_categories(["A"])
+        |> Podium.Chart.ChartData.add_series("S1", [1])
+
+      {prs, _slide} =
+        Podium.set_chart_placeholder(prs, slide, :content, :column_clustered, chart_data)
+
+      {:ok, binary} = Podium.save_to_memory(prs)
+      parts = PptxHelpers.unzip_pptx_binary(binary)
+      slide_xml = parts["ppt/slides/slide1.xml"]
+
+      # At 4:3 (same as template), no scaling — raw master body position
+      assert slide_xml =~ ~s(x="457200")
+      assert slide_xml =~ ~s(y="1600200")
+      assert slide_xml =~ ~s(cx="8229600")
+      assert slide_xml =~ ~s(cy="4525963")
+    end
+  end
+
   describe "error cases" do
     test "raises on unknown layout index > 11" do
       prs = Podium.new()
