@@ -252,6 +252,66 @@ defmodule Podium.ShapeTest do
       assert xml =~ ~s(<a:buAutoNum type="arabicPeriod"/>)
     end
 
+    test "gradient fill" do
+      {_prs, slide} = Podium.new() |> Podium.add_slide()
+
+      slide =
+        Podium.add_text_box(slide, "Gradient",
+          x: {1, :inches},
+          y: {1, :inches},
+          width: {4, :inches},
+          height: {1, :inches},
+          fill: {:gradient, [{0, "FF0000"}, {100_000, "0000FF"}], angle: 5_400_000}
+        )
+
+      shape = hd(slide.shapes)
+      xml = Podium.Shape.to_xml(shape)
+
+      assert xml =~ ~s(<a:gradFill rotWithShape="1">)
+      assert xml =~ ~s(<a:gs pos="0"><a:srgbClr val="FF0000"/></a:gs>)
+      assert xml =~ ~s(<a:gs pos="100000"><a:srgbClr val="0000FF"/></a:gs>)
+      assert xml =~ ~s(<a:lin ang="5400000" scaled="0"/>)
+    end
+
+    test "pattern fill" do
+      {_prs, slide} = Podium.new() |> Podium.add_slide()
+
+      slide =
+        Podium.add_text_box(slide, "Pattern",
+          x: {1, :inches},
+          y: {1, :inches},
+          width: {4, :inches},
+          height: {1, :inches},
+          fill: {:pattern, :dn_diag, foreground: "FF0000", background: "FFFFFF"}
+        )
+
+      shape = hd(slide.shapes)
+      xml = Podium.Shape.to_xml(shape)
+
+      assert xml =~ ~s(<a:pattFill prst="dnDiag">)
+      assert xml =~ ~s(<a:fgClr><a:srgbClr val="FF0000"/></a:fgClr>)
+      assert xml =~ ~s(<a:bgClr><a:srgbClr val="FFFFFF"/></a:bgClr>)
+    end
+
+    test "line with dash style" do
+      {_prs, slide} = Podium.new() |> Podium.add_slide()
+
+      slide =
+        Podium.add_text_box(slide, "Dashed",
+          x: {1, :inches},
+          y: {1, :inches},
+          width: {4, :inches},
+          height: {1, :inches},
+          line: [color: "000000", width: {1, :pt}, dash_style: :dash]
+        )
+
+      shape = hd(slide.shapes)
+      xml = Podium.Shape.to_xml(shape)
+
+      assert xml =~ ~s(<a:prstDash val="dash"/>)
+      assert xml =~ ~s(<a:ln w="12700">)
+    end
+
     test "underline and font options" do
       {_prs, slide} = Podium.new() |> Podium.add_slide()
 

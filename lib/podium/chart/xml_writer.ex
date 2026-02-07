@@ -65,21 +65,76 @@ defmodule Podium.Chart.XmlWriter do
       ~s(</c:title>)
   end
 
+  defp title_xml(opts) when is_list(opts) do
+    text = Keyword.fetch!(opts, :text)
+    escaped = Builder.escape(text)
+    rpr_attrs = font_rpr_attrs(opts)
+
+    ~s(<c:title>) <>
+      ~s(<c:tx><c:rich>) <>
+      ~s(<a:bodyPr/><a:lstStyle/>) <>
+      ~s(<a:p><a:r><a:rPr #{rpr_attrs}/><a:t>#{escaped}</a:t></a:r></a:p>) <>
+      ~s(</c:rich></c:tx>) <>
+      ~s(<c:overlay val="0"/>) <>
+      ~s(</c:title>)
+  end
+
   # -- Legend --
 
   defp legend_xml(nil), do: ""
   defp legend_xml(false), do: ""
 
   defp legend_xml(position) when position in [:left, :right, :top, :bottom] do
-    pos =
-      case position do
-        :left -> "l"
-        :right -> "r"
-        :top -> "t"
-        :bottom -> "b"
-      end
-
+    pos = legend_pos_value(position)
     ~s(<c:legend><c:legendPos val="#{pos}"/><c:overlay val="0"/></c:legend>)
+  end
+
+  defp legend_xml(opts) when is_list(opts) do
+    position = Keyword.fetch!(opts, :position)
+    pos = legend_pos_value(position)
+    font_xml = legend_font_xml(opts)
+
+    ~s(<c:legend><c:legendPos val="#{pos}"/><c:overlay val="0"/>#{font_xml}</c:legend>)
+  end
+
+  defp legend_pos_value(:left), do: "l"
+  defp legend_pos_value(:right), do: "r"
+  defp legend_pos_value(:top), do: "t"
+  defp legend_pos_value(:bottom), do: "b"
+
+  defp legend_font_xml(opts) do
+    font_size = Keyword.get(opts, :font_size)
+    bold = Keyword.get(opts, :bold)
+    italic = Keyword.get(opts, :italic)
+    color = Keyword.get(opts, :color)
+    font = Keyword.get(opts, :font)
+
+    if font_size || bold || italic || color || font do
+      attrs = def_rpr_attrs(font_size, bold, italic)
+      children = def_rpr_children(color, font)
+
+      if children == "" do
+        ~s(<c:txPr><a:bodyPr/><a:lstStyle/><a:p><a:pPr><a:defRPr #{attrs}/></a:pPr><a:endParaRPr lang="en-US"/></a:p></c:txPr>)
+      else
+        ~s(<c:txPr><a:bodyPr/><a:lstStyle/><a:p><a:pPr><a:defRPr #{attrs}>#{children}</a:defRPr></a:pPr><a:endParaRPr lang="en-US"/></a:p></c:txPr>)
+      end
+    else
+      ""
+    end
+  end
+
+  defp def_rpr_attrs(font_size, bold, italic) do
+    attrs = []
+    attrs = if font_size, do: attrs ++ [~s(sz="#{font_size * 100}")], else: attrs
+    attrs = if bold, do: attrs ++ [~s(b="1")], else: attrs
+    attrs = if italic, do: attrs ++ [~s(i="1")], else: attrs
+    Enum.join(attrs, " ")
+  end
+
+  defp def_rpr_children(color, font) do
+    color_xml = if color, do: ~s(<a:solidFill><a:srgbClr val="#{color}"/></a:solidFill>), else: ""
+    font_xml = if font, do: ~s(<a:latin typeface="#{font}"/>), else: ""
+    color_xml <> font_xml
   end
 
   # -- Date1904 --
@@ -127,28 +182,73 @@ defmodule Podium.Chart.XmlWriter do
   defp data_labels_xml([]), do: ""
 
   defp data_labels_xml(labels) when is_list(labels) do
-    show_val = if :value in labels, do: ~s(<c:showVal val="1"/>), else: ~s(<c:showVal val="0"/>)
+    # Support both simple atom list and keyword opts
+    {show_atoms, position, number_format} = parse_data_labels(labels)
+
+    show_val =
+      if :value in show_atoms, do: ~s(<c:showVal val="1"/>), else: ~s(<c:showVal val="0"/>)
 
     show_cat =
-      if :category in labels,
+      if :category in show_atoms,
         do: ~s(<c:showCatName val="1"/>),
         else: ~s(<c:showCatName val="0"/>)
 
     show_ser =
-      if :series in labels,
+      if :series in show_atoms,
         do: ~s(<c:showSerName val="1"/>),
         else: ~s(<c:showSerName val="0"/>)
 
     show_pct =
-      if :percent in labels, do: ~s(<c:showPercent val="1"/>), else: ~s(<c:showPercent val="0"/>)
+      if :percent in show_atoms,
+        do: ~s(<c:showPercent val="1"/>),
+        else: ~s(<c:showPercent val="0"/>)
+
+    pos_xml = dlbl_position_xml(position)
+    num_fmt_xml = dlbl_num_fmt_xml(number_format)
 
     ~s(<c:dLbls>) <>
+      num_fmt_xml <>
+      pos_xml <>
       show_val <>
       show_cat <>
       show_ser <>
       show_pct <>
       ~s(<c:showLegendKey val="0"/>) <>
       ~s(</c:dLbls>)
+  end
+
+  defp parse_data_labels(labels) do
+    if Keyword.keyword?(labels) and Keyword.has_key?(labels, :show) do
+      {Keyword.get(labels, :show, []), Keyword.get(labels, :position),
+       Keyword.get(labels, :number_format)}
+    else
+      {labels, nil, nil}
+    end
+  end
+
+  defp dlbl_position_xml(nil), do: ""
+
+  defp dlbl_position_xml(position) do
+    val =
+      case position do
+        :center -> "ctr"
+        :inside_end -> "inEnd"
+        :inside_base -> "inBase"
+        :outside_end -> "outEnd"
+        :top -> "t"
+        :bottom -> "b"
+        :left -> "l"
+        :right -> "r"
+        :best_fit -> "bestFit"
+      end
+
+    ~s(<c:dLblPos val="#{val}"/>)
+  end
+
+  defp dlbl_num_fmt_xml(nil), do: ""
+
+  defp dlbl_num_fmt_xml(fmt) do
+    ~s(<c:numFmt formatCode="#{Builder.escape(fmt)}" sourceLinked="0"/>)
   end
 
   defp overlap_xml(%{overlap: nil}), do: ""
@@ -181,6 +281,7 @@ defmodule Podium.Chart.XmlWriter do
       end
 
     color_xml = series_color_xml(config, series)
+    dpt_xml = data_points_xml(series)
 
     ~s(<c:ser>) <>
       ~s(<c:idx val="#{series.index}"/>) <>
@@ -188,13 +289,27 @@ defmodule Podium.Chart.XmlWriter do
       tx_xml(chart_data, series) <>
       color_xml <>
       marker_xml <>
+      dpt_xml <>
       cat_xml(chart_data) <>
       val_xml(chart_data, series) <>
       smooth_xml <>
       ~s(</c:ser>)
   end
 
-  defp series_color_xml(_config, %{color: nil}), do: ""
+  defp series_color_xml(_config, %{color: nil, pattern: nil}), do: ""
+
+  defp series_color_xml(_config, %{pattern: pattern}) when not is_nil(pattern) do
+    prst = pattern_preset(pattern[:type])
+    fg = Keyword.get(pattern, :foreground, "000000")
+    bg = Keyword.get(pattern, :background, "FFFFFF")
+
+    ~s(<c:spPr>) <>
+      ~s(<a:pattFill prst="#{prst}">) <>
+      ~s(<a:fgClr><a:srgbClr val="#{fg}"/></a:fgClr>) <>
+      ~s(<a:bgClr><a:srgbClr val="#{bg}"/></a:bgClr>) <>
+      ~s(</a:pattFill>) <>
+      ~s(</c:spPr>)
+  end
 
   defp series_color_xml(%{element: "c:lineChart"}, %{color: color}) do
     ~s(<c:spPr><a:ln><a:solidFill><a:srgbClr val="#{color}"/></a:solidFill></a:ln></c:spPr>)
@@ -202,6 +317,22 @@ defmodule Podium.Chart.XmlWriter do
 
   defp series_color_xml(_config, %{color: color}) do
     ~s(<c:spPr><a:solidFill><a:srgbClr val="#{color}"/></a:solidFill></c:spPr>)
+  end
+
+  # -- Per-point formatting --
+
+  defp data_points_xml(%{point_colors: pc}) when pc == %{}, do: ""
+
+  defp data_points_xml(%{point_colors: point_colors}) do
+    point_colors
+    |> Enum.sort_by(fn {idx, _} -> idx end)
+    |> Enum.map(fn {idx, color} ->
+      ~s(<c:dPt>) <>
+        ~s(<c:idx val="#{idx}"/>) <>
+        ~s(<c:spPr><a:solidFill><a:srgbClr val="#{color}"/></a:solidFill></c:spPr>) <>
+        ~s(</c:dPt>)
+    end)
+    |> Enum.join()
   end
 
   defp tx_xml(chart_data, series) do
@@ -284,6 +415,8 @@ defmodule Podium.Chart.XmlWriter do
     pos = ChartType.cat_ax_pos(chart.chart_type)
     axis_opts = chart.category_axis || []
     axis_title = Keyword.get(axis_opts, :title)
+    crosses = Keyword.get(axis_opts, :crosses, :auto_zero)
+    label_rotation = Keyword.get(axis_opts, :label_rotation)
 
     ~s(<c:catAx>) <>
       ~s(<c:axId val="#{ax_id}"/>) <>
@@ -295,11 +428,12 @@ defmodule Podium.Chart.XmlWriter do
       ~s(<c:minorTickMark val="none"/>) <>
       ~s(<c:tickLblPos val="nextTo"/>) <>
       ~s(<c:crossAx val="#{cross_ax_id}"/>) <>
-      ~s(<c:crosses val="autoZero"/>) <>
+      crosses_xml(crosses) <>
       ~s(<c:auto val="1"/>) <>
       ~s(<c:lblAlgn val="ctr"/>) <>
       ~s(<c:lblOffset val="100"/>) <>
       ~s(<c:noMultiLvlLbl val="0"/>) <>
+      label_rotation_xml(label_rotation) <>
       ~s(</c:catAx>)
   end
 
@@ -312,6 +446,8 @@ defmodule Podium.Chart.XmlWriter do
     min_val = Keyword.get(axis_opts, :min)
     max_val = Keyword.get(axis_opts, :max)
     major_unit = Keyword.get(axis_opts, :major_unit)
+    crosses = Keyword.get(axis_opts, :crosses, :auto_zero)
+    label_rotation = Keyword.get(axis_opts, :label_rotation)
 
     scaling_xml = val_scaling_xml(min_val, max_val)
     gridlines_xml = if gridlines, do: ~s(<c:majorGridlines/>), else: ""
@@ -330,10 +466,18 @@ defmodule Podium.Chart.XmlWriter do
       ~s(<c:minorTickMark val="none"/>) <>
       ~s(<c:tickLblPos val="nextTo"/>) <>
       ~s(<c:crossAx val="#{cross_ax_id}"/>) <>
-      ~s(<c:crosses val="autoZero"/>) <>
+      crosses_xml(crosses) <>
       major_unit_xml <>
+      label_rotation_xml(label_rotation) <>
       ~s(</c:valAx>)
   end
+
+  defp crosses_xml(:auto_zero), do: ~s(<c:crosses val="autoZero"/>)
+  defp crosses_xml(:min), do: ~s(<c:crosses val="min"/>)
+  defp crosses_xml(:max), do: ~s(<c:crosses val="max"/>)
+
+  defp crosses_xml(value) when is_number(value),
+    do: ~s(<c:crosses val="autoZero"/><c:crossesAt val="#{value}"/>)
 
   defp val_scaling_xml(nil, nil), do: ~s(<c:scaling/>)
 
@@ -351,7 +495,7 @@ defmodule Podium.Chart.XmlWriter do
 
   defp axis_title_xml(nil), do: ""
 
-  defp axis_title_xml(title) do
+  defp axis_title_xml(title) when is_binary(title) do
     escaped = Builder.escape(title)
 
     ~s(<c:title>) <>
@@ -361,6 +505,43 @@ defmodule Podium.Chart.XmlWriter do
       ~s(</c:rich></c:tx>) <>
       ~s(<c:overlay val="0"/>) <>
       ~s(</c:title>)
+  end
+
+  defp axis_title_xml(opts) when is_list(opts) do
+    text = Keyword.fetch!(opts, :text)
+    escaped = Builder.escape(text)
+    rpr_attrs = font_rpr_attrs(opts)
+
+    ~s(<c:title>) <>
+      ~s(<c:tx><c:rich>) <>
+      ~s(<a:bodyPr/><a:lstStyle/>) <>
+      ~s(<a:p><a:r><a:rPr #{rpr_attrs}/><a:t>#{escaped}</a:t></a:r></a:p>) <>
+      ~s(</c:rich></c:tx>) <>
+      ~s(<c:overlay val="0"/>) <>
+      ~s(</c:title>)
+  end
+
+  defp label_rotation_xml(nil), do: ""
+
+  defp label_rotation_xml(degrees) do
+    # OOXML rotation is in 1/60000th of a degree
+    rot = degrees * 60_000
+
+    ~s(<c:txPr><a:bodyPr rot="#{rot}"/><a:lstStyle/>) <>
+      ~s(<a:p><a:pPr><a:defRPr/></a:pPr><a:endParaRPr lang="en-US"/></a:p></c:txPr>)
+  end
+
+  defp font_rpr_attrs(opts) do
+    attrs = [~s(lang="en-US")]
+    font_size = Keyword.get(opts, :font_size)
+    bold = Keyword.get(opts, :bold)
+    italic = Keyword.get(opts, :italic)
+
+    attrs = if font_size, do: attrs ++ [~s(sz="#{font_size * 100}")], else: attrs
+    attrs = if bold, do: attrs ++ [~s(b="1")], else: attrs
+    attrs = if italic, do: attrs ++ [~s(i="1")], else: attrs
+    attrs = attrs ++ [~s(dirty="0")]
+    Enum.join(attrs, " ")
   end
 
   defp txpr_xml do
@@ -373,4 +554,17 @@ defmodule Podium.Chart.XmlWriter do
       ~s(</a:p>) <>
       ~s(</c:txPr>)
   end
+
+  defp pattern_preset(:dn_diag), do: "dnDiag"
+  defp pattern_preset(:up_diag), do: "upDiag"
+  defp pattern_preset(:lt_horz), do: "ltHorz"
+  defp pattern_preset(:lt_vert), do: "ltVert"
+  defp pattern_preset(:dk_dn_diag), do: "dkDnDiag"
+  defp pattern_preset(:dk_up_diag), do: "dkUpDiag"
+  defp pattern_preset(:dk_horz), do: "dkHorz"
+  defp pattern_preset(:dk_vert), do: "dkVert"
+  defp pattern_preset(:sm_grid), do: "smGrid"
+  defp pattern_preset(:lg_grid), do: "lgGrid"
+  defp pattern_preset(:cross), do: "cross"
+  defp pattern_preset(:diag_cross), do: "diagCross"
 end

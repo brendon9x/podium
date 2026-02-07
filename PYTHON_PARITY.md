@@ -8,16 +8,16 @@
 | Slides (add, blank layout, title_slide, title_content layouts) | Done |
 | Slide dimensions (16:9 default, configurable width/height) | Done |
 | Text boxes (position, size, font_size, XML escaping) | Done |
-| Rich text (bold, italic, underline, color, font, alignment, multiple paragraphs/runs) | Done |
-| Shape fill (solid) & line (solid, configurable width) | Done |
-| Images (PNG, JPEG with magic-byte detection) | Done |
-| Tables (rows, cols, cell text, rich text cells, even distribution) | Done |
+| Rich text (bold, italic, underline, color, font, alignment, language, multiple paragraphs/runs) | Done |
+| Shape fill (solid, gradient, pattern) & line (solid, configurable width, dash styles) | Done |
+| Images (PNG, JPEG, BMP, GIF, TIFF with magic-byte detection, cropping, deduplication) | Done |
+| Tables (rows, cols, cell text, rich text cells, even distribution, cell merge, borders, fills, padding) | Done |
 | Placeholders (title_slide, title_content layouts; title, subtitle, body) | Done |
 | Charts — 7 types: column clustered/stacked, bar clustered/stacked, line, line+markers, pie | Done |
-| Chart titles & legends (title text, legend position) | Done |
-| Chart data labels (value, category, series, percent) | Done |
-| Chart axis customization (title, gridlines, number format, min/max, major_unit) | Done |
-| Series formatting (solid fill color per series, line stroke for line charts) | Done |
+| Chart titles & legends (title text, legend position, font formatting on titles and legends) | Done |
+| Chart data labels (value, category, series, percent, label position, number format) | Done |
+| Chart axis customization (title, gridlines, number format, min/max, major_unit, crossing, label rotation) | Done |
+| Series formatting (solid fill, pattern fill, line stroke, per-point formatting) | Done |
 | Editable charts (embedded Excel via elixlsx, externalData link) | Done |
 | OPC packaging (content types, relationships, ZIP round-trip) | Done |
 | Units (inches, cm, pt to EMU) | Done |
@@ -26,19 +26,19 @@
 
 ### Tier 1 — Remaining Gaps
 
-All Tier 1 features have basic implementations. The remaining gaps within each are incremental improvements:
+Most Tier 1 features are now fully implemented. Remaining gaps:
 
 | Feature | python-pptx | Podium | Gap |
 |---------|-------------|--------|-----|
-| **Rich text** | spacing, bullets, superscript, strikethrough, language | bold, italic, underline, strikethrough, superscript, subscript, color, font, alignment, bullets, line spacing, space before/after | Language |
-| **Images** | BMP, GIF, TIFF, EMF, WMF, cropping, deduplication | PNG, JPEG | More formats, cropping, dedup |
-| **Tables** | merge, borders, fills, padding, vertical anchor | Rows/cols with rich text cells | Cell merge, borders, fills, padding |
-| **Chart titles & legends** | Font formatting on titles/legends | Title text, legend position | Font formatting |
-| **Chart data labels** | Position, number format per label | show value/category/series/percent | Label positioning, per-label format |
-| **Chart axis customization** | Crossing, tick mark style, label rotation | Title, gridlines, number format, min/max, major_unit | Crossing, label rotation |
-| **Series formatting** | Pattern, line format per point | Solid fill per series | Pattern fills, per-point formatting |
+| **Rich text** | spacing, bullets, superscript, strikethrough, language | All implemented | — |
+| **Images** | BMP, GIF, TIFF, EMF, WMF, cropping, deduplication | PNG, JPEG, BMP, GIF, TIFF, cropping, dedup | EMF, WMF formats |
+| **Tables** | merge, borders, fills, padding, vertical anchor | Merge, borders, fills, padding, anchor | — |
+| **Chart titles & legends** | Font formatting on titles/legends | Font formatting on titles/legends | — |
+| **Chart data labels** | Position, number format per label | Position, number format | Per-individual-label overrides |
+| **Chart axis customization** | Crossing, tick mark style, label rotation | Crossing, label rotation | Tick mark style |
+| **Series formatting** | Pattern, line format per point | Pattern fill, per-point solid fill | Per-point line format |
 | **Placeholders** | 16+ types with master/layout/slide inheritance | title, subtitle, body on 3 layouts | More placeholder types, inheritance |
-| **Shape fill & line** | Gradient, pattern, picture fills; line dash style | Solid fill, solid line with width | Gradient, pattern, dash styles |
+| **Shape fill & line** | Gradient, pattern, picture fills; line dash style | Gradient, pattern fill; dash styles | Picture fill |
 
 ### Tier 2 — Nice to Have
 
@@ -64,6 +64,5 @@ All Tier 1 features have basic implementations. The remaining gaps within each a
 | Click actions (macros, slide navigation) | Yes (PP_ACTION enum) | No | Medium |
 | Shadow/3D effects | Partial | No | Medium-Large |
 | Text auto-size/fit to shape | Yes (font metrics) | No | Medium |
-| Gradient/pattern fills | Yes | No | Medium |
 | Slide master/layout editing | Yes | No | Large |
 | Slide reorder/delete/duplicate | Yes | No | Small-Medium |

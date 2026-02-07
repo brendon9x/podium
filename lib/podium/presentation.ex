@@ -18,6 +18,7 @@ defmodule Podium.Presentation do
     next_slide_index: 1,
     next_chart_index: 1,
     next_image_index: 1,
+    image_hashes: %{},
     pres_rels: nil,
     slide_width: @default_slide_width,
     slide_height: @default_slide_height
@@ -124,6 +125,18 @@ defmodule Podium.Presentation do
     image_index = prs.next_image_index
     image = Image.new(binary, image_index, opts)
 
+    # Deduplication: reuse existing image index if same binary was already added
+    {image, next_index, image_hashes} =
+      case Map.get(prs.image_hashes, image.sha1) do
+        nil ->
+          hashes = Map.put(prs.image_hashes, image.sha1, image_index)
+          {image, image_index + 1, hashes}
+
+        existing_index ->
+          deduped = %{image | image_index: existing_index}
+          {deduped, image_index, prs.image_hashes}
+      end
+
     slide = Slide.add_image(slide, image)
 
     content_types =
@@ -134,8 +147,9 @@ defmodule Podium.Presentation do
     prs = %{
       prs
       | slides: slides,
-        next_image_index: image_index + 1,
-        content_types: content_types
+        next_image_index: next_index,
+        content_types: content_types,
+        image_hashes: image_hashes
     }
 
     {prs, slide}
@@ -166,6 +180,9 @@ defmodule Podium.Presentation do
 
   defp content_type("png"), do: Constants.ct(:png)
   defp content_type("jpeg"), do: Constants.ct(:jpeg)
+  defp content_type("bmp"), do: Constants.ct(:bmp)
+  defp content_type("gif"), do: Constants.ct(:gif)
+  defp content_type("tiff"), do: Constants.ct(:tiff)
 
   defp resolve_layout_index(:title_slide), do: 1
   defp resolve_layout_index(:title_content), do: 2

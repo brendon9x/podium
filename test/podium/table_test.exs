@@ -70,6 +70,123 @@ defmodule Podium.TableTest do
       assert xml =~ "Plain"
     end
 
+    test "cell with solid fill" do
+      {_prs, slide} = Podium.new() |> Podium.add_slide()
+
+      slide =
+        Podium.add_table(
+          slide,
+          [
+            [{"Header", fill: "4472C4"}, "Plain"],
+            ["Data 1", "Data 2"]
+          ],
+          x: {1, :inches},
+          y: {1, :inches},
+          width: {6, :inches},
+          height: {2, :inches}
+        )
+
+      table = hd(slide.tables)
+      xml = Podium.Table.to_xml(table)
+
+      assert xml =~ ~s(<a:solidFill><a:srgbClr val="4472C4"/></a:solidFill>)
+      assert xml =~ "Header"
+    end
+
+    test "cell with borders" do
+      {_prs, slide} = Podium.new() |> Podium.add_slide()
+
+      slide =
+        Podium.add_table(
+          slide,
+          [
+            [{"Cell", borders: [bottom: "000000", top: [color: "FF0000", width: {2, :pt}]]}]
+          ],
+          x: {1, :inches},
+          y: {1, :inches},
+          width: {4, :inches},
+          height: {1, :inches}
+        )
+
+      table = hd(slide.tables)
+      xml = Podium.Table.to_xml(table)
+
+      assert xml =~ "<a:lnB>"
+      assert xml =~ ~s(val="000000")
+      assert xml =~ ~s(<a:lnT w="25400">)
+      assert xml =~ ~s(val="FF0000")
+    end
+
+    test "cell with padding" do
+      {_prs, slide} = Podium.new() |> Podium.add_slide()
+
+      slide =
+        Podium.add_table(
+          slide,
+          [
+            [{"Padded", padding: [left: {0.1, :inches}, top: {0.05, :inches}]}]
+          ],
+          x: {1, :inches},
+          y: {1, :inches},
+          width: {4, :inches},
+          height: {1, :inches}
+        )
+
+      table = hd(slide.tables)
+      xml = Podium.Table.to_xml(table)
+
+      # 0.1 inches = 91440 EMU
+      assert xml =~ ~s(marL="91440")
+      # 0.05 inches = 45720 EMU
+      assert xml =~ ~s(marT="45720")
+    end
+
+    test "horizontal cell merge" do
+      {_prs, slide} = Podium.new() |> Podium.add_slide()
+
+      slide =
+        Podium.add_table(
+          slide,
+          [
+            [{"Merged Header", col_span: 2}, :merge],
+            ["A", "B"]
+          ],
+          x: {1, :inches},
+          y: {1, :inches},
+          width: {6, :inches},
+          height: {2, :inches}
+        )
+
+      table = hd(slide.tables)
+      xml = Podium.Table.to_xml(table)
+
+      assert xml =~ ~s(gridSpan="2")
+      assert xml =~ ~s(hMerge="1")
+    end
+
+    test "vertical cell merge" do
+      {_prs, slide} = Podium.new() |> Podium.add_slide()
+
+      slide =
+        Podium.add_table(
+          slide,
+          [
+            [{"Tall", row_span: 2}, "Top"],
+            [:merge, "Bottom"]
+          ],
+          x: {1, :inches},
+          y: {1, :inches},
+          width: {6, :inches},
+          height: {2, :inches}
+        )
+
+      table = hd(slide.tables)
+      xml = Podium.Table.to_xml(table)
+
+      assert xml =~ ~s(rowSpan="2")
+      assert xml =~ ~s(vMerge="1")
+    end
+
     test "distributes column widths evenly" do
       {_prs, slide} = Podium.new() |> Podium.add_slide()
 

@@ -104,6 +104,9 @@ defmodule Podium.OPC.Constants do
   def ct(:rels), do: "application/vnd.openxmlformats-package.relationships+xml"
   def ct(:jpeg), do: "image/jpeg"
   def ct(:png), do: "image/png"
+  def ct(:bmp), do: "image/bmp"
+  def ct(:gif), do: "image/gif"
+  def ct(:tiff), do: "image/tiff"
 
   def ct(:printer_settings),
     do: "application/vnd.openxmlformats-officedocument.presentationml.printerSettings"

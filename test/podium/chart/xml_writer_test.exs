@@ -296,5 +296,147 @@ defmodule Podium.Chart.XmlWriterTest do
       assert xml =~
                ~s(<c:spPr><a:ln><a:solidFill><a:srgbClr val="FF0000"/></a:solidFill></a:ln></c:spPr>)
     end
+
+    test "series with pattern fill" do
+      chart_data =
+        ChartData.new()
+        |> ChartData.add_categories(["A", "B"])
+        |> ChartData.add_series("S1", [10, 20],
+          pattern: [type: :dn_diag, foreground: "FF0000", background: "FFFFFF"]
+        )
+
+      chart = %Chart{chart_type: :column_clustered, chart_data: chart_data}
+      xml = XmlWriter.to_xml(chart)
+
+      assert xml =~ ~s(<a:pattFill prst="dnDiag">)
+      assert xml =~ ~s(<a:fgClr><a:srgbClr val="FF0000"/></a:fgClr>)
+      assert xml =~ ~s(<a:bgClr><a:srgbClr val="FFFFFF"/></a:bgClr>)
+    end
+
+    test "per-point formatting" do
+      chart_data =
+        ChartData.new()
+        |> ChartData.add_categories(["A", "B", "C"])
+        |> ChartData.add_series("S1", [10, 20, 30], point_colors: %{0 => "FF0000", 2 => "00FF00"})
+
+      chart = %Chart{chart_type: :pie, chart_data: chart_data}
+      xml = XmlWriter.to_xml(chart)
+
+      assert xml =~ ~s(<c:dPt>)
+      assert xml =~ ~s(<c:idx val="0"/>)
+      assert xml =~ ~s(val="FF0000")
+      assert xml =~ ~s(<c:idx val="2"/>)
+      assert xml =~ ~s(val="00FF00")
+    end
+  end
+
+  describe "chart title with font formatting" do
+    test "keyword list title with font opts", %{chart_data: chart_data} do
+      chart = %Chart{
+        chart_type: :column_clustered,
+        chart_data: chart_data,
+        title: [text: "Styled Title", font_size: 20, bold: true]
+      }
+
+      xml = XmlWriter.to_xml(chart)
+
+      assert xml =~ "<c:title>"
+      assert xml =~ "Styled Title"
+      assert xml =~ ~s(sz="2000")
+      assert xml =~ ~s(b="1")
+    end
+  end
+
+  describe "legend with font formatting" do
+    test "keyword list legend with font opts", %{chart_data: chart_data} do
+      chart = %Chart{
+        chart_type: :column_clustered,
+        chart_data: chart_data,
+        legend: [position: :bottom, font_size: 10, bold: true, color: "333333"]
+      }
+
+      xml = XmlWriter.to_xml(chart)
+
+      assert xml =~ ~s(c:legendPos val="b")
+      assert xml =~ ~s(sz="1000")
+      assert xml =~ ~s(b="1")
+      assert xml =~ ~s(val="333333")
+      assert xml =~ "c:txPr"
+    end
+  end
+
+  describe "data label positioning and number format" do
+    test "keyword data labels with position", %{chart_data: chart_data} do
+      chart = %Chart{
+        chart_type: :column_clustered,
+        chart_data: chart_data,
+        data_labels: [show: [:value], position: :center]
+      }
+
+      xml = XmlWriter.to_xml(chart)
+
+      assert xml =~ ~s(<c:dLblPos val="ctr"/>)
+      assert xml =~ ~s(<c:showVal val="1"/>)
+    end
+
+    test "data labels with number format", %{chart_data: chart_data} do
+      chart = %Chart{
+        chart_type: :column_clustered,
+        chart_data: chart_data,
+        data_labels: [show: [:value], number_format: "0.00%"]
+      }
+
+      xml = XmlWriter.to_xml(chart)
+
+      assert xml =~ ~s(formatCode="0.00%")
+    end
+  end
+
+  describe "axis crossing and label rotation" do
+    test "category axis label rotation", %{chart_data: chart_data} do
+      chart = %Chart{
+        chart_type: :column_clustered,
+        chart_data: chart_data,
+        category_axis: [label_rotation: 45]
+      }
+
+      xml = XmlWriter.to_xml(chart)
+
+      # 45 * 60000 = 2700000
+      assert xml =~ ~s(rot="2700000")
+    end
+
+    test "value axis label rotation", %{chart_data: chart_data} do
+      chart = %Chart{
+        chart_type: :column_clustered,
+        chart_data: chart_data,
+        value_axis: [label_rotation: -45]
+      }
+
+      xml = XmlWriter.to_xml(chart)
+      assert xml =~ ~s(rot="-2700000")
+    end
+
+    test "axis crosses at max", %{chart_data: chart_data} do
+      chart = %Chart{
+        chart_type: :column_clustered,
+        chart_data: chart_data,
+        category_axis: [crosses: :max]
+      }
+
+      xml = XmlWriter.to_xml(chart)
+      assert xml =~ ~s(<c:crosses val="max"/>)
+    end
+
+    test "axis crosses at specific value", %{chart_data: chart_data} do
+      chart = %Chart{
+        chart_type: :column_clustered,
+        chart_data: chart_data,
+        value_axis: [crosses: 1000]
+      }
+
+      xml = XmlWriter.to_xml(chart)
+      assert xml =~ ~s(<c:crossesAt val="1000"/>)
+    end
   end
 end
