@@ -19,7 +19,8 @@ defmodule Podium.Shape do
     :margin_left,
     :margin_right,
     :margin_top,
-    :margin_bottom
+    :margin_bottom,
+    :fill_opts
   ]
 
   @doc """
@@ -55,13 +56,24 @@ defmodule Podium.Shape do
   @doc """
   Generates XML for a shape.
   """
-  def to_xml(%__MODULE__{type: :text_box} = shape) do
+  def to_xml(shape, fill_rid \\ nil)
+
+  def to_xml(%__MODULE__{type: :text_box} = shape, fill_rid) do
     ns_a = Constants.ns(:a)
     ns_p = Constants.ns(:p)
 
     body_xml = Text.paragraphs_xml(shape.paragraphs)
 
     rot_attr = rotation_attr(shape.rotation)
+
+    fill_out =
+      case {shape.fill, fill_rid} do
+        {{:picture_fill, _idx}, rid} when is_binary(rid) ->
+          Drawing.fill_xml({:picture, rid, shape.fill_opts || []})
+
+        _ ->
+          Drawing.fill_xml(shape.fill)
+      end
 
     ~s(<p:sp xmlns:a="#{ns_a}" xmlns:p="#{ns_p}">) <>
       ~s(<p:nvSpPr>) <>
@@ -75,7 +87,7 @@ defmodule Podium.Shape do
       ~s(<a:ext cx="#{shape.width}" cy="#{shape.height}"/>) <>
       ~s(</a:xfrm>) <>
       ~s(<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>) <>
-      Drawing.fill_xml(shape.fill) <>
+      fill_out <>
       Drawing.line_xml(shape.line) <>
       ~s(</p:spPr>) <>
       ~s(<p:txBody>) <>

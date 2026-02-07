@@ -14,7 +14,8 @@ defmodule Podium.Image do
     :width,
     :height,
     :crop,
-    :rotation
+    :rotation,
+    shape: "rect"
   ]
 
   @doc """
@@ -43,7 +44,8 @@ defmodule Podium.Image do
       width: width,
       height: height,
       crop: Keyword.get(opts, :crop),
-      rotation: Keyword.get(opts, :rotation)
+      rotation: Keyword.get(opts, :rotation),
+      shape: shape_preset(Keyword.get(opts, :shape, "rect"))
     }
   end
 
@@ -81,10 +83,22 @@ defmodule Podium.Image do
       ~s(<a:off x="#{image.x}" y="#{image.y}"/>) <>
       ~s(<a:ext cx="#{image.width}" cy="#{image.height}"/>) <>
       ~s(</a:xfrm>) <>
-      ~s(<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>) <>
+      ~s(<a:prstGeom prst="#{image.shape}"><a:avLst/></a:prstGeom>) <>
       ~s(</p:spPr>) <>
       ~s(</p:pic>)
   end
+
+  defp shape_preset(:ellipse), do: "ellipse"
+  defp shape_preset(:diamond), do: "diamond"
+  defp shape_preset(:round_rect), do: "roundRect"
+  defp shape_preset(:star5), do: "star5"
+  defp shape_preset(:star6), do: "star6"
+  defp shape_preset(:star8), do: "star8"
+  defp shape_preset(:heart), do: "heart"
+  defp shape_preset(:triangle), do: "triangle"
+  defp shape_preset(:hexagon), do: "hexagon"
+  defp shape_preset(:octagon), do: "octagon"
+  defp shape_preset(str) when is_binary(str), do: str
 
   defp src_rect_xml(nil), do: ""
 

@@ -52,6 +52,13 @@ defmodule Podium do
   end
 
   @doc """
+  Adds a text box with a picture (blip) fill to a slide. Returns `{presentation, slide}`.
+  """
+  def add_picture_fill_text_box(prs, slide, text, image_binary, opts) do
+    Presentation.add_picture_fill_text_box(prs, slide, text, image_binary, opts)
+  end
+
+  @doc """
   Adds a table to a slide.
 
   `rows` is a list of lists where each inner list is a row of cell values.

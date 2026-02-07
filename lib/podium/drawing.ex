@@ -31,6 +31,24 @@ defmodule Podium.Drawing do
       ~s(</a:gradFill>)
   end
 
+  # Placeholder for picture fill — should be resolved to {:picture, rid, opts} in Shape.to_xml
+  def fill_xml({:picture_fill, _index}), do: "<a:noFill/>"
+
+  def fill_xml({:picture, rid, opts}) when is_binary(rid) do
+    mode = Keyword.get(opts, :mode, :stretch)
+
+    mode_xml =
+      case mode do
+        :stretch -> ~s(<a:stretch><a:fillRect/></a:stretch>)
+        :tile -> ~s(<a:tile tx="0" ty="0" sx="100000" sy="100000"/>)
+      end
+
+    ~s(<a:blipFill rotWithShape="1">) <>
+      ~s(<a:blip r:embed="#{rid}" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"/>) <>
+      mode_xml <>
+      ~s(</a:blipFill>)
+  end
+
   def fill_xml({:pattern, preset, opts}) when is_atom(preset) do
     fg = Keyword.get(opts, :foreground, "000000")
     bg = Keyword.get(opts, :background, "FFFFFF")
