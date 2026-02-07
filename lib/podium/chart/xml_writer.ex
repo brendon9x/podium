@@ -3,8 +3,8 @@ defmodule Podium.Chart.XmlWriter do
 
   alias Podium.Chart
   alias Podium.Chart.{ChartData, ChartType}
+  alias Podium.{Drawing, Pattern}
   alias Podium.OPC.Constants
-  alias Podium.Pattern
   alias Podium.XML.Builder
 
   @cat_ax_id "-2068027336"
@@ -253,11 +253,14 @@ defmodule Podium.Chart.XmlWriter do
 
   defp single_series_xml(config, chart_data, series) do
     marker_xml =
-      case config do
-        %{element: "c:lineChart", show_marker: false} ->
+      cond do
+        series.marker ->
+          series_marker_xml(series.marker)
+
+        match?(%{element: "c:lineChart", show_marker: false}, config) ->
           ~s(<c:marker><c:symbol val="none"/></c:marker>)
 
-        _ ->
+        true ->
           ""
       end
 
@@ -413,15 +416,22 @@ defmodule Podium.Chart.XmlWriter do
     axis_title = Keyword.get(axis_opts, :title)
     crosses = Keyword.get(axis_opts, :crosses, :auto_zero)
     label_rotation = Keyword.get(axis_opts, :label_rotation)
+    reverse = Keyword.get(axis_opts, :reverse, false)
+    visible = Keyword.get(axis_opts, :visible, true)
+    major_tick = Keyword.get(axis_opts, :major_tick_mark, :out)
+    minor_tick = Keyword.get(axis_opts, :minor_tick_mark, :none)
+
+    orientation = if reverse, do: "maxMin", else: "minMax"
+    delete_val = if visible, do: "0", else: "1"
 
     ~s(<c:catAx>) <>
       ~s(<c:axId val="#{ax_id}"/>) <>
-      ~s(<c:scaling><c:orientation val="minMax"/></c:scaling>) <>
-      ~s(<c:delete val="0"/>) <>
+      ~s(<c:scaling><c:orientation val="#{orientation}"/></c:scaling>) <>
+      ~s(<c:delete val="#{delete_val}"/>) <>
       ~s(<c:axPos val="#{pos}"/>) <>
       axis_title_xml(axis_title) <>
-      ~s(<c:majorTickMark val="out"/>) <>
-      ~s(<c:minorTickMark val="none"/>) <>
+      ~s(<c:majorTickMark val="#{tick_mark_value(major_tick)}"/>) <>
+      ~s(<c:minorTickMark val="#{tick_mark_value(minor_tick)}"/>) <>
       ~s(<c:tickLblPos val="nextTo"/>) <>
       ~s(<c:crossAx val="#{cross_ax_id}"/>) <>
       crosses_xml(crosses) <>
@@ -439,31 +449,42 @@ defmodule Podium.Chart.XmlWriter do
     axis_title = Keyword.get(axis_opts, :title)
     num_fmt = Keyword.get(axis_opts, :number_format)
     gridlines = Keyword.get(axis_opts, :major_gridlines, true)
+    minor_gridlines = Keyword.get(axis_opts, :minor_gridlines, false)
     min_val = Keyword.get(axis_opts, :min)
     max_val = Keyword.get(axis_opts, :max)
     major_unit = Keyword.get(axis_opts, :major_unit)
+    minor_unit = Keyword.get(axis_opts, :minor_unit)
     crosses = Keyword.get(axis_opts, :crosses, :auto_zero)
     label_rotation = Keyword.get(axis_opts, :label_rotation)
+    reverse = Keyword.get(axis_opts, :reverse, false)
+    visible = Keyword.get(axis_opts, :visible, true)
+    major_tick = Keyword.get(axis_opts, :major_tick_mark, :out)
+    minor_tick = Keyword.get(axis_opts, :minor_tick_mark, :none)
 
-    scaling_xml = val_scaling_xml(min_val, max_val)
+    scaling_xml = val_scaling_xml(min_val, max_val, reverse)
     gridlines_xml = if gridlines, do: ~s(<c:majorGridlines/>), else: ""
+    minor_gridlines_xml = if minor_gridlines, do: ~s(<c:minorGridlines/>), else: ""
     num_fmt_xml = val_num_fmt_xml(num_fmt)
     major_unit_xml = if major_unit, do: ~s(<c:majorUnit val="#{major_unit}"/>), else: ""
+    minor_unit_xml = if minor_unit, do: ~s(<c:minorUnit val="#{minor_unit}"/>), else: ""
+    delete_val = if visible, do: "0", else: "1"
 
     ~s(<c:valAx>) <>
       ~s(<c:axId val="#{ax_id}"/>) <>
       scaling_xml <>
-      ~s(<c:delete val="0"/>) <>
+      ~s(<c:delete val="#{delete_val}"/>) <>
       ~s(<c:axPos val="#{pos}"/>) <>
       gridlines_xml <>
+      minor_gridlines_xml <>
       axis_title_xml(axis_title) <>
       num_fmt_xml <>
-      ~s(<c:majorTickMark val="out"/>) <>
-      ~s(<c:minorTickMark val="none"/>) <>
+      ~s(<c:majorTickMark val="#{tick_mark_value(major_tick)}"/>) <>
+      ~s(<c:minorTickMark val="#{tick_mark_value(minor_tick)}"/>) <>
       ~s(<c:tickLblPos val="nextTo"/>) <>
       ~s(<c:crossAx val="#{cross_ax_id}"/>) <>
       crosses_xml(crosses) <>
       major_unit_xml <>
+      minor_unit_xml <>
       label_rotation_xml(label_rotation) <>
       ~s(</c:valAx>)
   end
@@ -475,12 +496,11 @@ defmodule Podium.Chart.XmlWriter do
   defp crosses_xml(value) when is_number(value),
     do: ~s(<c:crossesAt val="#{value}"/>)
 
-  defp val_scaling_xml(nil, nil), do: ~s(<c:scaling/>)
-
-  defp val_scaling_xml(min_val, max_val) do
+  defp val_scaling_xml(min_val, max_val, reverse) do
+    orientation = if reverse, do: "maxMin", else: "minMax"
     min_xml = if min_val, do: ~s(<c:min val="#{min_val}"/>), else: ""
     max_xml = if max_val, do: ~s(<c:max val="#{max_val}"/>), else: ""
-    ~s(<c:scaling>#{min_xml}#{max_xml}</c:scaling>)
+    ~s(<c:scaling><c:orientation val="#{orientation}"/>#{min_xml}#{max_xml}</c:scaling>)
   end
 
   defp val_num_fmt_xml(nil), do: ""
@@ -558,6 +578,43 @@ defmodule Podium.Chart.XmlWriter do
     font_xml = if font, do: ~s(<a:latin typeface="#{font}"/>), else: ""
     color_xml <> font_xml
   end
+
+  defp series_marker_xml(opts) when is_list(opts) do
+    style = Keyword.get(opts, :style)
+    size = Keyword.get(opts, :size)
+    fill = Keyword.get(opts, :fill)
+    line = Keyword.get(opts, :line)
+
+    symbol_xml = if style, do: ~s(<c:symbol val="#{marker_symbol(style)}"/>), else: ""
+    size_xml = if size, do: ~s(<c:size val="#{size}"/>), else: ""
+
+    sp_pr_xml =
+      if fill || line do
+        fill_xml = if fill, do: Drawing.fill_xml(fill), else: ""
+        line_xml = if line, do: Drawing.line_xml(line), else: ""
+        ~s(<c:spPr>#{fill_xml}#{line_xml}</c:spPr>)
+      else
+        ""
+      end
+
+    ~s(<c:marker>#{symbol_xml}#{size_xml}#{sp_pr_xml}</c:marker>)
+  end
+
+  defp marker_symbol(:circle), do: "circle"
+  defp marker_symbol(:square), do: "square"
+  defp marker_symbol(:diamond), do: "diamond"
+  defp marker_symbol(:triangle), do: "triangle"
+  defp marker_symbol(:star), do: "star"
+  defp marker_symbol(:x), do: "x"
+  defp marker_symbol(:plus), do: "plus"
+  defp marker_symbol(:dash), do: "dash"
+  defp marker_symbol(:dot), do: "dot"
+  defp marker_symbol(:none), do: "none"
+
+  defp tick_mark_value(:out), do: "out"
+  defp tick_mark_value(:in), do: "in"
+  defp tick_mark_value(:cross), do: "cross"
+  defp tick_mark_value(:none), do: "none"
 
   defp txpr_xml do
     ~s(<c:txPr>) <>

@@ -208,6 +208,8 @@ defmodule Podium.Presentation do
   defp content_type("bmp"), do: Constants.ct(:bmp)
   defp content_type("gif"), do: Constants.ct(:gif)
   defp content_type("tiff"), do: Constants.ct(:tiff)
+  defp content_type("emf"), do: Constants.ct(:emf)
+  defp content_type("wmf"), do: Constants.ct(:wmf)
 
   defp resolve_layout_index(:title_slide), do: 1
   defp resolve_layout_index(:title_content), do: 2

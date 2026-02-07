@@ -312,6 +312,48 @@ defmodule Podium.ShapeTest do
       assert xml =~ ~s(<a:ln w="12700">)
     end
 
+    test "line with gradient fill" do
+      {_prs, slide} = Podium.new() |> Podium.add_slide()
+
+      slide =
+        Podium.add_text_box(slide, "Gradient line",
+          x: {1, :inches},
+          y: {1, :inches},
+          width: {4, :inches},
+          height: {1, :inches},
+          line: [fill: {:gradient, [{0, "FF0000"}, {100_000, "0000FF"}], angle: 5_400_000}]
+        )
+
+      shape = hd(slide.shapes)
+      xml = Podium.Shape.to_xml(shape)
+
+      assert xml =~ ~s(<a:ln>)
+      assert xml =~ ~s(<a:gradFill rotWithShape="1">)
+      assert xml =~ ~s(<a:gs pos="0"><a:srgbClr val="FF0000"/></a:gs>)
+    end
+
+    test "line with pattern fill" do
+      {_prs, slide} = Podium.new() |> Podium.add_slide()
+
+      slide =
+        Podium.add_text_box(slide, "Pattern line",
+          x: {1, :inches},
+          y: {1, :inches},
+          width: {4, :inches},
+          height: {1, :inches},
+          line: [
+            fill: {:pattern, :dn_diag, foreground: "FF0000", background: "FFFFFF"},
+            width: {2, :pt}
+          ]
+        )
+
+      shape = hd(slide.shapes)
+      xml = Podium.Shape.to_xml(shape)
+
+      assert xml =~ ~s(<a:ln w="25400">)
+      assert xml =~ ~s(<a:pattFill prst="dnDiag">)
+    end
+
     test "underline and font options" do
       {_prs, slide} = Podium.new() |> Podium.add_slide()
 

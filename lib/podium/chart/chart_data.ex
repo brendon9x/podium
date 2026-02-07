@@ -5,7 +5,7 @@ defmodule Podium.Chart.ChartData do
 
   defmodule Series do
     @moduledoc false
-    defstruct [:name, :index, :color, :pattern, values: [], point_colors: %{}]
+    defstruct [:name, :index, :color, :pattern, :marker, values: [], point_colors: %{}]
   end
 
   @doc """
@@ -38,6 +38,7 @@ defmodule Podium.Chart.ChartData do
       values: values,
       color: Keyword.get(opts, :color),
       pattern: Keyword.get(opts, :pattern),
+      marker: Keyword.get(opts, :marker),
       point_colors: Keyword.get(opts, :point_colors, %{})
     }
 

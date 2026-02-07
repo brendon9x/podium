@@ -11,17 +11,17 @@
 | **Rich text** | bold, italic, underline (18 OOXML styles: single, double, heavy, dotted, wavy, etc.), strikethrough, superscript, subscript, color, font, font_size, lang, line breaks (`\n` and `:line_break`) |
 | **Paragraph formatting** | alignment (left/center/right/justify), line_spacing, space_before, space_after, bullets (boolean/`:number`/custom char), level (0-based indent) |
 | **Shape fill** | Solid (`"RRGGBB"`), gradient (`{:gradient, stops, angle: N}`), pattern (`{:pattern, preset, fg/bg}`) — all 54 OOXML pattern presets |
-| **Shape line** | Color, width, 11 dash styles (dash, dot, dash_dot, long_dash, etc.) |
+| **Shape line** | Color, width, 11 dash styles (dash, dot, dash_dot, long_dash, etc.); gradient fill (`{:gradient, ...}`), pattern fill (`{:pattern, ...}`) via `:fill` key |
 | **Shape rotation** | Clockwise rotation in degrees on text boxes and images |
-| **Images** | PNG, JPEG, BMP, GIF, TIFF via magic-byte detection; position, size, cropping (per-side in 1/1000ths of percent); SHA-1 deduplication; rotation |
-| **Tables** | Cell text, rich text cells, solid fill, borders (per-side with color/width), padding (per-side), vertical anchor (top/middle/bottom), col_span, row_span, `:merge` placeholders |
+| **Images** | PNG, JPEG, BMP, GIF, TIFF, EMF, WMF via magic-byte detection; position, size, cropping (per-side in 1/1000ths of percent); SHA-1 deduplication; rotation; **auto-scale** when size omitted (reads native pixel dimensions + DPI from image headers); aspect-ratio preservation when only width or height given |
+| **Tables** | Cell text, rich text cells, solid/gradient/pattern fill, borders (per-side with color/width), padding (per-side), vertical anchor (top/middle/bottom), col_span, row_span, `:merge` placeholders; table style banding flags (`first_row`, `last_row`, `first_col`, `last_col`, `band_row`, `band_col`) |
 | **Placeholders** | `:title_slide` → title + subtitle; `:title_content` → title + body; accepts plain string or rich text |
 | **Charts** | 7 types: column_clustered, column_stacked, bar_clustered, bar_stacked, line, line_markers, pie |
 | **Chart titles** | Plain string or keyword list with text, font_size, bold, italic, color, font |
 | **Chart legends** | Position atom or keyword list with position, font_size, bold, italic, color, font |
 | **Chart data labels** | Simple list (`[:value, :category, :percent]`) or keyword list with show, position (9 options), number_format |
-| **Chart axes** | category_axis and value_axis: title (string or formatted), major_gridlines, number_format, min, max, major_unit, crosses (auto_zero/min/max/numeric), label_rotation |
-| **Series formatting** | Solid color, pattern fill (54 presets), per-point colors via `point_colors` map |
+| **Chart axes** | category_axis and value_axis: title (string or formatted), major_gridlines, minor_gridlines, number_format, min, max, major_unit, minor_unit, crosses (auto_zero/min/max/numeric), label_rotation, major/minor tick marks (`:out`/`:in`/`:cross`/`:none`), reverse order, axis visibility |
+| **Series formatting** | Solid color, pattern fill (54 presets), per-point colors via `point_colors` map; series markers with style (10 symbols), size, fill, and line properties |
 | **Editable charts** | Embedded Excel workbook via elixlsx with externalData link |
 | **Slide background** | Solid, gradient, pattern fill via `:background` option on `add_slide/2` |
 | **Core properties** | title, author, subject, keywords, category, comments, last_modified_by via `Podium.new/1` opts or `set_core_properties/2` |
@@ -36,13 +36,13 @@ Most Tier 1 features are implemented. These are the actual remaining gaps:
 
 | Feature | python-pptx | Podium | Gap |
 |---------|-------------|--------|-----|
-| **Images** | Any format PowerPoint supports (incl. EMF, WMF); auto-scale when size omitted; image masking via auto_shape_type | PNG, JPEG, BMP, GIF, TIFF; explicit size required | EMF/WMF formats, auto-scale, image masking |
-| **Tables** | Cell fill supports solid, gradient, pattern, picture; first_row/last_row/horz_banding style flags; split (unmerge) | Cell fill is solid only; no table style flags; no unmerge | Gradient/pattern cell fill, table style banding flags |
+| **Images** | Any format PowerPoint supports (incl. EMF, WMF); auto-scale when size omitted; image masking via auto_shape_type | PNG, JPEG, BMP, GIF, TIFF, EMF, WMF; auto-scale; aspect-ratio preservation | Image masking only |
+| **Tables** | Cell fill supports solid, gradient, pattern, picture; first_row/last_row/horz_banding style flags; split (unmerge) | Cell fill: solid, gradient, pattern; table style banding flags | Picture cell fill, unmerge |
 | **Chart data labels** | Per-individual-point data label overrides; show_legend_key | Chart-wide data labels only | Per-point label overrides |
-| **Chart axes** | Tick mark style (major/minor), minor gridlines, minor_unit, reverse_order, axis visibility, date axis type | None of these | Tick marks, minor gridlines, minor_unit, reverse, visibility |
-| **Series formatting** | Per-point line format; series markers (style, size, fill, line) on line/scatter/radar | Per-point solid fill only; no marker formatting | Per-point line, marker customization |
+| **Chart axes** | Tick mark style (major/minor), minor gridlines, minor_unit, reverse_order, axis visibility, date axis type | Tick marks, minor gridlines, minor_unit, reverse, visibility | Date axis type |
+| **Series formatting** | Per-point line format; series markers (style, size, fill, line) on line/scatter/radar | Series markers (10 styles, size, fill, line); per-point solid fill | Per-point line format |
 | **Placeholders** | 16+ types (title, body, picture, chart, table, date, slide_number, footer, etc.) with master → layout → slide inheritance | 3 types (title, subtitle, body) on 3 layouts | More types, inheritance chain |
-| **Shape fill & line** | Picture fill (blip fill); line fill supports gradient/pattern | No picture fill; line is solid only | Picture fill, line gradient/pattern |
+| **Shape fill & line** | Picture fill (blip fill); line fill supports gradient/pattern | Line fill: gradient/pattern; shape fill: solid/gradient/pattern | Picture fill (blip fill) |
 
 ### Tier 2 — Nice to Have
 

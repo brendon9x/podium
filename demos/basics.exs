@@ -400,11 +400,150 @@ slide11 =
 
 prs = Podium.put_slide(prs, slide11)
 
-# --- Slide 12: Closing ---
+# --- Slide 12: Table with gradient/pattern cell fills and banding flags ---
 {prs, slide12} = Podium.add_slide(prs)
 
 slide12 =
   slide12
+  |> Podium.add_text_box("Table Cell Fills & Banding",
+    x: {0.5, :inches},
+    y: {0.3, :inches},
+    width: {11, :inches},
+    height: {0.6, :inches},
+    font_size: 24,
+    alignment: :center
+  )
+  |> Podium.add_table(
+    [
+      [
+        {"Gradient Cell",
+         fill: {:gradient, [{0, "4472C4"}, {100_000, "002060"}], angle: 5_400_000}},
+        {"Pattern Cell",
+         fill: {:pattern, :lt_horz, foreground: "ED7D31", background: "FFFFFF"}},
+        {"Solid Cell", fill: "70AD47"}
+      ],
+      ["Plain A", "Plain B", "Plain C"]
+    ],
+    x: {1, :inches},
+    y: {1.2, :inches},
+    width: {10, :inches},
+    height: {2, :inches},
+    table_style: [first_row: true, band_row: true, band_col: true]
+  )
+
+prs = Podium.put_slide(prs, slide12)
+
+# --- Slide 13: Line chart with axis extras and series markers ---
+{prs, slide13} = Podium.add_slide(prs)
+
+marker_data =
+  ChartData.new()
+  |> ChartData.add_categories(["Jan", "Feb", "Mar", "Apr", "May", "Jun"])
+  |> ChartData.add_series("Diamonds", [20, 35, 45, 50, 55, 70],
+    color: "4472C4",
+    marker: [style: :diamond, size: 10, fill: "4472C4", line: "002060"]
+  )
+  |> ChartData.add_series("Circles", [15, 25, 30, 40, 48, 60],
+    color: "ED7D31",
+    marker: [style: :circle, size: 8, fill: "ED7D31"]
+  )
+  |> ChartData.add_series("Squares", [10, 18, 22, 28, 35, 45],
+    color: "70AD47",
+    marker: [style: :square, size: 6]
+  )
+
+{prs, _slide13} =
+  Podium.add_chart(prs, slide13, :line_markers, marker_data,
+    x: {0.5, :inches},
+    y: {0.5, :inches},
+    width: {11, :inches},
+    height: {6, :inches},
+    title: "Series Markers & Axis Extras",
+    legend: :bottom,
+    category_axis: [
+      major_tick_mark: :cross,
+      minor_tick_mark: :in
+    ],
+    value_axis: [
+      major_gridlines: true,
+      minor_gridlines: true,
+      minor_unit: 5,
+      major_unit: 20,
+      min: 0,
+      max: 80
+    ]
+  )
+
+# --- Slide 14: Line gradient/pattern fill demo ---
+{prs, slide14} = Podium.add_slide(prs)
+
+slide14 =
+  slide14
+  |> Podium.add_text_box("Line Fill Variants",
+    x: {0.5, :inches},
+    y: {0.3, :inches},
+    width: {11, :inches},
+    height: {0.6, :inches},
+    font_size: 24,
+    alignment: :center
+  )
+  |> Podium.add_text_box("Gradient Line",
+    x: {1, :inches},
+    y: {1.5, :inches},
+    width: {4, :inches},
+    height: {1.5, :inches},
+    font_size: 18,
+    alignment: :center,
+    line: [
+      fill: {:gradient, [{0, "FF0000"}, {100_000, "0000FF"}], angle: 5_400_000},
+      width: {3, :pt}
+    ]
+  )
+  |> Podium.add_text_box("Pattern Line",
+    x: {6.5, :inches},
+    y: {1.5, :inches},
+    width: {4, :inches},
+    height: {1.5, :inches},
+    font_size: 18,
+    alignment: :center,
+    line: [
+      fill: {:pattern, :dn_diag, foreground: "003366", background: "FFFFFF"},
+      width: {3, :pt}
+    ]
+  )
+
+prs = Podium.put_slide(prs, slide14)
+
+# --- Slide 15: Image auto-scale demo ---
+{prs, slide15} = Podium.add_slide(prs)
+
+slide15 =
+  Podium.add_text_box(slide15, "Image Auto-Scale (native size from PNG header)",
+    x: {0.5, :inches},
+    y: {0.3, :inches},
+    width: {11, :inches},
+    height: {0.6, :inches},
+    font_size: 24,
+    alignment: :center
+  )
+
+# Re-use the JPEG image with width-only (height auto-calculated)
+image_binary = File.read!(Path.join(__DIR__, "acme.jpg"))
+
+{prs, slide15} =
+  Podium.add_image(prs, slide15, image_binary,
+    x: {2, :inches},
+    y: {1.5, :inches},
+    width: {8, :inches}
+  )
+
+prs = Podium.put_slide(prs, slide15)
+
+# --- Slide 16: Closing ---
+{prs, slide16} = Podium.add_slide(prs)
+
+slide16 =
+  slide16
   |> Podium.add_text_box(
     [
       {[{"Thank You", bold: true, font_size: 44, color: "003366"}], alignment: :center},
@@ -417,7 +556,7 @@ slide12 =
     height: {3, :inches}
   )
 
-prs = Podium.put_slide(prs, slide12)
+prs = Podium.put_slide(prs, slide16)
 
 # --- Save ---
 path = Path.join(__DIR__, "basics.pptx")

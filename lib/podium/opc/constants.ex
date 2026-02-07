@@ -107,6 +107,8 @@ defmodule Podium.OPC.Constants do
   def ct(:bmp), do: "image/bmp"
   def ct(:gif), do: "image/gif"
   def ct(:tiff), do: "image/tiff"
+  def ct(:emf), do: "image/x-emf"
+  def ct(:wmf), do: "image/x-wmf"
 
   def ct(:printer_settings),
     do: "application/vnd.openxmlformats-officedocument.presentationml.printerSettings"

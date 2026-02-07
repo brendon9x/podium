@@ -491,6 +491,146 @@ defmodule Podium.Chart.XmlWriterTest do
     end
   end
 
+  describe "axis extras" do
+    test "minor gridlines on value axis", %{chart_data: chart_data} do
+      chart = %Chart{
+        chart_type: :column_clustered,
+        chart_data: chart_data,
+        value_axis: [minor_gridlines: true]
+      }
+
+      xml = XmlWriter.to_xml(chart)
+      assert xml =~ "<c:minorGridlines/>"
+    end
+
+    test "minor unit on value axis", %{chart_data: chart_data} do
+      chart = %Chart{
+        chart_type: :column_clustered,
+        chart_data: chart_data,
+        value_axis: [minor_unit: 500]
+      }
+
+      xml = XmlWriter.to_xml(chart)
+      assert xml =~ ~s(<c:minorUnit val="500"/>)
+    end
+
+    test "tick mark atoms", %{chart_data: chart_data} do
+      chart = %Chart{
+        chart_type: :column_clustered,
+        chart_data: chart_data,
+        category_axis: [major_tick_mark: :cross, minor_tick_mark: :in],
+        value_axis: [major_tick_mark: :none, minor_tick_mark: :out]
+      }
+
+      xml = XmlWriter.to_xml(chart)
+      assert xml =~ ~s(<c:majorTickMark val="cross"/>)
+      assert xml =~ ~s(<c:minorTickMark val="in"/>)
+      assert xml =~ ~s(<c:majorTickMark val="none"/>)
+    end
+
+    test "reverse order on category axis", %{chart_data: chart_data} do
+      chart = %Chart{
+        chart_type: :column_clustered,
+        chart_data: chart_data,
+        category_axis: [reverse: true]
+      }
+
+      xml = XmlWriter.to_xml(chart)
+      # catAx should have maxMin orientation
+      assert xml =~ ~s(<c:orientation val="maxMin"/>)
+    end
+
+    test "reverse order on value axis", %{chart_data: chart_data} do
+      chart = %Chart{
+        chart_type: :column_clustered,
+        chart_data: chart_data,
+        value_axis: [reverse: true]
+      }
+
+      xml = XmlWriter.to_xml(chart)
+      assert xml =~ ~s(<c:orientation val="maxMin"/>)
+    end
+
+    test "hidden axis", %{chart_data: chart_data} do
+      chart = %Chart{
+        chart_type: :column_clustered,
+        chart_data: chart_data,
+        category_axis: [visible: false],
+        value_axis: [visible: false]
+      }
+
+      xml = XmlWriter.to_xml(chart)
+      # Both axes should have delete="1"
+      [_, _] = Regex.scan(~r/<c:delete val="1"\/>/, xml)
+    end
+
+    test "default axes are visible", %{chart_data: chart_data} do
+      xml = XmlWriter.to_xml(:column_clustered, chart_data)
+      # Both axes should have delete="0"
+      matches = Regex.scan(~r/<c:delete val="0"\/>/, xml)
+      assert length(matches) == 2
+    end
+  end
+
+  describe "series markers" do
+    test "marker with style and size" do
+      chart_data =
+        ChartData.new()
+        |> ChartData.add_categories(["A", "B", "C"])
+        |> ChartData.add_series("S1", [10, 20, 30], marker: [style: :diamond, size: 8])
+
+      chart = %Chart{chart_type: :line_markers, chart_data: chart_data}
+      xml = XmlWriter.to_xml(chart)
+
+      assert xml =~ ~s(<c:marker>)
+      assert xml =~ ~s(<c:symbol val="diamond"/>)
+      assert xml =~ ~s(<c:size val="8"/>)
+    end
+
+    test "marker with fill and line" do
+      chart_data =
+        ChartData.new()
+        |> ChartData.add_categories(["A", "B", "C"])
+        |> ChartData.add_series("S1", [10, 20, 30],
+          marker: [style: :circle, fill: "FF0000", line: "000000"]
+        )
+
+      chart = %Chart{chart_type: :line_markers, chart_data: chart_data}
+      xml = XmlWriter.to_xml(chart)
+
+      assert xml =~ ~s(<c:marker>)
+      assert xml =~ ~s(<c:symbol val="circle"/>)
+      assert xml =~ ~s(<c:spPr>)
+      assert xml =~ ~s(<a:solidFill><a:srgbClr val="FF0000"/></a:solidFill>)
+      assert xml =~ ~s(<a:ln><a:solidFill><a:srgbClr val="000000"/></a:solidFill></a:ln>)
+    end
+
+    test "no-marker line chart unchanged" do
+      chart_data =
+        ChartData.new()
+        |> ChartData.add_categories(["A", "B"])
+        |> ChartData.add_series("S1", [10, 20])
+
+      chart = %Chart{chart_type: :line, chart_data: chart_data}
+      xml = XmlWriter.to_xml(chart)
+
+      assert xml =~ ~s(<c:symbol val="none"/>)
+    end
+
+    test "line_markers without series marker has no marker element" do
+      chart_data =
+        ChartData.new()
+        |> ChartData.add_categories(["A", "B"])
+        |> ChartData.add_series("S1", [10, 20])
+
+      chart = %Chart{chart_type: :line_markers, chart_data: chart_data}
+      xml = XmlWriter.to_xml(chart)
+
+      refute xml =~ ~s(<c:symbol val="none"/>)
+      refute xml =~ ~s(<c:marker>)
+    end
+  end
+
   describe "legend font typeface" do
     test "legend with custom font", %{chart_data: chart_data} do
       chart = %Chart{
