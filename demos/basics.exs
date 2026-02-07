@@ -1,6 +1,6 @@
 alias Podium.Chart.ChartData
 
-prs = Podium.new()
+prs = Podium.new(title: "Acme Corp Annual Review", author: "Podium Demo")
 
 # --- Slide 1: Title slide using placeholder layout ---
 {prs, slide1} = Podium.add_slide(prs, layout: :title_slide)
@@ -315,11 +315,96 @@ slide10 =
 
 prs = Podium.put_slide(prs, slide10)
 
-# --- Slide 11: Closing ---
-{prs, slide11} = Podium.add_slide(prs)
+# --- Slide 11: New features showcase ---
+{prs, slide11} = Podium.add_slide(prs, background: "E8EDF2")
 
 slide11 =
   slide11
+  |> Podium.add_text_box(
+    [
+      {[{"New Features Showcase", bold: true, font_size: 28, color: "003366"}],
+       alignment: :center}
+    ],
+    x: {0.5, :inches},
+    y: {0.2, :inches},
+    width: {11, :inches},
+    height: {0.6, :inches}
+  )
+  # Rotated text box with custom margins
+  |> Podium.add_text_box("Rotated!",
+    x: {0.5, :inches},
+    y: {1.2, :inches},
+    width: {2, :inches},
+    height: {1, :inches},
+    rotation: 15,
+    fill: "4472C4",
+    margin_left: {0.3, :inches},
+    margin_right: {0.3, :inches},
+    margin_top: {0.15, :inches},
+    margin_bottom: {0.15, :inches},
+    font_size: 18,
+    alignment: :center
+  )
+  # Underline styles
+  |> Podium.add_text_box(
+    [
+      [
+        {"Single", underline: :single, font_size: 14},
+        {"  Double", underline: :double, font_size: 14},
+        {"  Wavy", underline: :wavy, font_size: 14},
+        {"  Heavy", underline: :heavy, font_size: 14},
+        {"  Dotted", underline: :dotted, font_size: 14}
+      ]
+    ],
+    x: {3, :inches},
+    y: {1.2, :inches},
+    width: {8.5, :inches},
+    height: {0.6, :inches}
+  )
+  # Line breaks within a paragraph
+  |> Podium.add_text_box(
+    [
+      [
+        {"Line breaks in a single paragraph:", bold: true, font_size: 14},
+        :line_break,
+        {"First line\nSecond line\nThird line", font_size: 14, color: "4472C4"}
+      ]
+    ],
+    x: {0.5, :inches},
+    y: {2.5, :inches},
+    width: {5, :inches},
+    height: {1.8, :inches},
+    margin_left: {0.2, :inches},
+    margin_top: {0.15, :inches}
+  )
+  # New pattern preset (sphere)
+  |> Podium.add_text_box("Sphere Pattern",
+    x: {6, :inches},
+    y: {2.5, :inches},
+    width: {2.5, :inches},
+    height: {1, :inches},
+    fill: {:pattern, :sphere, foreground: "4472C4", background: "FFFFFF"},
+    font_size: 16,
+    alignment: :center
+  )
+  # New pattern preset (zig_zag)
+  |> Podium.add_text_box("ZigZag Pattern",
+    x: {9, :inches},
+    y: {2.5, :inches},
+    width: {2.5, :inches},
+    height: {1, :inches},
+    fill: {:pattern, :zig_zag, foreground: "ED7D31", background: "FFFFFF"},
+    font_size: 16,
+    alignment: :center
+  )
+
+prs = Podium.put_slide(prs, slide11)
+
+# --- Slide 12: Closing ---
+{prs, slide12} = Podium.add_slide(prs)
+
+slide12 =
+  slide12
   |> Podium.add_text_box(
     [
       {[{"Thank You", bold: true, font_size: 44, color: "003366"}], alignment: :center},
@@ -332,7 +417,7 @@ slide11 =
     height: {3, :inches}
   )
 
-prs = Podium.put_slide(prs, slide11)
+prs = Podium.put_slide(prs, slide12)
 
 # --- Save ---
 path = Path.join(__DIR__, "basics.pptx")

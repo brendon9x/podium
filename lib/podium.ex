@@ -78,6 +78,22 @@ defmodule Podium do
   defp layout_atom(n) when is_integer(n), do: :blank
 
   @doc """
+  Sets core document properties (Dublin Core metadata).
+
+  ## Options
+    * `:title` - document title
+    * `:author` - document author
+    * `:subject` - document subject
+    * `:keywords` - keywords
+    * `:category` - category
+    * `:comments` - comments/description
+    * `:last_modified_by` - last modified by
+  """
+  def set_core_properties(prs, opts) do
+    Presentation.set_core_properties(prs, opts)
+  end
+
+  @doc """
   Replaces a slide in the presentation with an updated version.
   """
   def put_slide(prs, slide) do

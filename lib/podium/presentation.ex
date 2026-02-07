@@ -3,7 +3,7 @@ defmodule Podium.Presentation do
 
   alias Podium.Chart
   alias Podium.Chart.{XlsxWriter, XmlWriter}
-  alias Podium.{Image, Slide, Units}
+  alias Podium.{CoreProperties, Image, Slide, Units}
   alias Podium.OPC.{Constants, ContentTypes, Package, Relationships}
 
   @blank_layout_index 7
@@ -21,7 +21,8 @@ defmodule Podium.Presentation do
     image_hashes: %{},
     pres_rels: nil,
     slide_width: @default_slide_width,
-    slide_height: @default_slide_height
+    slide_height: @default_slide_height,
+    core_properties: nil
   ]
 
   @doc """
@@ -43,12 +44,28 @@ defmodule Podium.Presentation do
     slide_width = Units.to_emu(Keyword.get(opts, :slide_width, @default_slide_width))
     slide_height = Units.to_emu(Keyword.get(opts, :slide_height, @default_slide_height))
 
+    core_prop_keys = [
+      :title,
+      :author,
+      :subject,
+      :keywords,
+      :category,
+      :comments,
+      :last_modified_by
+    ]
+
+    core_opts = Keyword.take(opts, core_prop_keys)
+
+    core_properties =
+      if core_opts == [], do: nil, else: CoreProperties.new(core_opts)
+
     %__MODULE__{
       template_parts: parts,
       content_types: ContentTypes.from_template(),
       pres_rels: pres_rels,
       slide_width: slide_width,
-      slide_height: slide_height
+      slide_height: slide_height,
+      core_properties: core_properties
     }
   end
 
@@ -70,8 +87,9 @@ defmodule Podium.Presentation do
     {pres_rels, rid} =
       Relationships.add(prs.pres_rels, Constants.rt(:slide), "slides/slide#{slide_index}.xml")
 
+    background = Keyword.get(opts, :background)
     slide = Slide.new(index: slide_index, layout_index: layout_index)
-    slide = %{slide | pres_rid: rid}
+    slide = %{slide | pres_rid: rid, background: background}
 
     content_types =
       ContentTypes.add_override(
@@ -156,6 +174,13 @@ defmodule Podium.Presentation do
   end
 
   @doc """
+  Sets core document properties (Dublin Core metadata).
+  """
+  def set_core_properties(%__MODULE__{} = prs, opts) when is_list(opts) do
+    %{prs | core_properties: CoreProperties.new(opts)}
+  end
+
+  @doc """
   Replaces a slide in the presentation (by matching slide index).
   """
   def put_slide(%__MODULE__{} = prs, %Slide{} = slide) do
@@ -213,6 +238,14 @@ defmodule Podium.Presentation do
 
     # Update content types
     parts = Map.put(parts, "[Content_Types].xml", ContentTypes.to_xml(prs.content_types))
+
+    # Replace core properties if set
+    parts =
+      if prs.core_properties do
+        Map.put(parts, "docProps/core.xml", CoreProperties.to_xml(prs.core_properties))
+      else
+        parts
+      end
 
     parts
   end

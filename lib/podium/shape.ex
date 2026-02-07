@@ -14,7 +14,12 @@ defmodule Podium.Shape do
     :height,
     :paragraphs,
     :fill,
-    :line
+    :line,
+    :rotation,
+    :margin_left,
+    :margin_right,
+    :margin_top,
+    :margin_bottom
   ]
 
   @doc """
@@ -38,7 +43,12 @@ defmodule Podium.Shape do
       height: height,
       paragraphs: paragraphs,
       fill: Keyword.get(opts, :fill),
-      line: Keyword.get(opts, :line)
+      line: Keyword.get(opts, :line),
+      rotation: Keyword.get(opts, :rotation),
+      margin_left: margin_emu(Keyword.get(opts, :margin_left)),
+      margin_right: margin_emu(Keyword.get(opts, :margin_right)),
+      margin_top: margin_emu(Keyword.get(opts, :margin_top)),
+      margin_bottom: margin_emu(Keyword.get(opts, :margin_bottom))
     }
   end
 
@@ -51,6 +61,8 @@ defmodule Podium.Shape do
 
     body_xml = Text.paragraphs_xml(shape.paragraphs)
 
+    rot_attr = rotation_attr(shape.rotation)
+
     ~s(<p:sp xmlns:a="#{ns_a}" xmlns:p="#{ns_p}">) <>
       ~s(<p:nvSpPr>) <>
       ~s(<p:cNvPr id="#{shape.id}" name="#{shape.name}"/>) <>
@@ -58,7 +70,7 @@ defmodule Podium.Shape do
       ~s(<p:nvPr/>) <>
       ~s(</p:nvSpPr>) <>
       ~s(<p:spPr>) <>
-      ~s(<a:xfrm>) <>
+      ~s(<a:xfrm#{rot_attr}>) <>
       ~s(<a:off x="#{shape.x}" y="#{shape.y}"/>) <>
       ~s(<a:ext cx="#{shape.width}" cy="#{shape.height}"/>) <>
       ~s(</a:xfrm>) <>
@@ -67,10 +79,33 @@ defmodule Podium.Shape do
       Drawing.line_xml(shape.line) <>
       ~s(</p:spPr>) <>
       ~s(<p:txBody>) <>
-      ~s(<a:bodyPr wrap="square" rtlCol="0"/>) <>
+      body_pr_xml(shape) <>
       ~s(<a:lstStyle/>) <>
       body_xml <>
       ~s(</p:txBody>) <>
       ~s(</p:sp>)
   end
+
+  defp body_pr_xml(shape) do
+    margin_attrs =
+      [
+        margin_attr("lIns", shape.margin_left),
+        margin_attr("rIns", shape.margin_right),
+        margin_attr("tIns", shape.margin_top),
+        margin_attr("bIns", shape.margin_bottom)
+      ]
+      |> Enum.reject(&is_nil/1)
+      |> Enum.join()
+
+    ~s(<a:bodyPr wrap="square" rtlCol="0"#{margin_attrs}/>)
+  end
+
+  defp margin_attr(_name, nil), do: nil
+  defp margin_attr(name, value), do: ~s( #{name}="#{value}")
+
+  defp margin_emu(nil), do: nil
+  defp margin_emu(value), do: Units.to_emu(value)
+
+  defp rotation_attr(nil), do: ""
+  defp rotation_attr(degrees), do: ~s( rot="#{round(degrees * 60_000)}")
 end

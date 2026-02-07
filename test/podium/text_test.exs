@@ -146,5 +146,49 @@ defmodule Podium.TextTest do
       xml = Text.paragraphs_xml(paragraphs)
       refute xml =~ "<a:pPr"
     end
+
+    test "underline :double produces u=\"dbl\"" do
+      paragraphs = Text.normalize([[{"Text", underline: :double}]])
+      xml = Text.paragraphs_xml(paragraphs)
+      assert xml =~ ~s(u="dbl")
+    end
+
+    test "underline :wavy produces u=\"wavy\"" do
+      paragraphs = Text.normalize([[{"Text", underline: :wavy}]])
+      xml = Text.paragraphs_xml(paragraphs)
+      assert xml =~ ~s(u="wavy")
+    end
+
+    test "underline :dotted_heavy produces u=\"dottedHeavy\"" do
+      paragraphs = Text.normalize([[{"Text", underline: :dotted_heavy}]])
+      xml = Text.paragraphs_xml(paragraphs)
+      assert xml =~ ~s(u="dottedHeavy")
+    end
+
+    test "underline false produces no u attribute" do
+      paragraphs = Text.normalize([[{"Text", underline: false}]])
+      xml = Text.paragraphs_xml(paragraphs)
+      refute xml =~ ~s(u=)
+    end
+
+    test "underline true still produces u=\"sng\"" do
+      paragraphs = Text.normalize([[{"Text", underline: true}]])
+      xml = Text.paragraphs_xml(paragraphs)
+      assert xml =~ ~s(u="sng")
+    end
+
+    test "newline in string inserts a:br between segments" do
+      paragraphs = Text.normalize([[{"Line 1\nLine 2", bold: true}]])
+      xml = Text.paragraphs_xml(paragraphs)
+      assert xml =~ "<a:t>Line 1</a:t></a:r><a:br/><a:r>"
+      assert xml =~ "<a:t>Line 2</a:t>"
+    end
+
+    test ":line_break atom in rich text produces a:br" do
+      paragraphs = Text.normalize([[{"Before"}, :line_break, {"After"}]])
+      xml = Text.paragraphs_xml(paragraphs)
+      assert xml =~ "<a:t>Before</a:t></a:r><a:br/><a:r>"
+      assert xml =~ "<a:t>After</a:t>"
+    end
   end
 end
