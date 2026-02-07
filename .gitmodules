@@ -1,0 +1,3 @@
+[submodule "reference/python-pptx"]
+	path = reference/python-pptx
+	url = git@github.com:scanny/python-pptx.git
