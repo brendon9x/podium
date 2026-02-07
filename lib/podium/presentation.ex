@@ -3,13 +3,14 @@ defmodule Podium.Presentation do
 
   alias Podium.Chart
   alias Podium.Chart.{XlsxWriter, XmlWriter}
-  alias Podium.{CoreProperties, Image, Slide, Units}
+  alias Podium.{CoreProperties, Image, Placeholder, Slide, Units}
   alias Podium.OPC.{Constants, ContentTypes, Package, Relationships}
 
   @blank_layout_index 7
 
   @default_slide_width 12_192_000
   @default_slide_height 6_858_000
+  @template_width 9_144_000
 
   defstruct [
     :template_parts,
@@ -22,7 +23,8 @@ defmodule Podium.Presentation do
     pres_rels: nil,
     slide_width: @default_slide_width,
     slide_height: @default_slide_height,
-    core_properties: nil
+    core_properties: nil,
+    footer: nil
   ]
 
   @doc """
@@ -196,6 +198,55 @@ defmodule Podium.Presentation do
   defp detect_fill_extension(_), do: "png"
 
   @doc """
+  Sets presentation-level footer, date, and slide number options.
+  """
+  def set_footer(%__MODULE__{} = prs, opts) when is_list(opts) do
+    %{prs | footer: opts}
+  end
+
+  @doc """
+  Sets a picture placeholder on a slide. Returns `{presentation, slide}`.
+  Registers the image binary and stores the picture placeholder entry.
+  """
+  def set_picture_placeholder(%__MODULE__{} = prs, %Slide{} = slide, name, binary)
+      when is_atom(name) and is_binary(binary) do
+    layout_atom = layout_atom(slide.layout_index)
+    ph = Placeholder.new_picture(layout_atom, name)
+
+    extension = detect_fill_extension(binary)
+    image_index = prs.next_image_index
+    sha1 = :crypto.hash(:sha, binary) |> Base.encode16(case: :lower)
+
+    {actual_index, next_index, image_hashes} =
+      case Map.get(prs.image_hashes, sha1) do
+        nil ->
+          hashes = Map.put(prs.image_hashes, sha1, image_index)
+          {image_index, image_index + 1, hashes}
+
+        existing_index ->
+          {existing_index, image_index, prs.image_hashes}
+      end
+
+    picture_entry = {ph, binary, extension, actual_index}
+    slide = %{slide | picture_placeholders: slide.picture_placeholders ++ [picture_entry]}
+
+    content_types =
+      ContentTypes.add_default(prs.content_types, extension, content_type(extension))
+
+    slides = replace_slide(prs.slides, slide)
+
+    prs = %{
+      prs
+      | slides: slides,
+        next_image_index: next_index,
+        content_types: content_types,
+        image_hashes: image_hashes
+    }
+
+    {prs, slide}
+  end
+
+  @doc """
   Sets core document properties (Dublin Core metadata).
   """
   def set_core_properties(%__MODULE__{} = prs, opts) when is_list(opts) do
@@ -235,8 +286,32 @@ defmodule Podium.Presentation do
 
   defp resolve_layout_index(:title_slide), do: 1
   defp resolve_layout_index(:title_content), do: 2
+  defp resolve_layout_index(:section_header), do: 3
+  defp resolve_layout_index(:two_content), do: 4
+  defp resolve_layout_index(:comparison), do: 5
+  defp resolve_layout_index(:title_only), do: 6
   defp resolve_layout_index(:blank), do: @blank_layout_index
+  defp resolve_layout_index(:content_caption), do: 8
+  defp resolve_layout_index(:picture_caption), do: 9
+  defp resolve_layout_index(:title_vertical_text), do: 10
+  defp resolve_layout_index(:vertical_title_text), do: 11
   defp resolve_layout_index(index) when is_integer(index), do: index
+
+  defp layout_atom(1), do: :title_slide
+  defp layout_atom(2), do: :title_content
+  defp layout_atom(3), do: :section_header
+  defp layout_atom(4), do: :two_content
+  defp layout_atom(5), do: :comparison
+  defp layout_atom(6), do: :title_only
+  defp layout_atom(7), do: :blank
+  defp layout_atom(8), do: :content_caption
+  defp layout_atom(9), do: :picture_caption
+  defp layout_atom(10), do: :title_vertical_text
+  defp layout_atom(11), do: :vertical_title_text
+
+  defp layout_atom(n) when is_integer(n) do
+    raise ArgumentError, "unknown layout index #{n}; expected 1..11"
+  end
 
   defp replace_slide(slides, %Slide{} = slide) do
     Enum.map(slides, fn existing ->
@@ -245,12 +320,12 @@ defmodule Podium.Presentation do
   end
 
   defp build_parts(%__MODULE__{} = prs) do
-    parts = prs.template_parts
+    parts = scale_layout_coordinates(prs.template_parts, prs.slide_width)
 
     # Process each slide: generate slide XML, slide rels, chart parts, image parts
     parts =
       Enum.reduce(prs.slides, parts, fn slide, acc ->
-        build_slide_parts(slide, acc)
+        build_slide_parts(slide, acc, prs.footer)
       end)
 
     # Update presentation.xml to include slide references
@@ -274,7 +349,7 @@ defmodule Podium.Presentation do
     parts
   end
 
-  defp build_slide_parts(slide, parts) do
+  defp build_slide_parts(slide, parts, footer_opts) do
     # Start with slide layout relationship
     slide_rels = Relationships.new()
 
@@ -346,6 +421,37 @@ defmodule Podium.Presentation do
         {rels, rids, acc}
       end)
 
+    # Add picture placeholder relationships and store image binaries
+    {slide_rels, slide, parts} =
+      Enum.reduce(
+        slide.picture_placeholders,
+        {slide_rels, slide, parts},
+        fn {ph, binary, ext, img_index}, {rels, sl, acc} ->
+          {rels, pic_rid} =
+            Relationships.add(
+              rels,
+              Constants.rt(:image),
+              "../media/image#{img_index}.#{ext}"
+            )
+
+          acc = Map.put(acc, "ppt/media/image#{img_index}.#{ext}", binary)
+
+          # Set image_rid on the placeholder and add to slide.placeholders
+          ph = %{ph | image_rid: pic_rid}
+          sl = %{sl | placeholders: sl.placeholders ++ [ph]}
+
+          {rels, sl, acc}
+        end
+      )
+
+    # Inject footer/date/slide_number placeholders if set
+    slide =
+      if footer_opts do
+        inject_footer_placeholders(slide, footer_opts)
+      else
+        slide
+      end
+
     # Generate slide XML with chart, image, and fill relationship IDs
     parts =
       Map.put(
@@ -357,6 +463,31 @@ defmodule Podium.Presentation do
     parts = Map.put(parts, Slide.rels_partname(slide), Relationships.to_xml(slide_rels))
 
     parts
+  end
+
+  defp inject_footer_placeholders(slide, opts) do
+    placeholders = slide.placeholders
+
+    placeholders =
+      case Keyword.get(opts, :footer) do
+        nil -> placeholders
+        text -> placeholders ++ [Placeholder.new_footer(text)]
+      end
+
+    placeholders =
+      case Keyword.get(opts, :date) do
+        nil -> placeholders
+        text -> placeholders ++ [Placeholder.new_date(text)]
+      end
+
+    placeholders =
+      if Keyword.get(opts, :slide_number, false) do
+        placeholders ++ [Placeholder.new_slide_number()]
+      else
+        placeholders
+      end
+
+    %{slide | placeholders: placeholders}
   end
 
   defp build_presentation_xml(%__MODULE__{} = prs) do
@@ -404,5 +535,46 @@ defmodule Podium.Presentation do
       |> Enum.join()
 
     ~s(<p:defaultTextStyle><a:defPPr><a:defRPr lang="en-US"/></a:defPPr>#{levels}</p:defaultTextStyle>)
+  end
+
+  # --- Template coordinate scaling ---
+  # The bundled template is 4:3 (9,144,000 EMU wide). When the presentation uses
+  # a different width (e.g. 16:9 = 12,192,000), we scale horizontal coordinates
+  # in the slide layout and slide master XMLs so placeholders fill the slide.
+
+  defp scale_layout_coordinates(parts, @template_width), do: parts
+
+  defp scale_layout_coordinates(parts, slide_width) do
+    scale = slide_width / @template_width
+
+    Map.new(parts, fn {path, data} ->
+      if layout_or_master_xml?(path) do
+        {path, scale_xml_x(to_string(data), scale)}
+      else
+        {path, data}
+      end
+    end)
+  end
+
+  defp layout_or_master_xml?(path) do
+    String.ends_with?(path, ".xml") and
+      (String.contains?(path, "slideLayout") or String.contains?(path, "slideMaster"))
+  end
+
+  defp scale_xml_x(xml, scale) do
+    xml
+    |> scale_attr("a:off", "x", scale)
+    |> scale_attr("a:ext", "cx", scale)
+    |> scale_attr("a:chOff", "x", scale)
+    |> scale_attr("a:chExt", "cx", scale)
+  end
+
+  defp scale_attr(xml, element, attr, scale) do
+    pattern = Regex.compile!("<#{Regex.escape(element)} #{attr}=\"(\\d+)\"")
+
+    Regex.replace(pattern, xml, fn _full, value_str ->
+      scaled = round(String.to_integer(value_str) * scale)
+      ~s(<#{element} #{attr}="#{scaled}")
+    end)
   end
 end

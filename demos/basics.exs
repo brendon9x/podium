@@ -25,7 +25,7 @@ slide2 =
     ],
     x: {0.5, :inches},
     y: {0.3, :inches},
-    width: {11, :inches},
+    width: {12.33, :inches},
     height: {0.8, :inches},
     fill: {:gradient, [{0, "001133"}, {100_000, "004488"}], angle: 5_400_000},
     line: [color: "001133", width: {1.5, :pt}, dash_style: :dash]
@@ -44,7 +44,7 @@ slide2 =
     ],
     x: {1, :inches},
     y: {1.5, :inches},
-    width: {10, :inches},
+    width: {11.33, :inches},
     height: {2.5, :inches}
   )
 
@@ -62,7 +62,7 @@ slide3 =
     ],
     x: {0.5, :inches},
     y: {0.3, :inches},
-    width: {11, :inches},
+    width: {12.33, :inches},
     height: {0.7, :inches},
     fill: {:pattern, :lt_horz, foreground: "003366", background: "E8EDF2"}
   )
@@ -83,7 +83,7 @@ slide3 =
     ],
     x: {0.5, :inches},
     y: {1.2, :inches},
-    width: {11, :inches},
+    width: {12.33, :inches},
     height: {2, :inches}
   )
   |> Podium.add_text_box(
@@ -101,7 +101,7 @@ slide3 =
     ],
     x: {0.5, :inches},
     y: {3.2, :inches},
-    width: {11, :inches},
+    width: {12.33, :inches},
     height: {4, :inches}
   )
 
@@ -121,7 +121,7 @@ revenue_data =
   Podium.add_chart(prs, slide4, :column_clustered, revenue_data,
     x: {0.5, :inches},
     y: {0.5, :inches},
-    width: {11, :inches},
+    width: {12.33, :inches},
     height: {6, :inches},
     title: [text: "Quarterly Revenue vs Expenses", font_size: 18, bold: true, color: "003366"],
     legend: [position: :bottom, font_size: 10, font: "Arial"],
@@ -149,7 +149,7 @@ market_data =
 
 {prs, _slide5} =
   Podium.add_chart(prs, slide5, :pie, market_data,
-    x: {1.5, :inches},
+    x: {2.17, :inches},
     y: {0.5, :inches},
     width: {9, :inches},
     height: {6, :inches},
@@ -191,7 +191,7 @@ trend_data =
   Podium.add_chart(prs, slide6, :line_markers, trend_data,
     x: {0.5, :inches},
     y: {0.5, :inches},
-    width: {11, :inches},
+    width: {12.33, :inches},
     height: {6, :inches},
     title: "Monthly Active Users — Trend",
     legend: :top,
@@ -206,7 +206,7 @@ slide7 =
   |> Podium.add_text_box("Department Summary",
     x: {0.5, :inches},
     y: {0.3, :inches},
-    width: {11, :inches},
+    width: {12.33, :inches},
     height: {0.8, :inches},
     font_size: 28,
     alignment: :center
@@ -244,7 +244,7 @@ slide7 =
     ],
     x: {0.5, :inches},
     y: {1.3, :inches},
-    width: {11, :inches},
+    width: {12.33, :inches},
     height: {4.5, :inches}
   )
 
@@ -257,7 +257,7 @@ slide8 =
   Podium.add_text_box(slide8, "Image Support Demo",
     x: {0.5, :inches},
     y: {0.3, :inches},
-    width: {11, :inches},
+    width: {12.33, :inches},
     height: {0.8, :inches},
     font_size: 28,
     alignment: :center
@@ -267,7 +267,7 @@ image_binary = File.read!(Path.join(__DIR__, "acme.jpg"))
 
 {prs, slide8} =
   Podium.add_image(prs, slide8, image_binary,
-    x: {3, :inches},
+    x: {3.67, :inches},
     y: {1.5, :inches},
     width: {6, :inches},
     height: {4.5, :inches},
@@ -293,7 +293,7 @@ tickets_data =
   Podium.add_chart(prs, slide9, :bar_stacked, tickets_data,
     x: {0.5, :inches},
     y: {0.5, :inches},
-    width: {11, :inches},
+    width: {12.33, :inches},
     height: {6, :inches},
     title: "Support Tickets by Channel",
     legend: :right,
@@ -307,7 +307,7 @@ tickets_data =
 slide10 =
   slide10
   |> Podium.set_placeholder(:title, "Next Steps")
-  |> Podium.set_placeholder(:body, [
+  |> Podium.set_placeholder(:content, [
     [{"Continue expanding into Asia Pacific market"}],
     [{"Invest in self-service support tools"}],
     [{"Target 95% customer satisfaction by Q4 2026"}]
@@ -327,7 +327,7 @@ slide11 =
     ],
     x: {0.5, :inches},
     y: {0.2, :inches},
-    width: {11, :inches},
+    width: {12.33, :inches},
     height: {0.6, :inches}
   )
   # Rotated text box with custom margins
@@ -358,7 +358,7 @@ slide11 =
     ],
     x: {3, :inches},
     y: {1.2, :inches},
-    width: {8.5, :inches},
+    width: {9.83, :inches},
     height: {0.6, :inches}
   )
   # Line breaks within a paragraph
@@ -372,14 +372,14 @@ slide11 =
     ],
     x: {0.5, :inches},
     y: {2.5, :inches},
-    width: {5, :inches},
+    width: {5.5, :inches},
     height: {1.8, :inches},
     margin_left: {0.2, :inches},
     margin_top: {0.15, :inches}
   )
   # New pattern preset (sphere)
   |> Podium.add_text_box("Sphere Pattern",
-    x: {6, :inches},
+    x: {7, :inches},
     y: {2.5, :inches},
     width: {2.5, :inches},
     height: {1, :inches},
@@ -389,7 +389,7 @@ slide11 =
   )
   # New pattern preset (zig_zag)
   |> Podium.add_text_box("ZigZag Pattern",
-    x: {9, :inches},
+    x: {10, :inches},
     y: {2.5, :inches},
     width: {2.5, :inches},
     height: {1, :inches},
@@ -408,7 +408,7 @@ slide12 =
   |> Podium.add_text_box("Table Cell Fills & Banding",
     x: {0.5, :inches},
     y: {0.3, :inches},
-    width: {11, :inches},
+    width: {12.33, :inches},
     height: {0.6, :inches},
     font_size: 24,
     alignment: :center
@@ -426,7 +426,7 @@ slide12 =
     ],
     x: {1, :inches},
     y: {1.2, :inches},
-    width: {10, :inches},
+    width: {11.33, :inches},
     height: {2, :inches},
     table_style: [first_row: true, band_row: true, band_col: true]
   )
@@ -456,7 +456,7 @@ marker_data =
   Podium.add_chart(prs, slide13, :line_markers, marker_data,
     x: {0.5, :inches},
     y: {0.5, :inches},
-    width: {11, :inches},
+    width: {12.33, :inches},
     height: {6, :inches},
     title: "Series Markers & Axis Extras",
     legend: :bottom,
@@ -482,7 +482,7 @@ slide14 =
   |> Podium.add_text_box("Line Fill Variants",
     x: {0.5, :inches},
     y: {0.3, :inches},
-    width: {11, :inches},
+    width: {12.33, :inches},
     height: {0.6, :inches},
     font_size: 24,
     alignment: :center
@@ -490,7 +490,7 @@ slide14 =
   |> Podium.add_text_box("Gradient Line",
     x: {1, :inches},
     y: {1.5, :inches},
-    width: {4, :inches},
+    width: {5, :inches},
     height: {1.5, :inches},
     font_size: 18,
     alignment: :center,
@@ -500,9 +500,9 @@ slide14 =
     ]
   )
   |> Podium.add_text_box("Pattern Line",
-    x: {6.5, :inches},
+    x: {7.33, :inches},
     y: {1.5, :inches},
-    width: {4, :inches},
+    width: {5, :inches},
     height: {1.5, :inches},
     font_size: 18,
     alignment: :center,
@@ -521,7 +521,7 @@ slide15 =
   Podium.add_text_box(slide15, "Image Auto-Scale (native size from PNG header)",
     x: {0.5, :inches},
     y: {0.3, :inches},
-    width: {11, :inches},
+    width: {12.33, :inches},
     height: {0.6, :inches},
     font_size: 24,
     alignment: :center
@@ -532,7 +532,7 @@ image_binary = File.read!(Path.join(__DIR__, "acme.jpg"))
 
 {prs, slide15} =
   Podium.add_image(prs, slide15, image_binary,
-    x: {2, :inches},
+    x: {2.67, :inches},
     y: {1.5, :inches},
     width: {8, :inches}
   )
@@ -546,7 +546,7 @@ slide16 =
   Podium.add_text_box(slide16, "Tier 1 Feature Showcase",
     x: {0.5, :inches},
     y: {0.2, :inches},
-    width: {11, :inches},
+    width: {12.33, :inches},
     height: {0.6, :inches},
     font_size: 28,
     alignment: :center
@@ -555,7 +555,7 @@ slide16 =
 # Image masking — ellipse shape
 {prs, slide16} =
   Podium.add_image(prs, slide16, image_binary,
-    x: {0.5, :inches},
+    x: {0.67, :inches},
     y: {1, :inches},
     width: {3, :inches},
     height: {3, :inches},
@@ -565,7 +565,7 @@ slide16 =
 # Image masking — diamond shape
 {prs, slide16} =
   Podium.add_image(prs, slide16, image_binary,
-    x: {4, :inches},
+    x: {5.17, :inches},
     y: {1, :inches},
     width: {3, :inches},
     height: {3, :inches},
@@ -575,7 +575,7 @@ slide16 =
 # Image masking — rounded rectangle
 {prs, slide16} =
   Podium.add_image(prs, slide16, image_binary,
-    x: {7.5, :inches},
+    x: {9.67, :inches},
     y: {1, :inches},
     width: {3, :inches},
     height: {3, :inches},
@@ -621,7 +621,7 @@ highlight_data =
   Podium.add_chart(prs, slide17, :column_clustered, highlight_data,
     x: {0.5, :inches},
     y: {0.5, :inches},
-    width: {11, :inches},
+    width: {12.33, :inches},
     height: {6, :inches},
     title: "Per-Point Lines & Data Label Overrides",
     value_axis: [title: "Revenue ($K)", major_gridlines: true]
@@ -639,7 +639,7 @@ date_data =
   Podium.add_chart(prs, slide18, :line_markers, date_data,
     x: {0.5, :inches},
     y: {0.5, :inches},
-    width: {11, :inches},
+    width: {12.33, :inches},
     height: {6, :inches},
     title: "Quarterly Sales (Date Axis)",
     legend: :bottom,
@@ -664,13 +664,72 @@ slide19 =
       {[{"Questions? strategy@acme.example.com", font_size: 18, color: "666666"}],
        alignment: :center}
     ],
-    x: {2, :inches},
+    x: {2.67, :inches},
     y: {2, :inches},
     width: {8, :inches},
     height: {3, :inches}
   )
 
 prs = Podium.put_slide(prs, slide19)
+
+# --- Slide 20: Two Content layout ---
+{prs, slide20} = Podium.add_slide(prs, layout: :two_content)
+
+slide20 =
+  slide20
+  |> Podium.set_placeholder(:title, "Two Column Layout")
+  |> Podium.set_placeholder(:left_content, [
+    [{"Left Column Highlights"}],
+    [{"Revenue growth: 35%"}],
+    [{"Market expansion ongoing"}]
+  ])
+  |> Podium.set_placeholder(:right_content, [
+    [{"Right Column Details"}],
+    [{"Customer satisfaction: 92%"}],
+    [{"NPS score improved by 15 points"}]
+  ])
+
+prs = Podium.put_slide(prs, slide20)
+
+# --- Slide 21: Comparison layout ---
+{prs, slide21} = Podium.add_slide(prs, layout: :comparison)
+
+slide21 =
+  slide21
+  |> Podium.set_placeholder(:title, "Before vs After")
+  |> Podium.set_placeholder(:left_heading, "Before (Q1)")
+  |> Podium.set_placeholder(:left_content, [
+    [{"Manual processes"}],
+    [{"3-day turnaround"}],
+    [{"High error rate"}]
+  ])
+  |> Podium.set_placeholder(:right_heading, "After (Q4)")
+  |> Podium.set_placeholder(:right_content, [
+    [{"Fully automated"}],
+    [{"Same-day delivery"}],
+    [{"99.9% accuracy"}]
+  ])
+
+prs = Podium.put_slide(prs, slide21)
+
+# --- Slide 22: Picture + Caption layout ---
+{prs, slide22} = Podium.add_slide(prs, layout: :picture_caption)
+
+slide22 =
+  slide22
+  |> Podium.set_placeholder(:title, "Product Showcase")
+  |> Podium.set_placeholder(:caption, "Our flagship product — the Acme Widget 3000")
+
+{prs, _slide22} = Podium.set_picture_placeholder(prs, slide22, :picture, image_binary)
+
+# --- Slide 23: Footer, date, and slide number demo ---
+# Enable footer on the presentation
+prs =
+  Podium.set_footer(prs,
+    footer: "Acme Corp Confidential",
+    date: "February 2026",
+    slide_number: true
+  )
 
 # --- Save ---
 path = Path.join(__DIR__, "basics.pptx")
