@@ -437,6 +437,70 @@ defmodule Podium.Chart.XmlWriterTest do
 
       xml = XmlWriter.to_xml(chart)
       assert xml =~ ~s(<c:crossesAt val="1000"/>)
+      # Numeric crossing should not also emit <c:crosses> on the same axis
+      refute xml =~ ~s(<c:crosses val="autoZero"/><c:crossesAt)
+    end
+  end
+
+  describe "table cell anchor" do
+    test "cell with vertical anchor" do
+      {_prs, slide} = Podium.new() |> Podium.add_slide()
+
+      slide =
+        Podium.add_table(
+          slide,
+          [[{"Middle", anchor: :middle}]],
+          x: {1, :inches},
+          y: {1, :inches},
+          width: {4, :inches},
+          height: {1, :inches}
+        )
+
+      table = hd(slide.tables)
+      xml = Podium.Table.to_xml(table)
+      assert xml =~ ~s(anchor="ctr")
+    end
+  end
+
+  describe "combined cell merge" do
+    test "2x2 merge produces hMerge and vMerge" do
+      {_prs, slide} = Podium.new() |> Podium.add_slide()
+
+      slide =
+        Podium.add_table(
+          slide,
+          [
+            [{"Big Cell", col_span: 2, row_span: 2}, :merge, "C"],
+            [:merge, :merge, "D"],
+            ["E", "F", "G"]
+          ],
+          x: {1, :inches},
+          y: {1, :inches},
+          width: {6, :inches},
+          height: {3, :inches}
+        )
+
+      table = hd(slide.tables)
+      xml = Podium.Table.to_xml(table)
+
+      assert xml =~ ~s(gridSpan="2")
+      assert xml =~ ~s(rowSpan="2")
+      assert xml =~ ~s(hMerge="1")
+      assert xml =~ ~s(vMerge="1")
+      assert xml =~ ~s(hMerge="1" vMerge="1")
+    end
+  end
+
+  describe "legend font typeface" do
+    test "legend with custom font", %{chart_data: chart_data} do
+      chart = %Chart{
+        chart_type: :column_clustered,
+        chart_data: chart_data,
+        legend: [position: :bottom, font: "Arial"]
+      }
+
+      xml = XmlWriter.to_xml(chart)
+      assert xml =~ ~s(<a:latin typeface="Arial"/>)
     end
   end
 end

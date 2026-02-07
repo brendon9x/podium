@@ -4,6 +4,7 @@ defmodule Podium.Chart.XmlWriter do
   alias Podium.Chart
   alias Podium.Chart.{ChartData, ChartType}
   alias Podium.OPC.Constants
+  alias Podium.Pattern
   alias Podium.XML.Builder
 
   @cat_ax_id "-2068027336"
@@ -68,12 +69,12 @@ defmodule Podium.Chart.XmlWriter do
   defp title_xml(opts) when is_list(opts) do
     text = Keyword.fetch!(opts, :text)
     escaped = Builder.escape(text)
-    rpr_attrs = font_rpr_attrs(opts)
+    rpr_xml = font_rpr_xml(opts)
 
     ~s(<c:title>) <>
       ~s(<c:tx><c:rich>) <>
       ~s(<a:bodyPr/><a:lstStyle/>) <>
-      ~s(<a:p><a:r><a:rPr #{rpr_attrs}/><a:t>#{escaped}</a:t></a:r></a:p>) <>
+      ~s(<a:p><a:r>#{rpr_xml}<a:t>#{escaped}</a:t></a:r></a:p>) <>
       ~s(</c:rich></c:tx>) <>
       ~s(<c:overlay val="0"/>) <>
       ~s(</c:title>)
@@ -110,8 +111,8 @@ defmodule Podium.Chart.XmlWriter do
     font = Keyword.get(opts, :font)
 
     if font_size || bold || italic || color || font do
-      attrs = def_rpr_attrs(font_size, bold, italic)
-      children = def_rpr_children(color, font)
+      attrs = font_rpr_attrs(opts)
+      children = font_rpr_children(opts)
 
       if children == "" do
         ~s(<c:txPr><a:bodyPr/><a:lstStyle/><a:p><a:pPr><a:defRPr #{attrs}/></a:pPr><a:endParaRPr lang="en-US"/></a:p></c:txPr>)
@@ -121,20 +122,6 @@ defmodule Podium.Chart.XmlWriter do
     else
       ""
     end
-  end
-
-  defp def_rpr_attrs(font_size, bold, italic) do
-    attrs = []
-    attrs = if font_size, do: attrs ++ [~s(sz="#{font_size * 100}")], else: attrs
-    attrs = if bold, do: attrs ++ [~s(b="1")], else: attrs
-    attrs = if italic, do: attrs ++ [~s(i="1")], else: attrs
-    Enum.join(attrs, " ")
-  end
-
-  defp def_rpr_children(color, font) do
-    color_xml = if color, do: ~s(<a:solidFill><a:srgbClr val="#{color}"/></a:solidFill>), else: ""
-    font_xml = if font, do: ~s(<a:latin typeface="#{font}"/>), else: ""
-    color_xml <> font_xml
   end
 
   # -- Date1904 --
@@ -280,6 +267,14 @@ defmodule Podium.Chart.XmlWriter do
         _ -> ""
       end
 
+    # Bar/column series default invertIfNegative to true when absent,
+    # which can cause fills to render incorrectly. Explicitly disable it.
+    invert_xml =
+      case config.element do
+        "c:barChart" -> ~s(<c:invertIfNegative val="0"/>)
+        _ -> ""
+      end
+
     color_xml = series_color_xml(config, series)
     dpt_xml = data_points_xml(series)
 
@@ -288,6 +283,7 @@ defmodule Podium.Chart.XmlWriter do
       ~s(<c:order val="#{series.index}"/>) <>
       tx_xml(chart_data, series) <>
       color_xml <>
+      invert_xml <>
       marker_xml <>
       dpt_xml <>
       cat_xml(chart_data) <>
@@ -299,7 +295,7 @@ defmodule Podium.Chart.XmlWriter do
   defp series_color_xml(_config, %{color: nil, pattern: nil}), do: ""
 
   defp series_color_xml(_config, %{pattern: pattern}) when not is_nil(pattern) do
-    prst = pattern_preset(pattern[:type])
+    prst = Pattern.preset(pattern[:type])
     fg = Keyword.get(pattern, :foreground, "000000")
     bg = Keyword.get(pattern, :background, "FFFFFF")
 
@@ -477,7 +473,7 @@ defmodule Podium.Chart.XmlWriter do
   defp crosses_xml(:max), do: ~s(<c:crosses val="max"/>)
 
   defp crosses_xml(value) when is_number(value),
-    do: ~s(<c:crosses val="autoZero"/><c:crossesAt val="#{value}"/>)
+    do: ~s(<c:crossesAt val="#{value}"/>)
 
   defp val_scaling_xml(nil, nil), do: ~s(<c:scaling/>)
 
@@ -510,12 +506,12 @@ defmodule Podium.Chart.XmlWriter do
   defp axis_title_xml(opts) when is_list(opts) do
     text = Keyword.fetch!(opts, :text)
     escaped = Builder.escape(text)
-    rpr_attrs = font_rpr_attrs(opts)
+    rpr_xml = font_rpr_xml(opts)
 
     ~s(<c:title>) <>
       ~s(<c:tx><c:rich>) <>
       ~s(<a:bodyPr/><a:lstStyle/>) <>
-      ~s(<a:p><a:r><a:rPr #{rpr_attrs}/><a:t>#{escaped}</a:t></a:r></a:p>) <>
+      ~s(<a:p><a:r>#{rpr_xml}<a:t>#{escaped}</a:t></a:r></a:p>) <>
       ~s(</c:rich></c:tx>) <>
       ~s(<c:overlay val="0"/>) <>
       ~s(</c:title>)
@@ -531,6 +527,17 @@ defmodule Podium.Chart.XmlWriter do
       ~s(<a:p><a:pPr><a:defRPr/></a:pPr><a:endParaRPr lang="en-US"/></a:p></c:txPr>)
   end
 
+  defp font_rpr_xml(opts) do
+    attrs = font_rpr_attrs(opts)
+    children = font_rpr_children(opts)
+
+    if children == "" do
+      ~s(<a:rPr #{attrs}/>)
+    else
+      ~s(<a:rPr #{attrs}>#{children}</a:rPr>)
+    end
+  end
+
   defp font_rpr_attrs(opts) do
     attrs = [~s(lang="en-US")]
     font_size = Keyword.get(opts, :font_size)
@@ -544,6 +551,14 @@ defmodule Podium.Chart.XmlWriter do
     Enum.join(attrs, " ")
   end
 
+  defp font_rpr_children(opts) do
+    color = Keyword.get(opts, :color)
+    font = Keyword.get(opts, :font)
+    color_xml = if color, do: ~s(<a:solidFill><a:srgbClr val="#{color}"/></a:solidFill>), else: ""
+    font_xml = if font, do: ~s(<a:latin typeface="#{font}"/>), else: ""
+    color_xml <> font_xml
+  end
+
   defp txpr_xml do
     ~s(<c:txPr>) <>
       ~s(<a:bodyPr/>) <>
@@ -554,17 +569,4 @@ defmodule Podium.Chart.XmlWriter do
       ~s(</a:p>) <>
       ~s(</c:txPr>)
   end
-
-  defp pattern_preset(:dn_diag), do: "dnDiag"
-  defp pattern_preset(:up_diag), do: "upDiag"
-  defp pattern_preset(:lt_horz), do: "ltHorz"
-  defp pattern_preset(:lt_vert), do: "ltVert"
-  defp pattern_preset(:dk_dn_diag), do: "dkDnDiag"
-  defp pattern_preset(:dk_up_diag), do: "dkUpDiag"
-  defp pattern_preset(:dk_horz), do: "dkHorz"
-  defp pattern_preset(:dk_vert), do: "dkVert"
-  defp pattern_preset(:sm_grid), do: "smGrid"
-  defp pattern_preset(:lg_grid), do: "lgGrid"
-  defp pattern_preset(:cross), do: "cross"
-  defp pattern_preset(:diag_cross), do: "diagCross"
 end

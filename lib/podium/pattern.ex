@@ -1,0 +1,31 @@
+defmodule Podium.Pattern do
+  @moduledoc false
+
+  @doc """
+  Maps pattern fill atoms to OOXML preset strings for `<a:pattFill prst="...">`.
+  """
+  def preset(:dn_diag), do: "dnDiag"
+  def preset(:up_diag), do: "upDiag"
+  def preset(:lt_horz), do: "ltHorz"
+  def preset(:lt_vert), do: "ltVert"
+  def preset(:dk_dn_diag), do: "dkDnDiag"
+  def preset(:dk_up_diag), do: "dkUpDiag"
+  def preset(:dk_horz), do: "dkHorz"
+  def preset(:dk_vert), do: "dkVert"
+  def preset(:sm_grid), do: "smGrid"
+  def preset(:lg_grid), do: "lgGrid"
+  def preset(:cross), do: "cross"
+  def preset(:diag_cross), do: "diagCross"
+  def preset(:pct_5), do: "pct5"
+  def preset(:pct_10), do: "pct10"
+  def preset(:pct_20), do: "pct20"
+  def preset(:pct_25), do: "pct25"
+  def preset(:pct_30), do: "pct30"
+  def preset(:pct_40), do: "pct40"
+  def preset(:pct_50), do: "pct50"
+  def preset(:pct_60), do: "pct60"
+  def preset(:pct_70), do: "pct70"
+  def preset(:pct_75), do: "pct75"
+  def preset(:pct_80), do: "pct80"
+  def preset(:pct_90), do: "pct90"
+end
