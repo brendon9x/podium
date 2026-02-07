@@ -3,7 +3,7 @@ defmodule Podium.Presentation do
 
   alias Podium.Chart
   alias Podium.Chart.{XlsxWriter, XmlWriter}
-  alias Podium.{CoreProperties, Image, Placeholder, Slide, Units}
+  alias Podium.{CoreProperties, Image, Placeholder, Slide, TemplatePlaceholders, Units}
   alias Podium.OPC.{Constants, ContentTypes, Package, Relationships}
 
   @blank_layout_index 7
@@ -24,7 +24,8 @@ defmodule Podium.Presentation do
     slide_width: @default_slide_width,
     slide_height: @default_slide_height,
     core_properties: nil,
-    footer: nil
+    footer: nil,
+    placeholder_positions: %{}
   ]
 
   @doc """
@@ -67,7 +68,8 @@ defmodule Podium.Presentation do
       pres_rels: pres_rels,
       slide_width: slide_width,
       slide_height: slide_height,
-      core_properties: core_properties
+      core_properties: core_properties,
+      placeholder_positions: TemplatePlaceholders.resolve_positions(parts)
     }
   end
 
@@ -244,6 +246,100 @@ defmodule Podium.Presentation do
     }
 
     {prs, slide}
+  end
+
+  @doc """
+  Places a chart into a content placeholder. Returns `{presentation, slide}`.
+
+  The placeholder must be a content placeholder (type: nil) on a layout that supports it.
+  Position is inherited from the template layout. Any user-supplied x/y/width/height in opts
+  are silently dropped.
+  """
+  def set_chart_placeholder(
+        %__MODULE__{} = prs,
+        %Slide{} = slide,
+        name,
+        chart_type,
+        chart_data,
+        opts
+      )
+      when is_atom(name) do
+    layout_index = slide.layout_index
+    layout = layout_atom(layout_index)
+    validate_content_placeholder!(layout, name)
+    pos = lookup_position!(prs, layout_index, layout, name)
+    scaled = scale_position(pos, prs.slide_width)
+
+    chart_opts =
+      opts
+      |> Keyword.drop([:x, :y, :width, :height])
+      |> Keyword.merge(x: scaled.x, y: scaled.y, width: scaled.cx, height: scaled.cy)
+
+    add_chart(prs, slide, chart_type, chart_data, chart_opts)
+  end
+
+  @doc """
+  Places a table into a content placeholder. Returns `{presentation, slide}`.
+
+  The placeholder must be a content placeholder (type: nil) on a layout that supports it.
+  Position is inherited from the template layout. Any user-supplied x/y/width/height in opts
+  are silently dropped.
+  """
+  def set_table_placeholder(%__MODULE__{} = prs, %Slide{} = slide, name, rows, opts \\ [])
+      when is_atom(name) do
+    layout_index = slide.layout_index
+    layout = layout_atom(layout_index)
+    validate_content_placeholder!(layout, name)
+    pos = lookup_position!(prs, layout_index, layout, name)
+    scaled = scale_position(pos, prs.slide_width)
+
+    table_opts =
+      opts
+      |> Keyword.drop([:x, :y, :width, :height])
+      |> Keyword.merge(x: scaled.x, y: scaled.y, width: scaled.cx, height: scaled.cy)
+
+    slide = Slide.add_table(slide, rows, table_opts)
+    slides = replace_slide(prs.slides, slide)
+    prs = %{prs | slides: slides}
+    {prs, slide}
+  end
+
+  defp validate_content_placeholder!(layout, name) do
+    defs = Placeholder.placeholders_for(layout)
+
+    case Map.get(defs, name) do
+      nil ->
+        raise ArgumentError,
+              "unknown placeholder #{inspect(name)} for layout #{inspect(layout)}"
+
+      %{type: nil} ->
+        :ok
+
+      %{type: type} ->
+        raise ArgumentError,
+              "placeholder #{inspect(name)} has type #{inspect(type)}; " <>
+                "only content placeholders accept charts/tables"
+    end
+  end
+
+  defp lookup_position!(prs, layout_index, layout, name) do
+    case get_in(prs.placeholder_positions, [layout_index, name]) do
+      nil ->
+        raise ArgumentError,
+              "could not resolve position for placeholder #{inspect(name)} on layout #{inspect(layout)}"
+
+      pos ->
+        pos
+    end
+  end
+
+  defp scale_position(%{x: x, y: y, cx: cx, cy: cy}, @template_width) do
+    %{x: x, y: y, cx: cx, cy: cy}
+  end
+
+  defp scale_position(%{x: x, y: y, cx: cx, cy: cy}, slide_width) do
+    scale = slide_width / @template_width
+    %{x: round(x * scale), y: y, cx: round(cx * scale), cy: cy}
   end
 
   @doc """

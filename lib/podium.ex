@@ -95,6 +95,27 @@ defmodule Podium do
   end
 
   @doc """
+  Places a chart into a content placeholder. Returns `{presentation, slide}`.
+
+  The placeholder must be a content placeholder (type: nil) — e.g. `:content` on
+  `:title_content`, or `:left_content`/`:right_content` on `:two_content`.
+  Position and size are inherited from the template layout.
+  """
+  def set_chart_placeholder(prs, slide, name, chart_type, chart_data, opts \\ []) do
+    Presentation.set_chart_placeholder(prs, slide, name, chart_type, chart_data, opts)
+  end
+
+  @doc """
+  Places a table into a content placeholder. Returns `{presentation, slide}`.
+
+  The placeholder must be a content placeholder (type: nil).
+  Position and size are inherited from the template layout.
+  """
+  def set_table_placeholder(prs, slide, name, rows, opts \\ []) do
+    Presentation.set_table_placeholder(prs, slide, name, rows, opts)
+  end
+
+  @doc """
   Sets presentation-level footer, date, and slide number.
 
   ## Options

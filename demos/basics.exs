@@ -653,11 +653,58 @@ date_data =
     value_axis: [title: "Sales ($K)", major_gridlines: true]
   )
 
-# --- Slide 19: Closing ---
-{prs, slide19} = Podium.add_slide(prs)
+# --- Slide 19: Chart placeholder on title_content layout ---
+{prs, slide19} = Podium.add_slide(prs, layout: :title_content)
 
-slide19 =
-  slide19
+slide19 = Podium.set_placeholder(slide19, :title, "Chart Placeholder Demo")
+
+placeholder_chart_data =
+  ChartData.new()
+  |> ChartData.add_categories(["Q1", "Q2", "Q3", "Q4"])
+  |> ChartData.add_series("Revenue", [12_500, 14_600, 15_156, 18_167], color: "4472C4")
+  |> ChartData.add_series("Expenses", [10_000, 11_300, 12_500, 13_000], color: "ED7D31")
+
+{prs, _slide19} =
+  Podium.set_chart_placeholder(prs, slide19, :content, :column_clustered, placeholder_chart_data,
+    title: "Revenue vs Expenses",
+    legend: :bottom
+  )
+
+# --- Slide 20: Table + chart in two_content layout placeholders ---
+{prs, slide20} = Podium.add_slide(prs, layout: :two_content)
+
+slide20 = Podium.set_placeholder(slide20, :title, "Table & Chart Placeholders")
+
+{prs, slide20} =
+  Podium.set_table_placeholder(prs, slide20, :left_content,
+    [
+      ["Region", "Revenue"],
+      ["North America", "$12.5M"],
+      ["Europe", "$8.2M"],
+      ["Asia Pacific", "$5.1M"]
+    ],
+    table_style: [first_row: true]
+  )
+
+two_content_chart_data =
+  ChartData.new()
+  |> ChartData.add_categories(["NA", "EU", "APAC"])
+  |> ChartData.add_series("Revenue", [12.5, 8.2, 5.1],
+    point_colors: %{0 => "2E75B6", 1 => "BDD7EE", 2 => "ED7D31"}
+  )
+
+{prs, _slide20} =
+  Podium.set_chart_placeholder(prs, slide20, :right_content, :pie, two_content_chart_data,
+    title: "Revenue Split",
+    legend: :bottom,
+    data_labels: [:category, :percent]
+  )
+
+# --- Slide 21: Closing ---
+{prs, slide21} = Podium.add_slide(prs)
+
+slide21 =
+  slide21
   |> Podium.add_text_box(
     [
       {[{"Thank You", bold: true, font_size: 44, color: "003366"}], alignment: :center},
@@ -670,13 +717,13 @@ slide19 =
     height: {3, :inches}
   )
 
-prs = Podium.put_slide(prs, slide19)
+prs = Podium.put_slide(prs, slide21)
 
-# --- Slide 20: Two Content layout ---
-{prs, slide20} = Podium.add_slide(prs, layout: :two_content)
+# --- Slide 22: Two Content layout ---
+{prs, slide22} = Podium.add_slide(prs, layout: :two_content)
 
-slide20 =
-  slide20
+slide22 =
+  slide22
   |> Podium.set_placeholder(:title, "Two Column Layout")
   |> Podium.set_placeholder(:left_content, [
     [{"Left Column Highlights"}],
@@ -689,13 +736,13 @@ slide20 =
     [{"NPS score improved by 15 points"}]
   ])
 
-prs = Podium.put_slide(prs, slide20)
+prs = Podium.put_slide(prs, slide22)
 
-# --- Slide 21: Comparison layout ---
-{prs, slide21} = Podium.add_slide(prs, layout: :comparison)
+# --- Slide 23: Comparison layout ---
+{prs, slide23} = Podium.add_slide(prs, layout: :comparison)
 
-slide21 =
-  slide21
+slide23 =
+  slide23
   |> Podium.set_placeholder(:title, "Before vs After")
   |> Podium.set_placeholder(:left_heading, "Before (Q1)")
   |> Podium.set_placeholder(:left_content, [
@@ -710,19 +757,19 @@ slide21 =
     [{"99.9% accuracy"}]
   ])
 
-prs = Podium.put_slide(prs, slide21)
+prs = Podium.put_slide(prs, slide23)
 
-# --- Slide 22: Picture + Caption layout ---
-{prs, slide22} = Podium.add_slide(prs, layout: :picture_caption)
+# --- Slide 24: Picture + Caption layout ---
+{prs, slide24} = Podium.add_slide(prs, layout: :picture_caption)
 
-slide22 =
-  slide22
+slide24 =
+  slide24
   |> Podium.set_placeholder(:title, "Product Showcase")
   |> Podium.set_placeholder(:caption, "Our flagship product — the Acme Widget 3000")
 
-{prs, _slide22} = Podium.set_picture_placeholder(prs, slide22, :picture, image_binary)
+{prs, _slide24} = Podium.set_picture_placeholder(prs, slide24, :picture, image_binary)
 
-# --- Slide 23: Footer, date, and slide number demo ---
+# --- Slide 25: Footer, date, and slide number demo ---
 # Enable footer on the presentation
 prs =
   Podium.set_footer(prs,

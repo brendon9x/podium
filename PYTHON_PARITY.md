@@ -15,7 +15,7 @@
 | **Shape rotation** | Clockwise rotation in degrees on text boxes and images |
 | **Images** | PNG, JPEG, BMP, GIF, TIFF, EMF, WMF via magic-byte detection; position, size, cropping (per-side in 1/1000ths of percent); SHA-1 deduplication; rotation; **auto-scale** when size omitted (reads native pixel dimensions + DPI from image headers); aspect-ratio preservation when only width or height given; **image masking** via `:shape` option (ellipse, diamond, roundRect, star5, etc.) |
 | **Tables** | Cell text, rich text cells, solid/gradient/pattern fill, borders (per-side with color/width), padding (per-side), vertical anchor (top/middle/bottom), col_span, row_span, `:merge` placeholders; table style banding flags (`first_row`, `last_row`, `first_col`, `last_col`, `band_row`, `band_col`) |
-| **Placeholders** | All 11 slide layouts (title_slide, title_content, section_header, two_content, comparison, title_only, blank, content_caption, picture_caption, title_vertical_text, vertical_title_text); text placeholders (title, subtitle, content, body, caption, left/right content/heading); picture placeholder on picture_caption layout; footer, date, slide number as presentation-level settings |
+| **Placeholders** | All 11 slide layouts (title_slide, title_content, section_header, two_content, comparison, title_only, blank, content_caption, picture_caption, title_vertical_text, vertical_title_text); text placeholders (title, subtitle, content, body, caption, left/right content/heading); picture placeholder on picture_caption layout; chart/table content placeholders (`set_chart_placeholder`/`set_table_placeholder`) with position inherited from template layout; footer, date, slide number as presentation-level settings |
 | **Charts** | 7 types: column_clustered, column_stacked, bar_clustered, bar_stacked, line, line_markers, pie |
 | **Chart titles** | Plain string or keyword list with text, font_size, bold, italic, color, font |
 | **Chart legends** | Position atom or keyword list with position, font_size, bold, italic, color, font |
@@ -37,7 +37,7 @@ All actionable Tier 1 features are implemented. Remaining items are intentionall
 | Feature | python-pptx | Podium | Status |
 |---------|-------------|--------|--------|
 | **Tables** | Cell fill supports solid, gradient, pattern, picture; split (unmerge) | Cell fill: solid, gradient, pattern; table style banding flags | ~~Picture cell fill~~ (Won't implement — too niche), ~~unmerge~~ (Won't implement — create-only library) |
-| **Placeholders** | 16+ types (title, body, picture, chart, table, date, slide_number, footer, etc.) with master → layout → slide inheritance | All 11 layouts; text, picture, footer, date, slide_number placeholders | Remaining: chart/table placeholders, master → layout → slide inheritance chain |
+| **Placeholders** | 16+ types (title, body, picture, chart, table, date, slide_number, footer, etc.) with master → layout → slide inheritance | All 11 layouts; text, picture, chart/table content, footer, date, slide_number placeholders | ~~master → layout → slide inheritance chain~~ (Won't implement — only needed for read-modify-write workflows where a slide overrides its layout; Podium is create-only and already resolves positions from the template at parse time) |
 
 ### Tier 2 — Nice to Have
 
