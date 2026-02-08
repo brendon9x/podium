@@ -2,7 +2,7 @@ defmodule Podium.Slide do
   @moduledoc false
 
   alias Podium.OPC.Constants
-  alias Podium.{Drawing, Image, Shape, Table}
+  alias Podium.{Connector, Drawing, Image, Shape, Table}
 
   @blank_layout_index 7
 
@@ -17,6 +17,7 @@ defmodule Podium.Slide do
     charts: [],
     images: [],
     tables: [],
+    connectors: [],
     placeholders: [],
     picture_placeholders: [],
     fill_images: [],
@@ -51,6 +52,29 @@ defmodule Podium.Slide do
     shape = Shape.text_box(slide.next_shape_id, text, opts)
 
     %{slide | shapes: slide.shapes ++ [shape], next_shape_id: slide.next_shape_id + 1}
+  end
+
+  @doc """
+  Adds an auto shape to the slide.
+  """
+  def add_auto_shape(%__MODULE__{} = slide, preset, opts) do
+    shape = Shape.auto_shape(slide.next_shape_id, preset, opts)
+
+    %{slide | shapes: slide.shapes ++ [shape], next_shape_id: slide.next_shape_id + 1}
+  end
+
+  @doc """
+  Adds a connector to the slide.
+  """
+  def add_connector(%__MODULE__{} = slide, connector_type, begin_x, begin_y, end_x, end_y, opts) do
+    conn =
+      Connector.new(slide.next_shape_id, connector_type, begin_x, begin_y, end_x, end_y, opts)
+
+    %{
+      slide
+      | connectors: slide.connectors ++ [conn],
+        next_shape_id: slide.next_shape_id + 1
+    }
   end
 
   @doc """
@@ -162,6 +186,11 @@ defmodule Podium.Slide do
       end)
       |> Enum.join()
 
+    connectors_xml =
+      slide.connectors
+      |> Enum.map(&Connector.to_xml/1)
+      |> Enum.join()
+
     placeholders_xml =
       slide.placeholders
       |> Enum.map(&Podium.Placeholder.to_xml(&1, hyperlink_rids))
@@ -179,6 +208,7 @@ defmodule Podium.Slide do
       charts_xml <>
       images_xml <>
       tables_xml <>
+      connectors_xml <>
       ~s(</p:spTree></p:cSld>) <>
       ~s(<p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr>) <>
       ~s(</p:sld>)

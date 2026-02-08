@@ -42,6 +42,20 @@ defmodule Podium do
   end
 
   @doc """
+  Adds an auto shape to a slide.
+  """
+  def add_auto_shape(slide, preset, opts) do
+    Slide.add_auto_shape(slide, preset, opts)
+  end
+
+  @doc """
+  Adds a connector to a slide.
+  """
+  def add_connector(slide, connector_type, begin_x, begin_y, end_x, end_y, opts \\ []) do
+    Slide.add_connector(slide, connector_type, begin_x, begin_y, end_x, end_y, opts)
+  end
+
+  @doc """
   Adds a chart to a slide. Returns `{presentation, slide}`.
   """
   def add_chart(prs, slide, chart_type, chart_data, opts) do
