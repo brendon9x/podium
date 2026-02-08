@@ -63,6 +63,19 @@ defmodule Podium do
   end
 
   @doc """
+  Adds a combo chart (multiple chart types in one plot area) to a slide.
+  Returns `{presentation, slide}`.
+
+  ## Parameters
+    * `chart_data` - `%ChartData{}` with shared categories and series
+    * `plots` - list of `{chart_type, series: [indices], secondary_axis: bool}` tuples
+    * `opts` - position/size opts plus `:title`, `:legend`, `:secondary_value_axis`
+  """
+  def add_combo_chart(prs, slide, chart_data, plots, opts) do
+    Presentation.add_combo_chart(prs, slide, chart_data, plots, opts)
+  end
+
+  @doc """
   Adds an image to a slide. Returns `{presentation, slide}`.
 
   Image format is auto-detected from magic bytes (PNG/JPEG).
@@ -76,6 +89,33 @@ defmodule Podium do
   """
   def add_picture_fill_text_box(prs, slide, text, image_binary, opts) do
     Presentation.add_picture_fill_text_box(prs, slide, text, image_binary, opts)
+  end
+
+  @doc """
+  Adds a freeform shape (built with `Podium.Freeform`) to a slide.
+
+  ## Options
+    * `:origin_x`, `:origin_y` - offset for the shape's bounding box origin
+    * `:fill` - fill color or fill tuple
+    * `:line` - line color or line opts
+    * `:rotation` - rotation in degrees
+  """
+  def add_freeform(%Podium.Freeform{} = fb, slide, opts \\ []) do
+    Slide.add_freeform(slide, fb, opts)
+  end
+
+  @doc """
+  Adds a video (movie) to a slide. Returns `{presentation, slide}`.
+
+  All position/size opts are required (no auto-scaling for video).
+
+  ## Options
+    * `:x`, `:y`, `:width`, `:height` - position and size (required)
+    * `:mime_type` - MIME type, default "video/unknown"
+    * `:poster_frame` - poster frame image binary (optional, default speaker icon)
+  """
+  def add_movie(prs, slide, binary, opts) do
+    Presentation.add_movie(prs, slide, binary, opts)
   end
 
   @doc """

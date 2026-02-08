@@ -14,9 +14,11 @@ defmodule Podium.Chart do
     :height,
     :title,
     :legend,
+    :combo,
     data_labels: [],
     category_axis: [],
-    value_axis: []
+    value_axis: [],
+    secondary_value_axis: []
   ]
 
   @doc """
@@ -36,6 +38,28 @@ defmodule Podium.Chart do
       data_labels: Keyword.get(opts, :data_labels, []),
       category_axis: Keyword.get(opts, :category_axis, []),
       value_axis: Keyword.get(opts, :value_axis, [])
+    }
+  end
+
+  @doc """
+  Creates a new combo chart.
+  """
+  def new_combo(%Podium.Chart.ComboChart{} = combo, chart_index, opts) do
+    %__MODULE__{
+      chart_type: :combo,
+      chart_data: combo.chart_data,
+      chart_index: chart_index,
+      combo: combo,
+      x: Units.to_emu(Keyword.fetch!(opts, :x)),
+      y: Units.to_emu(Keyword.fetch!(opts, :y)),
+      width: Units.to_emu(Keyword.fetch!(opts, :width)),
+      height: Units.to_emu(Keyword.fetch!(opts, :height)),
+      title: Keyword.get(opts, :title),
+      legend: Keyword.get(opts, :legend),
+      data_labels: Keyword.get(opts, :data_labels, []),
+      category_axis: Keyword.get(opts, :category_axis, []),
+      value_axis: Keyword.get(opts, :value_axis, []),
+      secondary_value_axis: Keyword.get(opts, :secondary_value_axis, [])
     }
   end
 

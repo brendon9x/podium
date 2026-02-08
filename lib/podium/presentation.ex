@@ -2,7 +2,7 @@ defmodule Podium.Presentation do
   @moduledoc false
 
   alias Podium.Chart
-  alias Podium.Chart.{XlsxWriter, XmlWriter}
+  alias Podium.Chart.{ComboChart, XlsxWriter, XmlWriter}
 
   alias Podium.{
     CoreProperties,
@@ -11,7 +11,8 @@ defmodule Podium.Presentation do
     Placeholder,
     Slide,
     TemplatePlaceholders,
-    Units
+    Units,
+    Video
   }
 
   alias Podium.OPC.{Constants, ContentTypes, Package, Relationships}
@@ -29,7 +30,9 @@ defmodule Podium.Presentation do
     next_slide_index: 1,
     next_chart_index: 1,
     next_image_index: 1,
+    next_media_index: 1,
     image_hashes: %{},
+    media_hashes: %{},
     pres_rels: nil,
     slide_width: @default_slide_width,
     slide_height: @default_slide_height,
@@ -179,6 +182,37 @@ defmodule Podium.Presentation do
   end
 
   @doc """
+  Adds a combo chart to a slide. Returns `{presentation, slide}`.
+  """
+  def add_combo_chart(%__MODULE__{} = prs, %Slide{} = slide, chart_data, plot_specs, opts) do
+    chart_index = prs.next_chart_index
+    combo = ComboChart.new(chart_data, plot_specs)
+    chart = Chart.new_combo(combo, chart_index, opts)
+
+    slide = %{
+      slide
+      | charts: slide.charts ++ [chart],
+        next_shape_id: slide.next_shape_id + 1
+    }
+
+    content_types =
+      prs.content_types
+      |> ContentTypes.add_override("/ppt/charts/chart#{chart_index}.xml", Constants.ct(:chart))
+      |> ContentTypes.add_default("xlsx", Constants.ct(:xlsx))
+
+    slides = replace_slide(prs.slides, slide)
+
+    prs = %{
+      prs
+      | slides: slides,
+        next_chart_index: chart_index + 1,
+        content_types: content_types
+    }
+
+    {prs, slide}
+  end
+
+  @doc """
   Adds an image to a slide. Returns `{presentation, slide}`.
   """
   def add_image(%__MODULE__{} = prs, %Slide{} = slide, binary, opts) do
@@ -210,6 +244,72 @@ defmodule Podium.Presentation do
         next_image_index: next_index,
         content_types: content_types,
         image_hashes: image_hashes
+    }
+
+    {prs, slide}
+  end
+
+  @doc """
+  Adds a video to a slide. Returns `{presentation, slide}`.
+  """
+  def add_movie(%__MODULE__{} = prs, %Slide{} = slide, binary, opts) when is_binary(binary) do
+    sha1 = :crypto.hash(:sha, binary) |> Base.encode16(case: :lower)
+    mime_type = Keyword.get(opts, :mime_type, "video/unknown")
+
+    # Dedup media files by SHA1
+    {media_index, next_media, media_hashes} =
+      case Map.get(prs.media_hashes, sha1) do
+        nil ->
+          idx = prs.next_media_index
+          {idx, idx + 1, Map.put(prs.media_hashes, sha1, idx)}
+
+        existing_index ->
+          {existing_index, prs.next_media_index, prs.media_hashes}
+      end
+
+    # Poster frame uses image dedup
+    poster_binary = Keyword.get(opts, :poster_frame)
+    poster_sha1 = :crypto.hash(:sha, poster_binary || <<>>) |> Base.encode16(case: :lower)
+
+    {poster_index, next_image, image_hashes} =
+      if poster_binary do
+        case Map.get(prs.image_hashes, poster_sha1) do
+          nil ->
+            idx = prs.next_image_index
+            {idx, idx + 1, Map.put(prs.image_hashes, poster_sha1, idx)}
+
+          existing ->
+            {existing, prs.next_image_index, prs.image_hashes}
+        end
+      else
+        # Default poster - allocate a new image index (no dedup for default)
+        idx = prs.next_image_index
+        {idx, idx + 1, prs.image_hashes}
+      end
+
+    video = Video.new(binary, media_index, poster_index, opts)
+
+    slide = Slide.add_video(slide, video)
+
+    # Register content types
+    video_ext = video.extension
+    poster_ext = video.poster_frame.extension
+
+    content_types =
+      prs.content_types
+      |> ContentTypes.add_default(video_ext, mime_type)
+      |> ContentTypes.add_default(poster_ext, content_type(poster_ext))
+
+    slides = replace_slide(prs.slides, slide)
+
+    prs = %{
+      prs
+      | slides: slides,
+        next_media_index: next_media,
+        next_image_index: next_image,
+        media_hashes: media_hashes,
+        image_hashes: image_hashes,
+        content_types: content_types
     }
 
     {prs, slide}
@@ -615,6 +715,42 @@ defmodule Podium.Presentation do
         end
       )
 
+    # Add video relationships and store video/poster binaries
+    {slide_rels, video_rids, parts} =
+      Enum.reduce(slide.videos, {slide_rels, [], parts}, fn video, {rels, rids, acc} ->
+        # RT.VIDEO relationship (r:link - external-style, target on media file)
+        {rels, video_rid} =
+          Relationships.add(
+            rels,
+            Constants.rt(:video),
+            "../media/media#{video.media_index}.#{video.extension}"
+          )
+
+        # RT.MEDIA relationship (r:embed - for p14:media)
+        {rels, media_rid} =
+          Relationships.add(
+            rels,
+            Constants.rt(:media),
+            "../media/media#{video.media_index}.#{video.extension}"
+          )
+
+        # RT.IMAGE relationship for poster frame
+        poster = video.poster_frame
+
+        {rels, poster_rid} =
+          Relationships.add(
+            rels,
+            Constants.rt(:image),
+            "../media/image#{poster.image_index}.#{poster.extension}"
+          )
+
+        # Store media and poster binaries
+        acc = Map.put(acc, Video.media_partname(video), video.binary)
+        acc = Map.put(acc, Video.poster_partname(video), poster.binary)
+
+        {rels, rids ++ [{video, video_rid, media_rid, poster_rid}], acc}
+      end)
+
     # Collect hyperlink URLs from all shapes and placeholders, create external rels
     all_hyperlink_urls = collect_all_hyperlink_urls(slide)
 
@@ -640,12 +776,12 @@ defmodule Podium.Presentation do
         {slide_rels, parts, prs}
       end
 
-    # Generate slide XML with chart, image, fill, hyperlink relationship IDs
+    # Generate slide XML with chart, image, fill, hyperlink, video relationship IDs
     parts =
       Map.put(
         parts,
         Slide.partname(slide),
-        Slide.to_xml(slide, chart_rids, image_rids, fill_rids, hyperlink_rids, bg_rid)
+        Slide.to_xml(slide, chart_rids, image_rids, fill_rids, hyperlink_rids, bg_rid, video_rids)
       )
 
     parts = Map.put(parts, Slide.rels_partname(slide), Relationships.to_xml(slide_rels))

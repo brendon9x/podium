@@ -2,7 +2,7 @@ defmodule Podium.Slide do
   @moduledoc false
 
   alias Podium.OPC.Constants
-  alias Podium.{Connector, Drawing, Image, Shape, Table}
+  alias Podium.{Connector, Drawing, Image, Shape, Table, Video}
 
   @blank_layout_index 7
 
@@ -18,6 +18,7 @@ defmodule Podium.Slide do
     images: [],
     tables: [],
     connectors: [],
+    videos: [],
     placeholders: [],
     picture_placeholders: [],
     fill_images: [],
@@ -133,6 +134,25 @@ defmodule Podium.Slide do
   end
 
   @doc """
+  Adds a freeform shape to the slide.
+  """
+  def add_freeform(%__MODULE__{} = slide, %Podium.Freeform{} = fb, opts \\ []) do
+    shape = Shape.freeform(slide.next_shape_id, fb, opts)
+    %{slide | shapes: slide.shapes ++ [shape], next_shape_id: slide.next_shape_id + 1}
+  end
+
+  @doc """
+  Adds a video to the slide.
+  """
+  def add_video(%__MODULE__{} = slide, video) do
+    %{
+      slide
+      | videos: slide.videos ++ [video],
+        next_shape_id: slide.next_shape_id + 1
+    }
+  end
+
+  @doc """
   Adds a table to the slide.
   """
   def add_table(%__MODULE__{} = slide, rows, opts) do
@@ -151,7 +171,8 @@ defmodule Podium.Slide do
         image_rids \\ [],
         fill_rids \\ %{},
         hyperlink_rids \\ %{},
-        bg_rid \\ nil
+        bg_rid \\ nil,
+        video_rids \\ []
       ) do
     shapes_xml =
       Enum.map(slide.shapes, fn shape ->
@@ -191,6 +212,22 @@ defmodule Podium.Slide do
       |> Enum.map(&Connector.to_xml/1)
       |> Enum.join()
 
+    # Video shape IDs start after tables+connectors+images+charts
+    video_base_id =
+      slide.next_shape_id + length(chart_rids) + length(image_rids) +
+        length(slide.tables) + length(slide.connectors)
+
+    videos_xml =
+      video_rids
+      |> Enum.with_index()
+      |> Enum.map(fn {{video, video_rid, media_rid, poster_rid}, idx} ->
+        shape_id = video_base_id + idx
+        Video.pic_xml(video, shape_id, video_rid, media_rid, poster_rid)
+      end)
+      |> Enum.join()
+
+    timing_xml = build_timing_xml(video_rids, video_base_id)
+
     placeholders_xml =
       slide.placeholders
       |> Enum.map(&Podium.Placeholder.to_xml(&1, hyperlink_rids))
@@ -209,9 +246,33 @@ defmodule Podium.Slide do
       images_xml <>
       tables_xml <>
       connectors_xml <>
+      videos_xml <>
       ~s(</p:spTree></p:cSld>) <>
       ~s(<p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr>) <>
+      timing_xml <>
       ~s(</p:sld>)
+  end
+
+  defp build_timing_xml([], _base_id), do: ""
+
+  defp build_timing_xml(video_rids, base_id) do
+    children =
+      video_rids
+      |> Enum.with_index()
+      |> Enum.map(fn {_video_rid_tuple, idx} ->
+        shape_id = base_id + idx
+        ctn_id = 2 + idx
+        Video.video_timing_xml(shape_id, ctn_id)
+      end)
+      |> Enum.join()
+
+    ~s(<p:timing><p:tnLst><p:par>) <>
+      ~s(<p:cTn id="1" dur="indefinite" restart="never" nodeType="tmRoot">) <>
+      ~s(<p:childTnLst>) <>
+      children <>
+      ~s(</p:childTnLst>) <>
+      ~s(</p:cTn>) <>
+      ~s(</p:par></p:tnLst></p:timing>)
   end
 
   defp background_xml(nil, _bg_rid), do: ""

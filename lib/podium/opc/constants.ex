@@ -17,6 +17,7 @@ defmodule Podium.OPC.Constants do
 
   def ns(:mc), do: "http://schemas.openxmlformats.org/markup-compatibility/2006"
   def ns(:xsi), do: "http://www.w3.org/2001/XMLSchema-instance"
+  def ns(:p14), do: "http://schemas.microsoft.com/office/powerpoint/2010/main"
 
   # Relationship Types
   def rt(:office_document),
@@ -72,6 +73,12 @@ defmodule Podium.OPC.Constants do
 
   def rt(:notes_master),
     do: "http://schemas.openxmlformats.org/officeDocument/2006/relationships/notesMaster"
+
+  def rt(:video),
+    do: "http://schemas.openxmlformats.org/officeDocument/2006/relationships/video"
+
+  def rt(:media),
+    do: "http://schemas.microsoft.com/office/2007/relationships/media"
 
   # Content Types (MIME types)
   def ct(:presentation),

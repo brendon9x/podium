@@ -2,7 +2,7 @@ defmodule Podium.Shape do
   @moduledoc false
 
   alias Podium.OPC.Constants
-  alias Podium.{AutoShapeType, Drawing, Text, Units}
+  alias Podium.{AutoShapeType, Drawing, Freeform, Text, Units}
 
   defstruct [
     :type,
@@ -22,7 +22,8 @@ defmodule Podium.Shape do
     :margin_bottom,
     :fill_opts,
     :preset,
-    :auto_size
+    :auto_size,
+    :path_data
   ]
 
   @doc """
@@ -94,6 +95,30 @@ defmodule Podium.Shape do
       margin_top: margin_emu(Keyword.get(opts, :margin_top)),
       margin_bottom: margin_emu(Keyword.get(opts, :margin_bottom)),
       auto_size: Keyword.get(opts, :auto_size)
+    }
+  end
+
+  @doc """
+  Creates a freeform shape from a Freeform builder.
+  """
+  def freeform(id, %Freeform{} = fb, opts) do
+    {min_x, min_y, dx, dy} = Freeform.bounding_box(fb)
+    origin_x = Units.to_emu(Keyword.get(opts, :origin_x, 0))
+    origin_y = Units.to_emu(Keyword.get(opts, :origin_y, 0))
+
+    %__MODULE__{
+      type: :freeform,
+      id: id,
+      name: "Freeform #{id - 1}",
+      x: origin_x + round(min_x * fb.x_scale),
+      y: origin_y + round(min_y * fb.y_scale),
+      width: round(dx * fb.x_scale),
+      height: round(dy * fb.y_scale),
+      path_data: %{operations: Freeform.shape_operations(fb), path_w: dx, path_h: dy},
+      fill: Keyword.get(opts, :fill),
+      line: Keyword.get(opts, :line),
+      rotation: Keyword.get(opts, :rotation),
+      paragraphs: nil
     }
   end
 
@@ -186,6 +211,79 @@ defmodule Podium.Shape do
       body_content <>
       ~s(</p:txBody>) <>
       ~s(</p:sp>)
+  end
+
+  def to_xml(%__MODULE__{type: :freeform} = shape, _fill_rid, _hyperlink_rids) do
+    ns_a = Constants.ns(:a)
+    ns_p = Constants.ns(:p)
+
+    rot_attr = rotation_attr(shape.rotation)
+
+    fill_out =
+      case shape.fill do
+        nil -> ""
+        other -> Drawing.fill_xml(other)
+      end
+
+    path_data = shape.path_data
+    path_w = round(path_data.path_w)
+    path_h = round(path_data.path_h)
+
+    path_elements =
+      Enum.map(path_data.operations, fn
+        {:move_to, x, y} ->
+          ~s(<a:moveTo><a:pt x="#{round(x)}" y="#{round(y)}"/></a:moveTo>)
+
+        {:line_to, x, y} ->
+          ~s(<a:lnTo><a:pt x="#{round(x)}" y="#{round(y)}"/></a:lnTo>)
+
+        :close ->
+          ~s(<a:close/>)
+      end)
+      |> Enum.join()
+
+    ~s(<p:sp xmlns:a="#{ns_a}" xmlns:p="#{ns_p}">) <>
+      ~s(<p:nvSpPr>) <>
+      ~s(<p:cNvPr id="#{shape.id}" name="#{shape.name}"/>) <>
+      ~s(<p:cNvSpPr/>) <>
+      ~s(<p:nvPr/>) <>
+      ~s(</p:nvSpPr>) <>
+      ~s(<p:spPr>) <>
+      ~s(<a:xfrm#{rot_attr}>) <>
+      ~s(<a:off x="#{shape.x}" y="#{shape.y}"/>) <>
+      ~s(<a:ext cx="#{shape.width}" cy="#{shape.height}"/>) <>
+      ~s(</a:xfrm>) <>
+      ~s(<a:custGeom>) <>
+      ~s(<a:avLst/>) <>
+      ~s(<a:gdLst/>) <>
+      ~s(<a:ahLst/>) <>
+      ~s(<a:cxnLst/>) <>
+      ~s(<a:rect l="l" t="t" r="r" b="b"/>) <>
+      ~s(<a:pathLst>) <>
+      ~s(<a:path w="#{path_w}" h="#{path_h}">) <>
+      path_elements <>
+      ~s(</a:path>) <>
+      ~s(</a:pathLst>) <>
+      ~s(</a:custGeom>) <>
+      fill_out <>
+      Drawing.line_xml(shape.line) <>
+      ~s(</p:spPr>) <>
+      freeform_style_xml() <>
+      ~s(<p:txBody>) <>
+      ~s(<a:bodyPr wrap="square" rtlCol="0"/>) <>
+      ~s(<a:lstStyle/>) <>
+      ~s(<a:p/>) <>
+      ~s(</p:txBody>) <>
+      ~s(</p:sp>)
+  end
+
+  defp freeform_style_xml do
+    ~s(<p:style>) <>
+      ~s(<a:lnRef idx="1"><a:schemeClr val="accent1"/></a:lnRef>) <>
+      ~s(<a:fillRef idx="3"><a:schemeClr val="accent1"/></a:fillRef>) <>
+      ~s(<a:effectRef idx="2"><a:schemeClr val="accent1"/></a:effectRef>) <>
+      ~s(<a:fontRef idx="minor"><a:schemeClr val="lt1"/></a:fontRef>) <>
+      ~s(</p:style>)
   end
 
   defp style_xml do
