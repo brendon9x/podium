@@ -44,7 +44,7 @@ defmodule Podium.Drawing do
       end
 
     ~s(<a:blipFill rotWithShape="1">) <>
-      ~s(<a:blip r:embed="#{rid}" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"/>) <>
+      ~s(<a:blip r:embed="#{rid}"/>) <>
       mode_xml <>
       ~s(</a:blipFill>)
   end

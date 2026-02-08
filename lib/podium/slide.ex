@@ -11,6 +11,8 @@ defmodule Podium.Slide do
     :layout_index,
     :pres_rid,
     background: nil,
+    background_image: nil,
+    notes_text: nil,
     shapes: [],
     charts: [],
     images: [],
@@ -119,10 +121,17 @@ defmodule Podium.Slide do
   `chart_rids` is a list of {chart, rId} tuples.
   `image_rids` is a list of {image, rId} tuples.
   """
-  def to_xml(%__MODULE__{} = slide, chart_rids \\ [], image_rids \\ [], fill_rids \\ %{}) do
+  def to_xml(
+        %__MODULE__{} = slide,
+        chart_rids \\ [],
+        image_rids \\ [],
+        fill_rids \\ %{},
+        hyperlink_rids \\ %{},
+        bg_rid \\ nil
+      ) do
     shapes_xml =
       Enum.map(slide.shapes, fn shape ->
-        Shape.to_xml(shape, Map.get(fill_rids, shape.id))
+        Shape.to_xml(shape, Map.get(fill_rids, shape.id), hyperlink_rids)
       end)
       |> Enum.join()
 
@@ -155,13 +164,13 @@ defmodule Podium.Slide do
 
     placeholders_xml =
       slide.placeholders
-      |> Enum.map(&Podium.Placeholder.to_xml/1)
+      |> Enum.map(&Podium.Placeholder.to_xml(&1, hyperlink_rids))
       |> Enum.join()
 
     Podium.XML.Builder.xml_declaration() <>
       ~s(<p:sld xmlns:a="#{Constants.ns(:a)}" xmlns:p="#{Constants.ns(:p)}" xmlns:r="#{Constants.ns(:r)}">) <>
       ~s(<p:cSld>) <>
-      background_xml(slide.background) <>
+      background_xml(slide.background, bg_rid) <>
       ~s(<p:spTree>) <>
       ~s(<p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr>) <>
       ~s(<p:grpSpPr/>) <>
@@ -175,9 +184,14 @@ defmodule Podium.Slide do
       ~s(</p:sld>)
   end
 
-  defp background_xml(nil), do: ""
+  defp background_xml(nil, _bg_rid), do: ""
 
-  defp background_xml(fill) do
+  defp background_xml({:picture, _binary}, bg_rid) when is_binary(bg_rid) do
+    fill = Drawing.fill_xml({:picture, bg_rid, [mode: :stretch]})
+    ~s(<p:bg><p:bgPr>#{fill}<a:effectLst/></p:bgPr></p:bg>)
+  end
+
+  defp background_xml(fill, _bg_rid) do
     ~s(<p:bg><p:bgPr>#{Drawing.fill_xml(fill)}<a:effectLst/></p:bgPr></p:bg>)
   end
 end

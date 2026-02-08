@@ -71,16 +71,17 @@ defmodule Podium.Text do
 
   @doc """
   Generates the XML for a list of normalized paragraphs (the <a:p> elements).
+  Optionally accepts a `hyperlink_rids` map of `%{url => rId}` for resolving hyperlinks.
   """
-  def paragraphs_xml(paragraphs) do
+  def paragraphs_xml(paragraphs, hyperlink_rids \\ %{}) do
     paragraphs
-    |> Enum.map(&paragraph_xml/1)
+    |> Enum.map(&paragraph_xml(&1, hyperlink_rids))
     |> Enum.join()
   end
 
-  defp paragraph_xml(para) do
+  defp paragraph_xml(para, hyperlink_rids) do
     ppr = paragraph_properties_xml(para)
-    runs_xml = Enum.map(para.runs, &run_xml/1) |> Enum.join()
+    runs_xml = Enum.map(para.runs, &run_xml(&1, hyperlink_rids)) |> Enum.join()
     "<a:p>#{ppr}#{runs_xml}</a:p>"
   end
 
@@ -169,12 +170,12 @@ defmodule Podium.Text do
   defp underline_value(:wavy_double), do: "wavyDbl"
   defp underline_value(:words), do: "words"
 
-  defp run_xml(%{text: :line_break, opts: _opts}) do
+  defp run_xml(%{text: :line_break, opts: _opts}, _hyperlink_rids) do
     "<a:br/>"
   end
 
-  defp run_xml(%{text: text, opts: opts}) when is_binary(text) do
-    rpr = run_properties_xml(opts)
+  defp run_xml(%{text: text, opts: opts}, hyperlink_rids) when is_binary(text) do
+    rpr = run_properties_xml(opts, hyperlink_rids)
 
     case String.split(text, "\n") do
       [single] ->
@@ -192,11 +193,11 @@ defmodule Podium.Text do
     end
   end
 
-  defp run_properties_xml([]), do: ~s(<a:rPr lang="en-US" dirty="0"/>)
+  defp run_properties_xml([], _hyperlink_rids), do: ~s(<a:rPr lang="en-US" dirty="0"/>)
 
-  defp run_properties_xml(opts) do
+  defp run_properties_xml(opts, hyperlink_rids) do
     attrs = base_run_attrs(opts)
-    children = run_children_xml(opts)
+    children = run_children_xml(opts, hyperlink_rids)
 
     if children == "" do
       ~s(<a:rPr #{attrs}/>)
@@ -241,10 +242,11 @@ defmodule Podium.Text do
     Enum.join(attrs, " ")
   end
 
-  defp run_children_xml(opts) do
+  defp run_children_xml(opts, hyperlink_rids) do
     color_xml = color_child_xml(Keyword.get(opts, :color))
     font_xml = font_child_xml(Keyword.get(opts, :font))
-    color_xml <> font_xml
+    hyperlink_xml = hyperlink_child_xml(Keyword.get(opts, :hyperlink), hyperlink_rids)
+    color_xml <> font_xml <> hyperlink_xml
   end
 
   defp color_child_xml(nil), do: ""
@@ -252,4 +254,44 @@ defmodule Podium.Text do
 
   defp font_child_xml(nil), do: ""
   defp font_child_xml(font), do: ~s(<a:latin typeface="#{font}"/>)
+
+  defp hyperlink_child_xml(nil, _rids), do: ""
+
+  defp hyperlink_child_xml(url, rids) when is_binary(url) do
+    case Map.get(rids, url) do
+      nil -> ""
+      rid -> ~s(<a:hlinkClick r:id="#{rid}"/>)
+    end
+  end
+
+  defp hyperlink_child_xml(opts, rids) when is_list(opts) do
+    url = Keyword.fetch!(opts, :url)
+    tooltip = Keyword.get(opts, :tooltip)
+
+    case Map.get(rids, url) do
+      nil ->
+        ""
+
+      rid ->
+        tooltip_attr = if tooltip, do: ~s( tooltip="#{Builder.escape(tooltip)}"), else: ""
+        ~s(<a:hlinkClick r:id="#{rid}"#{tooltip_attr}/>)
+    end
+  end
+
+  @doc """
+  Collects all unique hyperlink URLs from normalized paragraphs.
+  """
+  def collect_hyperlink_urls(paragraphs) do
+    paragraphs
+    |> Enum.flat_map(fn para ->
+      Enum.flat_map(para.runs, fn run ->
+        case Keyword.get(run.opts, :hyperlink) do
+          nil -> []
+          url when is_binary(url) -> [url]
+          opts when is_list(opts) -> [Keyword.fetch!(opts, :url)]
+        end
+      end)
+    end)
+    |> Enum.uniq()
+  end
 end

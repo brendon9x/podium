@@ -56,13 +56,13 @@ defmodule Podium.Shape do
   @doc """
   Generates XML for a shape.
   """
-  def to_xml(shape, fill_rid \\ nil)
+  def to_xml(shape, fill_rid \\ nil, hyperlink_rids \\ %{})
 
-  def to_xml(%__MODULE__{type: :text_box} = shape, fill_rid) do
+  def to_xml(%__MODULE__{type: :text_box} = shape, fill_rid, hyperlink_rids) do
     ns_a = Constants.ns(:a)
     ns_p = Constants.ns(:p)
 
-    body_xml = Text.paragraphs_xml(shape.paragraphs)
+    body_xml = Text.paragraphs_xml(shape.paragraphs, hyperlink_rids)
 
     rot_attr = rotation_attr(shape.rotation)
 

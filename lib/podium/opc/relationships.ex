@@ -16,8 +16,12 @@ defmodule Podium.OPC.Relationships do
   def from_list(rels) when is_list(rels) do
     max_id =
       rels
-      |> Enum.map(fn {id, _type, _target} ->
-        id |> String.replace_prefix("rId", "") |> String.to_integer()
+      |> Enum.map(fn
+        {id, _type, _target} ->
+          id |> String.replace_prefix("rId", "") |> String.to_integer()
+
+        {id, _type, _target, _external} ->
+          id |> String.replace_prefix("rId", "") |> String.to_integer()
       end)
       |> Enum.max(fn -> 0 end)
 
@@ -27,9 +31,9 @@ defmodule Podium.OPC.Relationships do
   @doc """
   Adds a relationship and returns {updated_rels, rId}.
   """
-  def add(%__MODULE__{} = rels, type, target) do
+  def add(%__MODULE__{} = rels, type, target, external \\ false) do
     rid = "rId#{rels.next_id}"
-    new_rel = {rid, type, target}
+    new_rel = if external, do: {rid, type, target, true}, else: {rid, type, target}
 
     {%{rels | rels: rels.rels ++ [new_rel], next_id: rels.next_id + 1}, rid}
   end
@@ -40,8 +44,12 @@ defmodule Podium.OPC.Relationships do
   def to_xml(%__MODULE__{} = rels) do
     rels_xml =
       rels.rels
-      |> Enum.map(fn {id, type, target} ->
-        ~s(<Relationship Id="#{id}" Type="#{type}" Target="#{target}"/>)
+      |> Enum.map(fn
+        {id, type, target, true} ->
+          ~s(<Relationship Id="#{id}" Type="#{type}" Target="#{target}" TargetMode="External"/>)
+
+        {id, type, target} ->
+          ~s(<Relationship Id="#{id}" Type="#{type}" Target="#{target}"/>)
       end)
       |> Enum.join()
 
