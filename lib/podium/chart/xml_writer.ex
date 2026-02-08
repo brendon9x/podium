@@ -2,7 +2,7 @@ defmodule Podium.Chart.XmlWriter do
   @moduledoc false
 
   alias Podium.Chart
-  alias Podium.Chart.{BubbleChartData, ChartData, ChartType, XyChartData}
+  alias Podium.Chart.{BubbleChartData, ChartData, ChartType, ComboChart, XyChartData}
   alias Podium.{Drawing, Pattern}
   alias Podium.OPC.Constants
   alias Podium.XML.Builder
@@ -22,10 +22,18 @@ defmodule Podium.Chart.XmlWriter do
   @scatter_x_ax_id "2094734556"
   @scatter_y_ax_id "2094734557"
 
+  @combo_cat_ax_id "10000"
+  @combo_val_ax_id "10001"
+  @combo_secondary_val_ax_id "10002"
+
   @doc """
   Generates the chart XML. Accepts either a `%Chart{}` struct or
   `(chart_type, chart_data)` for backwards compatibility.
   """
+  def to_xml(%Chart{combo: %ComboChart{}} = chart) do
+    Builder.xml_declaration() <> combo_chart_space_xml(chart)
+  end
+
   def to_xml(%Chart{} = chart) do
     config = ChartType.config(chart.chart_type)
 
@@ -1022,6 +1030,285 @@ defmodule Podium.Chart.XmlWriter do
   defp tick_mark_value(:in), do: "in"
   defp tick_mark_value(:cross), do: "cross"
   defp tick_mark_value(:none), do: "none"
+
+  # -- Combo Chart --
+
+  defp combo_chart_space_xml(chart) do
+    ns_c = Constants.ns(:c)
+    ns_a = Constants.ns(:a)
+    ns_r = Constants.ns(:r)
+
+    has_secondary = Enum.any?(chart.combo.plots, & &1.secondary_axis)
+
+    ~s(<c:chartSpace xmlns:c="#{ns_c}" xmlns:a="#{ns_a}" xmlns:r="#{ns_r}">) <>
+      ~s(<c:date1904 val="0"/>) <>
+      ~s(<c:chart>) <>
+      title_xml(chart.title) <>
+      ~s(<c:plotArea>) <>
+      combo_plots_xml(chart) <>
+      combo_axes_xml(chart, has_secondary) <>
+      ~s(</c:plotArea>) <>
+      legend_xml(chart.legend) <>
+      ~s(<c:dispBlanksAs val="gap"/>) <>
+      ~s(</c:chart>) <>
+      txpr_xml() <>
+      ~s(<c:externalData r:id="rId1"><c:autoUpdate val="0"/></c:externalData>) <>
+      ~s(</c:chartSpace>)
+  end
+
+  defp combo_plots_xml(chart) do
+    # Track global series index across plots
+    {plots_xml, _} =
+      Enum.reduce(chart.combo.plots, {"", 0}, fn plot, {xml_acc, global_offset} ->
+        config = ChartType.config(plot.chart_type)
+        chart_data = chart.combo.chart_data
+
+        selected_series =
+          Enum.map(plot.series_indices, fn idx ->
+            Enum.at(chart_data.series, idx)
+          end)
+
+        {cat_ax_id, val_ax_id} = combo_axis_ids(plot)
+
+        plot_xml =
+          combo_single_plot_xml(
+            config,
+            chart_data,
+            selected_series,
+            cat_ax_id,
+            val_ax_id,
+            plot.series_indices,
+            chart.data_labels
+          )
+
+        {xml_acc <> plot_xml, global_offset + length(selected_series)}
+      end)
+
+    plots_xml
+  end
+
+  defp combo_single_plot_xml(
+         %{element: "c:barChart"} = config,
+         chart_data,
+         series_list,
+         cat_ax_id,
+         val_ax_id,
+         global_indices,
+         data_labels
+       ) do
+    series_xml =
+      series_list
+      |> Enum.zip(global_indices)
+      |> Enum.map(fn {series, global_idx} ->
+        combo_series_xml(config, chart_data, series, global_idx)
+      end)
+      |> Enum.join()
+
+    ~s(<c:barChart>) <>
+      ~s(<c:barDir val="#{config.bar_dir}"/>) <>
+      ~s(<c:grouping val="#{config.grouping}"/>) <>
+      series_xml <>
+      data_labels_xml(data_labels) <>
+      overlap_xml(config) <>
+      ~s(<c:axId val="#{cat_ax_id}"/>) <>
+      ~s(<c:axId val="#{val_ax_id}"/>) <>
+      ~s(</c:barChart>)
+  end
+
+  defp combo_single_plot_xml(
+         %{element: "c:lineChart"} = config,
+         chart_data,
+         series_list,
+         cat_ax_id,
+         val_ax_id,
+         global_indices,
+         data_labels
+       ) do
+    series_xml =
+      series_list
+      |> Enum.zip(global_indices)
+      |> Enum.map(fn {series, global_idx} ->
+        combo_series_xml(config, chart_data, series, global_idx)
+      end)
+      |> Enum.join()
+
+    ~s(<c:lineChart>) <>
+      ~s(<c:grouping val="#{config.grouping}"/>) <>
+      ~s(<c:varyColors val="0"/>) <>
+      series_xml <>
+      data_labels_xml(data_labels) <>
+      ~s(<c:marker val="1"/>) <>
+      ~s(<c:smooth val="0"/>) <>
+      ~s(<c:axId val="#{cat_ax_id}"/>) <>
+      ~s(<c:axId val="#{val_ax_id}"/>) <>
+      ~s(</c:lineChart>)
+  end
+
+  defp combo_single_plot_xml(
+         %{element: "c:areaChart"} = config,
+         chart_data,
+         series_list,
+         cat_ax_id,
+         val_ax_id,
+         global_indices,
+         data_labels
+       ) do
+    series_xml =
+      series_list
+      |> Enum.zip(global_indices)
+      |> Enum.map(fn {series, global_idx} ->
+        combo_series_xml(config, chart_data, series, global_idx)
+      end)
+      |> Enum.join()
+
+    ~s(<c:areaChart>) <>
+      ~s(<c:grouping val="#{config.grouping}"/>) <>
+      ~s(<c:varyColors val="0"/>) <>
+      series_xml <>
+      data_labels_xml(data_labels) <>
+      ~s(<c:axId val="#{cat_ax_id}"/>) <>
+      ~s(<c:axId val="#{val_ax_id}"/>) <>
+      ~s(</c:areaChart>)
+  end
+
+  defp combo_series_xml(config, chart_data, series, global_idx) do
+    marker_xml = cat_marker_xml(config, series)
+    smooth_xml = cat_smooth_xml(config)
+    invert_xml = invert_if_negative_xml(config)
+    color_xml = series_color_xml(config, series)
+    dpt_xml = data_points_xml(series)
+    series_dlbls_xml = series_data_labels_xml(series.data_labels)
+
+    ~s(<c:ser>) <>
+      ~s(<c:idx val="#{global_idx}"/>) <>
+      ~s(<c:order val="#{global_idx}"/>) <>
+      tx_xml(chart_data, series) <>
+      color_xml <>
+      invert_xml <>
+      marker_xml <>
+      dpt_xml <>
+      series_dlbls_xml <>
+      cat_xml(chart_data) <>
+      val_xml(chart_data, series) <>
+      smooth_xml <>
+      ~s(</c:ser>)
+  end
+
+  defp combo_axes_xml(chart, has_secondary) do
+    cat_ax = combo_cat_ax_xml(chart, @combo_cat_ax_id, @combo_val_ax_id)
+
+    primary_val_ax =
+      combo_val_ax_xml(chart, chart.value_axis, @combo_val_ax_id, @combo_cat_ax_id, "l")
+
+    secondary_val_ax =
+      if has_secondary do
+        combo_val_ax_xml(
+          chart,
+          chart.secondary_value_axis,
+          @combo_secondary_val_ax_id,
+          @combo_cat_ax_id,
+          "r"
+        )
+      else
+        ""
+      end
+
+    cat_ax <> primary_val_ax <> secondary_val_ax
+  end
+
+  defp combo_cat_ax_xml(chart, ax_id, cross_ax_id) do
+    axis_opts = chart.category_axis || []
+    axis_title = Keyword.get(axis_opts, :title)
+    crosses = Keyword.get(axis_opts, :crosses, :auto_zero)
+    label_rotation = Keyword.get(axis_opts, :label_rotation)
+    reverse = Keyword.get(axis_opts, :reverse, false)
+    visible = Keyword.get(axis_opts, :visible, true)
+
+    # Determine position from first plot's chart type
+    first_type = hd(chart.combo.plots).chart_type
+    pos = ChartType.cat_ax_pos(first_type)
+    orientation = if reverse, do: "maxMin", else: "minMax"
+    delete_val = if visible, do: "0", else: "1"
+
+    ~s(<c:catAx>) <>
+      ~s(<c:axId val="#{ax_id}"/>) <>
+      ~s(<c:scaling><c:orientation val="#{orientation}"/></c:scaling>) <>
+      ~s(<c:delete val="#{delete_val}"/>) <>
+      ~s(<c:axPos val="#{pos}"/>) <>
+      axis_title_xml(axis_title) <>
+      ~s(<c:majorTickMark val="out"/>) <>
+      ~s(<c:minorTickMark val="none"/>) <>
+      ~s(<c:tickLblPos val="nextTo"/>) <>
+      ~s(<c:crossAx val="#{cross_ax_id}"/>) <>
+      crosses_xml(crosses) <>
+      ~s(<c:auto val="1"/>) <>
+      ~s(<c:lblAlgn val="ctr"/>) <>
+      ~s(<c:lblOffset val="100"/>) <>
+      ~s(<c:noMultiLvlLbl val="0"/>) <>
+      label_rotation_xml(label_rotation) <>
+      ~s(</c:catAx>)
+  end
+
+  defp combo_val_ax_xml(chart, axis_opts, ax_id, cross_ax_id, pos) do
+    axis_opts = axis_opts || []
+    axis_title = Keyword.get(axis_opts, :title)
+    num_fmt = Keyword.get(axis_opts, :number_format)
+    gridlines = Keyword.get(axis_opts, :major_gridlines, pos == "l")
+    minor_gridlines = Keyword.get(axis_opts, :minor_gridlines, false)
+    min_val = Keyword.get(axis_opts, :min)
+    max_val = Keyword.get(axis_opts, :max)
+    major_unit = Keyword.get(axis_opts, :major_unit)
+    minor_unit = Keyword.get(axis_opts, :minor_unit)
+    crosses = Keyword.get(axis_opts, :crosses, :auto_zero)
+    label_rotation = Keyword.get(axis_opts, :label_rotation)
+    reverse = Keyword.get(axis_opts, :reverse, false)
+    visible = Keyword.get(axis_opts, :visible, true)
+
+    _ = chart
+
+    scaling_xml = val_scaling_xml(min_val, max_val, reverse)
+    gridlines_xml = if gridlines, do: ~s(<c:majorGridlines/>), else: ""
+    minor_gridlines_xml = if minor_gridlines, do: ~s(<c:minorGridlines/>), else: ""
+    num_fmt_xml = val_num_fmt_xml(num_fmt)
+    major_unit_xml = if major_unit, do: ~s(<c:majorUnit val="#{major_unit}"/>), else: ""
+    minor_unit_xml = if minor_unit, do: ~s(<c:minorUnit val="#{minor_unit}"/>), else: ""
+    delete_val = if visible, do: "0", else: "1"
+
+    # Secondary axis crosses at max to avoid overlapping
+    crosses_out =
+      if pos == "r" and crosses == :auto_zero do
+        crosses_xml(:max)
+      else
+        crosses_xml(crosses)
+      end
+
+    ~s(<c:valAx>) <>
+      ~s(<c:axId val="#{ax_id}"/>) <>
+      scaling_xml <>
+      ~s(<c:delete val="#{delete_val}"/>) <>
+      ~s(<c:axPos val="#{pos}"/>) <>
+      gridlines_xml <>
+      minor_gridlines_xml <>
+      axis_title_xml(axis_title) <>
+      num_fmt_xml <>
+      ~s(<c:majorTickMark val="out"/>) <>
+      ~s(<c:minorTickMark val="none"/>) <>
+      ~s(<c:tickLblPos val="nextTo"/>) <>
+      ~s(<c:crossAx val="#{cross_ax_id}"/>) <>
+      crosses_out <>
+      major_unit_xml <>
+      minor_unit_xml <>
+      label_rotation_xml(label_rotation) <>
+      ~s(</c:valAx>)
+  end
+
+  defp combo_axis_ids(%ComboChart.PlotSpec{secondary_axis: true}) do
+    {@combo_cat_ax_id, @combo_secondary_val_ax_id}
+  end
+
+  defp combo_axis_ids(%ComboChart.PlotSpec{secondary_axis: false}) do
+    {@combo_cat_ax_id, @combo_val_ax_id}
+  end
 
   defp txpr_xml do
     ~s(<c:txPr>) <>

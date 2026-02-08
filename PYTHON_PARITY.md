@@ -31,6 +31,9 @@
 | **Connectors** | Straight, elbow, curved connectors with coordinate-based begin/end points, auto flip calculation, line formatting (color, width, dash style); theme-styled by default |
 | **Text auto-size** | `:none` (`<a:noAutofit/>`), `:text_to_fit_shape` (`<a:normAutofit/>`), `:shape_to_fit_text` (`<a:spAutoFit/>`) on text boxes and auto shapes |
 | **OPC packaging** | Content types, relationships, ZIP round-trip |
+| **Video embedding** | `add_movie/4` with poster frame (default or custom), SHA-1 media dedup, RT.VIDEO + RT.MEDIA + RT.IMAGE relationships, `<p:timing>` playback support; matches python-pptx EXPERIMENTAL API |
+| **Freeform shapes** | Custom vector paths via `Freeform` builder: `line_to`, `move_to`, `close`, `add_line_segments`; custom coordinate scales; multiple contours; `<a:custGeom>` with `<a:pathLst>` |
+| **Combo charts** | Multi-plot charts via `add_combo_chart/5`: column+line, bar+line, area+line, stacked+line; secondary value axis support; shared categories; **exceeds python-pptx** (which can only read, not create combo charts) |
 | **Units** | inches, cm, pt → EMU; raw EMU integers also accepted |
 
 ## What python-pptx Has That We Don't
@@ -63,9 +66,9 @@ All actionable Tier 1 features are implemented. Remaining items are intentionall
 | Feature | python-pptx | Podium | Effort |
 |---------|-------------|--------|--------|
 | Open existing .pptx for modification | Yes (core feature, read-modify-write) | No — create-only | Very Large |
-| Video embedding | Yes (EXPERIMENTAL: add_movie with poster frame) | No | Large |
-| Freeform shapes | Yes (custom SVG-like paths via FreeformBuilder) | No | Large |
-| Combo/multi-plot charts | Yes (multiple plots in one chart frame) | No | Large |
+| Video embedding | Yes (EXPERIMENTAL: add_movie with poster frame) | ✅ `add_movie/4` with poster frame, media dedup | ~~Done~~ |
+| Freeform shapes | Yes (custom SVG-like paths via FreeformBuilder) | ✅ `Freeform` builder with line_to, move_to, close, custom scale | ~~Done~~ |
+| Combo/multi-plot charts | Yes (read-only, cannot create) | ✅ `add_combo_chart/5` with secondary axis — **exceeds python-pptx** | ~~Done~~ |
 | Click actions | Yes (PP_ACTION: hyperlink, slide nav, macros, run program, 12+ action types) | No | Medium |
 | Shadow effects | Partial (ShadowFormat on shapes) | No | Medium |
 | Text word wrap | Yes (word_wrap property on TextFrame) | No | Small |
@@ -81,3 +84,4 @@ All actionable Tier 1 features are implemented. Remaining items are intentionall
 - **python-pptx table cell borders**: Not exposed in the public API. Podium actually exceeds python-pptx here with per-side border color and width support.
 - **python-pptx audio**: No public API for audio embedding despite video support.
 - **Pattern presets**: All 54 OOXML patterns are now implemented.
+- **Combo charts**: python-pptx can only *read* combo charts from existing files, not create them programmatically. Podium exceeds parity here with full creation support including secondary axes.
