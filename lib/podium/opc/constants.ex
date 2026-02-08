@@ -16,6 +16,7 @@ defmodule Podium.OPC.Constants do
     do: "http://schemas.openxmlformats.org/officeDocument/2006/extended-properties"
 
   def ns(:mc), do: "http://schemas.openxmlformats.org/markup-compatibility/2006"
+  def ns(:xsi), do: "http://www.w3.org/2001/XMLSchema-instance"
 
   # Relationship Types
   def rt(:office_document),
@@ -62,6 +63,15 @@ defmodule Podium.OPC.Constants do
 
   def rt(:printer_settings),
     do: "http://schemas.openxmlformats.org/officeDocument/2006/relationships/printerSettings"
+
+  def rt(:hyperlink),
+    do: "http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink"
+
+  def rt(:notes_slide),
+    do: "http://schemas.openxmlformats.org/officeDocument/2006/relationships/notesSlide"
+
+  def rt(:notes_master),
+    do: "http://schemas.openxmlformats.org/officeDocument/2006/relationships/notesMaster"
 
   # Content Types (MIME types)
   def ct(:presentation),
@@ -112,4 +122,10 @@ defmodule Podium.OPC.Constants do
 
   def ct(:printer_settings),
     do: "application/vnd.openxmlformats-officedocument.presentationml.printerSettings"
+
+  def ct(:notes_slide),
+    do: "application/vnd.openxmlformats-officedocument.presentationml.notesSlide+xml"
+
+  def ct(:notes_master),
+    do: "application/vnd.openxmlformats-officedocument.presentationml.notesMaster+xml"
 end

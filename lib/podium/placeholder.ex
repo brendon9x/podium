@@ -137,13 +137,15 @@ defmodule Podium.Placeholder do
   Generates the XML for a placeholder shape.
   Dispatches based on the `:kind` field.
   """
-  def to_xml(%__MODULE__{kind: :text} = ph) do
+  def to_xml(ph, hyperlink_rids \\ %{})
+
+  def to_xml(%__MODULE__{kind: :text} = ph, hyperlink_rids) do
     ns_a = Constants.ns(:a)
     ns_p = Constants.ns(:p)
 
     type_attr = if ph.type, do: ~s( type="#{ph.type}"), else: ""
     idx_attr = if ph.idx, do: ~s( idx="#{ph.idx}"), else: ""
-    body_xml = Text.paragraphs_xml(ph.paragraphs)
+    body_xml = Text.paragraphs_xml(ph.paragraphs, hyperlink_rids)
 
     ~s(<p:sp xmlns:a="#{ns_a}" xmlns:p="#{ns_p}">) <>
       ~s(<p:nvSpPr>) <>
@@ -160,7 +162,7 @@ defmodule Podium.Placeholder do
       ~s(</p:sp>)
   end
 
-  def to_xml(%__MODULE__{kind: :picture} = ph) do
+  def to_xml(%__MODULE__{kind: :picture} = ph, _hyperlink_rids) do
     ns_a = Constants.ns(:a)
     ns_p = Constants.ns(:p)
     ns_r = Constants.ns(:r)
@@ -181,7 +183,7 @@ defmodule Podium.Placeholder do
       ~s(</p:pic>)
   end
 
-  def to_xml(%__MODULE__{kind: :footer} = ph) do
+  def to_xml(%__MODULE__{kind: :footer} = ph, _hyperlink_rids) do
     ns_a = Constants.ns(:a)
     ns_p = Constants.ns(:p)
 
@@ -200,7 +202,7 @@ defmodule Podium.Placeholder do
       ~s(</p:sp>)
   end
 
-  def to_xml(%__MODULE__{kind: :date} = ph) do
+  def to_xml(%__MODULE__{kind: :date} = ph, _hyperlink_rids) do
     ns_a = Constants.ns(:a)
     ns_p = Constants.ns(:p)
 
@@ -219,7 +221,7 @@ defmodule Podium.Placeholder do
       ~s(</p:sp>)
   end
 
-  def to_xml(%__MODULE__{kind: :slide_number}) do
+  def to_xml(%__MODULE__{kind: :slide_number}, _hyperlink_rids) do
     ns_a = Constants.ns(:a)
     ns_p = Constants.ns(:p)
 
@@ -241,8 +243,8 @@ defmodule Podium.Placeholder do
   end
 
   # Backward compat: placeholders created without :kind default to :text behavior
-  def to_xml(%__MODULE__{kind: nil} = ph) do
-    to_xml(%{ph | kind: :text})
+  def to_xml(%__MODULE__{kind: nil} = ph, hyperlink_rids) do
+    to_xml(%{ph | kind: :text}, hyperlink_rids)
   end
 
   defp escape(text) when is_binary(text) do

@@ -3,7 +3,17 @@ defmodule Podium.Presentation do
 
   alias Podium.Chart
   alias Podium.Chart.{XlsxWriter, XmlWriter}
-  alias Podium.{CoreProperties, Image, Placeholder, Slide, TemplatePlaceholders, Units}
+
+  alias Podium.{
+    CoreProperties,
+    Image,
+    NotesSlide,
+    Placeholder,
+    Slide,
+    TemplatePlaceholders,
+    Units
+  }
+
   alias Podium.OPC.{Constants, ContentTypes, Package, Relationships}
 
   @blank_layout_index 7
@@ -25,7 +35,9 @@ defmodule Podium.Presentation do
     slide_height: @default_slide_height,
     core_properties: nil,
     footer: nil,
-    placeholder_positions: %{}
+    placeholder_positions: %{},
+    notes_master_created: false,
+    notes_master_rid: nil
   ]
 
   @doc """
@@ -54,7 +66,14 @@ defmodule Podium.Presentation do
       :keywords,
       :category,
       :comments,
-      :last_modified_by
+      :last_modified_by,
+      :created,
+      :modified,
+      :last_printed,
+      :revision,
+      :content_status,
+      :language,
+      :version
     ]
 
     core_opts = Keyword.take(opts, core_prop_keys)
@@ -92,8 +111,20 @@ defmodule Podium.Presentation do
       Relationships.add(prs.pres_rels, Constants.rt(:slide), "slides/slide#{slide_index}.xml")
 
     background = Keyword.get(opts, :background)
+
+    # Handle picture background: store as {:picture, binary} on the slide
+    {background, background_image} =
+      case background do
+        {:picture, binary} when is_binary(binary) ->
+          ext = detect_fill_extension(binary)
+          {{:picture, binary}, {binary, ext}}
+
+        other ->
+          {other, nil}
+      end
+
     slide = Slide.new(index: slide_index, layout_index: layout_index)
-    slide = %{slide | pres_rid: rid, background: background}
+    slide = %{slide | pres_rid: rid, background: background, background_image: background_image}
 
     content_types =
       ContentTypes.add_override(
@@ -101,6 +132,13 @@ defmodule Podium.Presentation do
         "/ppt/slides/slide#{slide_index}.xml",
         Constants.ct(:slide)
       )
+
+    # Register content type for background image extension
+    content_types =
+      case background_image do
+        {_binary, ext} -> ContentTypes.add_default(content_types, ext, content_type(ext))
+        nil -> content_types
+      end
 
     prs = %{
       prs
@@ -204,6 +242,13 @@ defmodule Podium.Presentation do
   """
   def set_footer(%__MODULE__{} = prs, opts) when is_list(opts) do
     %{prs | footer: opts}
+  end
+
+  @doc """
+  Sets notes text on a slide. Returns the updated slide.
+  """
+  def set_notes(%Slide{} = slide, text) when is_binary(text) do
+    %{slide | notes_text: text}
   end
 
   @doc """
@@ -409,6 +454,20 @@ defmodule Podium.Presentation do
     raise ArgumentError, "unknown layout index #{n}; expected 1..11"
   end
 
+  defp next_theme_index(parts) do
+    parts
+    |> Map.keys()
+    |> Enum.filter(&String.starts_with?(&1, "ppt/theme/theme"))
+    |> Enum.map(fn path ->
+      path
+      |> String.replace_prefix("ppt/theme/theme", "")
+      |> String.replace_suffix(".xml", "")
+      |> String.to_integer()
+    end)
+    |> Enum.max(fn -> 0 end)
+    |> Kernel.+(1)
+  end
+
   defp replace_slide(slides, %Slide{} = slide) do
     Enum.map(slides, fn existing ->
       if existing.index == slide.index, do: slide, else: existing
@@ -419,9 +478,9 @@ defmodule Podium.Presentation do
     parts = scale_layout_coordinates(prs.template_parts, prs.slide_width)
 
     # Process each slide: generate slide XML, slide rels, chart parts, image parts
-    parts =
-      Enum.reduce(prs.slides, parts, fn slide, acc ->
-        build_slide_parts(slide, acc, prs.footer)
+    {parts, prs} =
+      Enum.reduce(prs.slides, {parts, prs}, fn slide, {acc, prs_acc} ->
+        build_slide_parts(slide, acc, prs_acc)
       end)
 
     # Update presentation.xml to include slide references
@@ -445,7 +504,7 @@ defmodule Podium.Presentation do
     parts
   end
 
-  defp build_slide_parts(slide, parts, footer_opts) do
+  defp build_slide_parts(slide, parts, prs) do
     # Start with slide layout relationship
     slide_rels = Relationships.new()
 
@@ -517,6 +576,22 @@ defmodule Podium.Presentation do
         {rels, rids, acc}
       end)
 
+    # Add background image relationship if present
+    {slide_rels, bg_rid, parts} =
+      case slide.background_image do
+        {binary, ext} ->
+          bg_media_name = "bg_image#{slide.index}.#{ext}"
+
+          {rels, rid} =
+            Relationships.add(slide_rels, Constants.rt(:image), "../media/#{bg_media_name}")
+
+          parts = Map.put(parts, "ppt/media/#{bg_media_name}", binary)
+          {rels, rid, parts}
+
+        nil ->
+          {slide_rels, nil, parts}
+      end
+
     # Add picture placeholder relationships and store image binaries
     {slide_rels, slide, parts} =
       Enum.reduce(
@@ -540,25 +615,160 @@ defmodule Podium.Presentation do
         end
       )
 
+    # Collect hyperlink URLs from all shapes and placeholders, create external rels
+    all_hyperlink_urls = collect_all_hyperlink_urls(slide)
+
+    {slide_rels, hyperlink_rids} =
+      Enum.reduce(all_hyperlink_urls, {slide_rels, %{}}, fn url, {rels, rids} ->
+        {rels, rid} = Relationships.add(rels, Constants.rt(:hyperlink), url, true)
+        {rels, Map.put(rids, url, rid)}
+      end)
+
     # Inject footer/date/slide_number placeholders if set
     slide =
-      if footer_opts do
-        inject_footer_placeholders(slide, footer_opts)
+      if prs.footer do
+        inject_footer_placeholders(slide, prs.footer)
       else
         slide
       end
 
-    # Generate slide XML with chart, image, and fill relationship IDs
+    # Handle notes slide
+    {slide_rels, parts, prs} =
+      if slide.notes_text do
+        build_notes_parts(slide, slide_rels, parts, prs)
+      else
+        {slide_rels, parts, prs}
+      end
+
+    # Generate slide XML with chart, image, fill, hyperlink relationship IDs
     parts =
       Map.put(
         parts,
         Slide.partname(slide),
-        Slide.to_xml(slide, chart_rids, image_rids, fill_rids)
+        Slide.to_xml(slide, chart_rids, image_rids, fill_rids, hyperlink_rids, bg_rid)
       )
 
     parts = Map.put(parts, Slide.rels_partname(slide), Relationships.to_xml(slide_rels))
 
-    parts
+    {parts, prs}
+  end
+
+  defp collect_all_hyperlink_urls(slide) do
+    shape_urls =
+      Enum.flat_map(slide.shapes, fn shape ->
+        Podium.Text.collect_hyperlink_urls(shape.paragraphs)
+      end)
+
+    placeholder_urls =
+      Enum.flat_map(slide.placeholders, fn ph ->
+        case ph.kind do
+          :text -> Podium.Text.collect_hyperlink_urls(ph.paragraphs || [])
+          _ -> []
+        end
+      end)
+
+    (shape_urls ++ placeholder_urls) |> Enum.uniq()
+  end
+
+  defp build_notes_parts(slide, slide_rels, parts, prs) do
+    n = slide.index
+
+    # Lazily create notes master (once per presentation)
+    {parts, prs} =
+      if prs.notes_master_created do
+        {parts, prs}
+      else
+        # Determine notes theme partname (next available theme index)
+        theme_index = next_theme_index(parts)
+        theme_partname = "ppt/theme/theme#{theme_index}.xml"
+
+        # Add notesMaster parts
+        parts = Map.put(parts, "ppt/notesMasters/notesMaster1.xml", NotesSlide.master_xml())
+
+        parts =
+          Map.put(
+            parts,
+            "ppt/notesMasters/_rels/notesMaster1.xml.rels",
+            NotesSlide.master_rels_xml("../theme/theme#{theme_index}.xml")
+          )
+
+        # Add separate theme for notes master (python-pptx pattern)
+        parts = Map.put(parts, theme_partname, NotesSlide.theme_xml())
+
+        # Add presentation -> notesMaster relationship
+        {pres_rels, nm_rid} =
+          Relationships.add(
+            prs.pres_rels,
+            Constants.rt(:notes_master),
+            "notesMasters/notesMaster1.xml"
+          )
+
+        # Add content type overrides for notesMaster and its theme
+        content_types =
+          prs.content_types
+          |> ContentTypes.add_override(
+            "/ppt/notesMasters/notesMaster1.xml",
+            Constants.ct(:notes_master)
+          )
+          |> ContentTypes.add_override(
+            "/#{theme_partname}",
+            Constants.ct(:theme)
+          )
+
+        prs = %{
+          prs
+          | pres_rels: pres_rels,
+            content_types: content_types,
+            notes_master_created: true,
+            notes_master_rid: nm_rid
+        }
+
+        {parts, prs}
+      end
+
+    # Create notesSlide XML
+    parts =
+      Map.put(parts, "ppt/notesSlides/notesSlide#{n}.xml", NotesSlide.to_xml(slide.notes_text))
+
+    # Create notesSlide rels (references slide + notesMaster)
+    notes_rels = Relationships.new()
+
+    {notes_rels, _slide_rid} =
+      Relationships.add(notes_rels, Constants.rt(:slide), "../slides/slide#{n}.xml")
+
+    {notes_rels, _master_rid} =
+      Relationships.add(
+        notes_rels,
+        Constants.rt(:notes_master),
+        "../notesMasters/notesMaster1.xml"
+      )
+
+    parts =
+      Map.put(
+        parts,
+        "ppt/notesSlides/_rels/notesSlide#{n}.xml.rels",
+        Relationships.to_xml(notes_rels)
+      )
+
+    # Add slide -> notesSlide relationship
+    {slide_rels, _notes_rid} =
+      Relationships.add(
+        slide_rels,
+        Constants.rt(:notes_slide),
+        "../notesSlides/notesSlide#{n}.xml"
+      )
+
+    # Add content type override for this notesSlide
+    content_types =
+      ContentTypes.add_override(
+        prs.content_types,
+        "/ppt/notesSlides/notesSlide#{n}.xml",
+        Constants.ct(:notes_slide)
+      )
+
+    prs = %{prs | content_types: content_types}
+
+    {slide_rels, parts, prs}
   end
 
   defp inject_footer_placeholders(slide, opts) do
@@ -607,9 +817,17 @@ defmodule Podium.Presentation do
         "<p:sldIdLst>#{entries}</p:sldIdLst>"
       end
 
+    notes_master_id_list =
+      if prs.notes_master_rid do
+        ~s(<p:notesMasterIdLst><p:notesMasterId r:id="#{prs.notes_master_rid}"/></p:notesMasterIdLst>)
+      else
+        ""
+      end
+
     Podium.XML.Builder.xml_declaration() <>
       ~s(<p:presentation xmlns:a="#{ns_a}" xmlns:r="#{ns_r}" xmlns:p="#{ns_p}" saveSubsetFonts="1" autoCompressPictures="0">) <>
       ~s(<p:sldMasterIdLst><p:sldMasterId id="2147483648" r:id="rId1"/></p:sldMasterIdLst>) <>
+      notes_master_id_list <>
       slide_id_list <>
       ~s(<p:sldSz cx="#{prs.slide_width}" cy="#{prs.slide_height}"/>) <>
       ~s(<p:notesSz cx="#{prs.slide_height}" cy="#{prs.slide_width}"/>) <>

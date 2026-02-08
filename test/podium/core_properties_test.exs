@@ -46,6 +46,60 @@ defmodule Podium.CorePropertiesTest do
 
       assert xml =~ "R&amp;D &lt;Report&gt; &apos;Draft&apos;"
     end
+
+    test "created and modified dates with xsi:type attribute" do
+      props =
+        CoreProperties.new(
+          title: "Dated Doc",
+          created: ~U[2025-01-15 10:00:00Z],
+          modified: ~U[2025-02-07 10:30:00Z]
+        )
+
+      xml = CoreProperties.to_xml(props)
+
+      assert xml =~ ~s(xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance")
+
+      assert xml =~
+               ~s(<dcterms:created xsi:type="dcterms:W3CDTF">2025-01-15T10:00:00Z</dcterms:created>)
+
+      assert xml =~
+               ~s(<dcterms:modified xsi:type="dcterms:W3CDTF">2025-02-07T10:30:00Z</dcterms:modified>)
+    end
+
+    test "revision as integer element" do
+      props = CoreProperties.new(revision: 5)
+      xml = CoreProperties.to_xml(props)
+
+      assert xml =~ "<cp:revision>5</cp:revision>"
+    end
+
+    test "content_status as string element" do
+      props = CoreProperties.new(content_status: "Draft")
+      xml = CoreProperties.to_xml(props)
+
+      assert xml =~ "<cp:contentStatus>Draft</cp:contentStatus>"
+    end
+
+    test "language field" do
+      props = CoreProperties.new(language: "en-US")
+      xml = CoreProperties.to_xml(props)
+
+      assert xml =~ "<dc:language>en-US</dc:language>"
+    end
+
+    test "version field" do
+      props = CoreProperties.new(version: "1.0")
+      xml = CoreProperties.to_xml(props)
+
+      assert xml =~ "<cp:version>1.0</cp:version>"
+    end
+
+    test "no xsi namespace when no datetime fields" do
+      props = CoreProperties.new(title: "No Dates")
+      xml = CoreProperties.to_xml(props)
+
+      refute xml =~ "xmlns:xsi"
+    end
   end
 
   describe "integration with Podium" do
@@ -83,6 +137,32 @@ defmodule Podium.CorePropertiesTest do
 
       # Template's core.xml should be preserved as-is
       assert Map.has_key?(parts, "docProps/core.xml")
+    end
+
+    test "date and revision fields via new/1 opts" do
+      prs =
+        Podium.new(
+          title: "Full Props",
+          created: ~U[2025-01-15 10:00:00Z],
+          modified: ~U[2025-02-07 10:30:00Z],
+          revision: 5,
+          content_status: "Draft",
+          language: "en-US"
+        )
+
+      {prs, _slide} = Podium.add_slide(prs)
+
+      {:ok, binary} = Podium.save_to_memory(prs)
+      parts = PptxHelpers.unzip_pptx_binary(binary)
+      core_xml = parts["docProps/core.xml"]
+
+      assert core_xml =~ "<dc:title>Full Props</dc:title>"
+      assert core_xml =~ "2025-01-15T10:00:00Z"
+      assert core_xml =~ "2025-02-07T10:30:00Z"
+      assert core_xml =~ "<cp:revision>5</cp:revision>"
+      assert core_xml =~ "<cp:contentStatus>Draft</cp:contentStatus>"
+      assert core_xml =~ "<dc:language>en-US</dc:language>"
+      assert core_xml =~ ~s(xsi:type="dcterms:W3CDTF")
     end
   end
 end

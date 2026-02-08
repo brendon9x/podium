@@ -144,6 +144,13 @@ defmodule Podium do
   end
 
   @doc """
+  Sets speaker notes on a slide.
+  """
+  def set_notes(slide, text) do
+    Presentation.set_notes(slide, text)
+  end
+
+  @doc """
   Sets core document properties (Dublin Core metadata).
 
   ## Options

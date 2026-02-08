@@ -769,7 +769,85 @@ slide24 =
 
 {prs, _slide24} = Podium.set_picture_placeholder(prs, slide24, :picture, image_binary)
 
-# --- Slide 25: Footer, date, and slide number demo ---
+# --- Slide 25: Hyperlinks demo ---
+{prs, slide25} = Podium.add_slide(prs)
+
+slide25 =
+  slide25
+  |> Podium.add_text_box(
+    [
+      {[{"Hyperlink Demo", bold: true, font_size: 28, color: "003366"}], alignment: :center}
+    ],
+    x: {0.5, :inches},
+    y: {0.3, :inches},
+    width: {12.33, :inches},
+    height: {0.7, :inches}
+  )
+  |> Podium.add_text_box(
+    [
+      [
+        {"Visit our website: ", font_size: 18},
+        {"example.com",
+         font_size: 18,
+         color: "0563C1",
+         underline: true,
+         hyperlink: [url: "https://example.com", tooltip: "Visit Example.com"]}
+      ],
+      [
+        {"Email us at: ", font_size: 18},
+        {"support@acme.example.com",
+         font_size: 18,
+         color: "0563C1",
+         underline: true,
+         hyperlink: "mailto:support@acme.example.com"}
+      ]
+    ],
+    x: {1, :inches},
+    y: {1.5, :inches},
+    width: {11.33, :inches},
+    height: {2, :inches}
+  )
+
+prs = Podium.put_slide(prs, slide25)
+
+# --- Slide 26: Speaker notes demo ---
+{prs, slide26} = Podium.add_slide(prs)
+
+slide26 =
+  slide26
+  |> Podium.add_text_box(
+    [
+      {[{"Speaker Notes Demo", bold: true, font_size: 28, color: "003366"}], alignment: :center},
+      {[{"Open Presenter View to see the speaker notes for this slide.", font_size: 18}],
+       alignment: :center}
+    ],
+    x: {1, :inches},
+    y: {2, :inches},
+    width: {11.33, :inches},
+    height: {2, :inches}
+  )
+  |> Podium.set_notes(
+    "These are speaker notes. They are visible in Presenter View but not on the slide itself. Use them for talking points, reminders, or supplementary data."
+  )
+
+prs = Podium.put_slide(prs, slide26)
+
+# --- Slide 27: Picture background demo ---
+{prs, slide27} = Podium.add_slide(prs, background: {:picture, image_binary})
+
+slide27 =
+  Podium.add_text_box(slide27, [[{"Picture Background", bold: true, font_size: 36, color: "FFFFFF"}]],
+    x: {2, :inches},
+    y: {2.5, :inches},
+    width: {9.33, :inches},
+    height: {1.5, :inches},
+    alignment: :center,
+    fill: "333333"
+  )
+
+prs = Podium.put_slide(prs, slide27)
+
+# --- Slide 28: Footer, date, and slide number demo ---
 # Enable footer on the presentation
 prs =
   Podium.set_footer(prs,
