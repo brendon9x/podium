@@ -16,7 +16,7 @@
 | **Images** | PNG, JPEG, BMP, GIF, TIFF, EMF, WMF via magic-byte detection; position, size, cropping (per-side in 1/1000ths of percent); SHA-1 deduplication; rotation; **auto-scale** when size omitted (reads native pixel dimensions + DPI from image headers); aspect-ratio preservation when only width or height given; **image masking** via `:shape` option (ellipse, diamond, roundRect, star5, etc.) |
 | **Tables** | Cell text, rich text cells, solid/gradient/pattern fill, borders (per-side with color/width), padding (per-side), vertical anchor (top/middle/bottom), col_span, row_span, `:merge` placeholders; table style banding flags (`first_row`, `last_row`, `first_col`, `last_col`, `band_row`, `band_col`) |
 | **Placeholders** | All 11 slide layouts (title_slide, title_content, section_header, two_content, comparison, title_only, blank, content_caption, picture_caption, title_vertical_text, vertical_title_text); text placeholders (title, subtitle, content, body, caption, left/right content/heading); picture placeholder on picture_caption layout; chart/table content placeholders (`set_chart_placeholder`/`set_table_placeholder`) with position inherited from template layout; footer, date, slide number as presentation-level settings |
-| **Charts** | 7 types: column_clustered, column_stacked, bar_clustered, bar_stacked, line, line_markers, pie |
+| **Charts** | 29 types: column (clustered, stacked, stacked_100), bar (clustered, stacked, stacked_100), line (standard, markers, stacked, markers_stacked, stacked_100, markers_stacked_100), pie, pie_exploded, area (standard, stacked, stacked_100), doughnut, doughnut_exploded, radar (standard, filled, markers), scatter (markers, lines, lines_no_markers, smooth, smooth_no_markers), bubble, bubble_3d |
 | **Chart titles** | Plain string or keyword list with text, font_size, bold, italic, color, font |
 | **Chart legends** | Position atom or keyword list with position, font_size, bold, italic, color, font |
 | **Chart data labels** | Simple list (`[:value, :category, :percent]`) or keyword list with show, position (9 options), number_format; **per-point data label overrides** via series `data_labels` map |
@@ -45,7 +45,7 @@ All actionable Tier 1 features are implemented. Remaining items are intentionall
 
 | Feature | python-pptx | Podium | Effort |
 |---------|-------------|--------|--------|
-| **More chart types** | 29 creatable types: area (3), bar/column stacked_100 (2), bubble (2), doughnut (2), line stacked variants (4), pie_exploded, radar (3), scatter (5) | 7 types | Medium per type |
+| **More chart types** | 29 creatable types: area (3), bar/column stacked_100 (2), bubble (2), doughnut (2), line stacked variants (4), pie_exploded, radar (3), scatter (5) | ✅ All 29 types including XyChartData and BubbleChartData for scatter/bubble | ~~Done~~ |
 | **Slide notes** | Full support: auto-create notes slide, notes_text_frame, notes_placeholder | ✅ `set_notes/2` with auto notes master | ~~Done~~ |
 | **Auto shapes** | 180+ preset geometries (rounded rect, arrows, stars, callouts, flowchart, etc.) via MSO_SHAPE enum | text_box only | Medium |
 | **Hyperlinks** | URL (http/https), email (mailto), file, slide jump — on text runs and shapes | ✅ URL/mailto on text runs with tooltip | ~~Done~~ |

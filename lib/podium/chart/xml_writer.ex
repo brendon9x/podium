@@ -2,7 +2,7 @@ defmodule Podium.Chart.XmlWriter do
   @moduledoc false
 
   alias Podium.Chart
-  alias Podium.Chart.{ChartData, ChartType}
+  alias Podium.Chart.{BubbleChartData, ChartData, ChartType, XyChartData}
   alias Podium.{Drawing, Pattern}
   alias Podium.OPC.Constants
   alias Podium.XML.Builder
@@ -12,6 +12,15 @@ defmodule Podium.Chart.XmlWriter do
 
   @line_cat_ax_id "2118791784"
   @line_val_ax_id "2140495176"
+
+  @area_cat_ax_id "2094734552"
+  @area_val_ax_id "2094734553"
+
+  @radar_cat_ax_id "2094734554"
+  @radar_val_ax_id "2094734555"
+
+  @scatter_x_ax_id "2094734556"
+  @scatter_y_ax_id "2094734557"
 
   @doc """
   Generates the chart XML. Accepts either a `%Chart{}` struct or
@@ -24,7 +33,7 @@ defmodule Podium.Chart.XmlWriter do
       chart_space_xml(chart, config)
   end
 
-  def to_xml(chart_type, %ChartData{} = chart_data) do
+  def to_xml(chart_type, chart_data) do
     chart = %Chart{chart_type: chart_type, chart_data: chart_data}
     to_xml(chart)
   end
@@ -127,6 +136,7 @@ defmodule Podium.Chart.XmlWriter do
   # -- Date1904 --
 
   defp date1904_xml(%{element: "c:pieChart"}), do: ""
+  defp date1904_xml(%{element: "c:doughnutChart"}), do: ""
   defp date1904_xml(_), do: ~s(<c:date1904 val="0"/>)
 
   # -- Plot --
@@ -162,6 +172,61 @@ defmodule Podium.Chart.XmlWriter do
       series_xml(chart) <>
       data_labels_xml(chart.data_labels) <>
       ~s(</c:pieChart>)
+  end
+
+  defp plot_xml(chart, %{element: "c:areaChart"} = config) do
+    ~s(<c:areaChart>) <>
+      ~s(<c:grouping val="#{config.grouping}"/>) <>
+      ~s(<c:varyColors val="0"/>) <>
+      series_xml(chart) <>
+      data_labels_xml(chart.data_labels) <>
+      ~s(<c:axId val="#{@area_cat_ax_id}"/>) <>
+      ~s(<c:axId val="#{@area_val_ax_id}"/>) <>
+      ~s(</c:areaChart>)
+  end
+
+  defp plot_xml(chart, %{element: "c:doughnutChart"}) do
+    ~s(<c:doughnutChart>) <>
+      ~s(<c:varyColors val="1"/>) <>
+      series_xml(chart) <>
+      data_labels_xml(chart.data_labels) <>
+      ~s(<c:firstSliceAng val="0"/>) <>
+      ~s(<c:holeSize val="50"/>) <>
+      ~s(</c:doughnutChart>)
+  end
+
+  defp plot_xml(chart, %{element: "c:radarChart"} = config) do
+    ~s(<c:radarChart>) <>
+      ~s(<c:radarStyle val="#{config.radar_style}"/>) <>
+      ~s(<c:varyColors val="0"/>) <>
+      series_xml(chart) <>
+      data_labels_xml(chart.data_labels) <>
+      ~s(<c:axId val="#{@radar_cat_ax_id}"/>) <>
+      ~s(<c:axId val="#{@radar_val_ax_id}"/>) <>
+      ~s(</c:radarChart>)
+  end
+
+  defp plot_xml(chart, %{element: "c:scatterChart"} = config) do
+    ~s(<c:scatterChart>) <>
+      ~s(<c:scatterStyle val="#{config.scatter_style}"/>) <>
+      ~s(<c:varyColors val="0"/>) <>
+      series_xml(chart) <>
+      data_labels_xml(chart.data_labels) <>
+      ~s(<c:axId val="#{@scatter_x_ax_id}"/>) <>
+      ~s(<c:axId val="#{@scatter_y_ax_id}"/>) <>
+      ~s(</c:scatterChart>)
+  end
+
+  defp plot_xml(chart, %{element: "c:bubbleChart"}) do
+    ~s(<c:bubbleChart>) <>
+      ~s(<c:varyColors val="0"/>) <>
+      series_xml(chart) <>
+      data_labels_xml(chart.data_labels) <>
+      ~s(<c:bubbleScale val="100"/>) <>
+      ~s(<c:showNegBubbles val="0"/>) <>
+      ~s(<c:axId val="#{@scatter_x_ax_id}"/>) <>
+      ~s(<c:axId val="#{@scatter_y_ax_id}"/>) <>
+      ~s(</c:bubbleChart>)
   end
 
   # -- Data Labels --
@@ -245,39 +310,18 @@ defmodule Podium.Chart.XmlWriter do
 
   defp series_xml(chart) do
     config = ChartType.config(chart.chart_type)
+    chart_data = chart.chart_data
 
-    chart.chart_data.series
-    |> Enum.map(fn series -> single_series_xml(config, chart.chart_data, series) end)
+    chart_data.series
+    |> Enum.map(fn series -> single_series_xml(config, chart_data, series) end)
     |> Enum.join()
   end
 
-  defp single_series_xml(config, chart_data, series) do
-    marker_xml =
-      cond do
-        series.marker ->
-          series_marker_xml(series.marker)
-
-        match?(%{element: "c:lineChart", show_marker: false}, config) ->
-          ~s(<c:marker><c:symbol val="none"/></c:marker>)
-
-        true ->
-          ""
-      end
-
-    smooth_xml =
-      case config.element do
-        "c:lineChart" -> ~s(<c:smooth val="0"/>)
-        _ -> ""
-      end
-
-    # Bar/column series default invertIfNegative to true when absent,
-    # which can cause fills to render incorrectly. Explicitly disable it.
-    invert_xml =
-      case config.element do
-        "c:barChart" -> ~s(<c:invertIfNegative val="0"/>)
-        _ -> ""
-      end
-
+  defp single_series_xml(config, %ChartData{} = chart_data, series) do
+    marker_xml = cat_marker_xml(config, series)
+    smooth_xml = cat_smooth_xml(config)
+    invert_xml = invert_if_negative_xml(config)
+    explosion_xml = explosion_xml(config)
     color_xml = series_color_xml(config, series)
     dpt_xml = data_points_xml(series)
     series_dlbls_xml = series_data_labels_xml(series.data_labels)
@@ -288,6 +332,7 @@ defmodule Podium.Chart.XmlWriter do
       tx_xml(chart_data, series) <>
       color_xml <>
       invert_xml <>
+      explosion_xml <>
       marker_xml <>
       dpt_xml <>
       series_dlbls_xml <>
@@ -296,6 +341,104 @@ defmodule Podium.Chart.XmlWriter do
       smooth_xml <>
       ~s(</c:ser>)
   end
+
+  defp single_series_xml(config, %XyChartData{} = chart_data, series) do
+    marker_xml = xy_marker_xml(config, series)
+    smooth_xml = xy_smooth_xml(config)
+    no_line_xml = no_line_xml(config, series)
+    color_xml = series_color_xml(config, series)
+    series_dlbls_xml = series_data_labels_xml(series.data_labels)
+
+    ~s(<c:ser>) <>
+      ~s(<c:idx val="#{series.index}"/>) <>
+      ~s(<c:order val="#{series.index}"/>) <>
+      tx_xml(chart_data, series) <>
+      color_xml <>
+      no_line_xml <>
+      marker_xml <>
+      series_dlbls_xml <>
+      x_val_xml(chart_data, series) <>
+      y_val_xml(chart_data, series) <>
+      smooth_xml <>
+      ~s(</c:ser>)
+  end
+
+  defp single_series_xml(config, %BubbleChartData{} = chart_data, series) do
+    color_xml = series_color_xml(config, series)
+    series_dlbls_xml = series_data_labels_xml(series.data_labels)
+    bubble_3d_val = if config[:bubble_3d], do: "1", else: "0"
+
+    ~s(<c:ser>) <>
+      ~s(<c:idx val="#{series.index}"/>) <>
+      ~s(<c:order val="#{series.index}"/>) <>
+      tx_xml(chart_data, series) <>
+      color_xml <>
+      ~s(<c:invertIfNegative val="0"/>) <>
+      series_dlbls_xml <>
+      x_val_xml(chart_data, series) <>
+      y_val_xml(chart_data, series) <>
+      bubble_size_xml(chart_data, series) <>
+      ~s(<c:bubble3D val="#{bubble_3d_val}"/>) <>
+      ~s(</c:ser>)
+  end
+
+  # -- Marker helpers for category-based charts --
+
+  defp cat_marker_xml(config, series) do
+    cond do
+      series.marker ->
+        series_marker_xml(series.marker)
+
+      match?(%{element: "c:lineChart", show_marker: false}, config) ->
+        ~s(<c:marker><c:symbol val="none"/></c:marker>)
+
+      match?(%{element: "c:radarChart", hide_marker: true}, config) ->
+        ~s(<c:marker><c:symbol val="none"/></c:marker>)
+
+      true ->
+        ""
+    end
+  end
+
+  defp cat_smooth_xml(%{element: "c:lineChart"}), do: ~s(<c:smooth val="0"/>)
+  defp cat_smooth_xml(%{element: "c:radarChart"}), do: ~s(<c:smooth val="0"/>)
+  defp cat_smooth_xml(_), do: ""
+
+  # -- Marker/smooth helpers for XY charts --
+
+  defp xy_marker_xml(config, series) do
+    cond do
+      series.marker ->
+        series_marker_xml(series.marker)
+
+      config[:hide_marker] == true ->
+        ~s(<c:marker><c:symbol val="none"/></c:marker>)
+
+      true ->
+        ""
+    end
+  end
+
+  defp xy_smooth_xml(%{scatter_style: "smoothMarker"}), do: ~s(<c:smooth val="1"/>)
+  defp xy_smooth_xml(_), do: ~s(<c:smooth val="0"/>)
+
+  defp no_line_xml(%{no_line: true}, %{color: nil, pattern: nil}) do
+    ~s(<c:spPr><a:ln><a:noFill/></a:ln></c:spPr>)
+  end
+
+  defp no_line_xml(_, _), do: ""
+
+  # -- Invert/explosion helpers --
+
+  defp invert_if_negative_xml(%{element: "c:barChart"}),
+    do: ~s(<c:invertIfNegative val="0"/>)
+
+  defp invert_if_negative_xml(_), do: ""
+
+  defp explosion_xml(%{explosion: val}) when is_integer(val),
+    do: ~s(<c:explosion val="#{val}"/>)
+
+  defp explosion_xml(_), do: ""
 
   defp series_color_xml(_config, %{color: nil, pattern: nil}), do: ""
 
@@ -408,8 +551,40 @@ defmodule Podium.Chart.XmlWriter do
       ~s(</c:dLbl>)
   end
 
-  defp tx_xml(chart_data, series) do
+  # -- tx_xml dispatches on data type --
+
+  defp tx_xml(%ChartData{} = chart_data, series) do
     name_ref = ChartData.series_name_ref(chart_data, series)
+    escaped_name = Builder.escape(series.name)
+
+    ~s(<c:tx>) <>
+      ~s(<c:strRef>) <>
+      ~s(<c:f>#{name_ref}</c:f>) <>
+      ~s(<c:strCache>) <>
+      ~s(<c:ptCount val="1"/>) <>
+      ~s(<c:pt idx="0"><c:v>#{escaped_name}</c:v></c:pt>) <>
+      ~s(</c:strCache>) <>
+      ~s(</c:strRef>) <>
+      ~s(</c:tx>)
+  end
+
+  defp tx_xml(%XyChartData{} = chart_data, series) do
+    name_ref = XyChartData.series_name_ref(chart_data, series)
+    escaped_name = Builder.escape(series.name)
+
+    ~s(<c:tx>) <>
+      ~s(<c:strRef>) <>
+      ~s(<c:f>#{name_ref}</c:f>) <>
+      ~s(<c:strCache>) <>
+      ~s(<c:ptCount val="1"/>) <>
+      ~s(<c:pt idx="0"><c:v>#{escaped_name}</c:v></c:pt>) <>
+      ~s(</c:strCache>) <>
+      ~s(</c:strRef>) <>
+      ~s(</c:tx>)
+  end
+
+  defp tx_xml(%BubbleChartData{} = chart_data, series) do
+    name_ref = BubbleChartData.series_name_ref(chart_data, series)
     escaped_name = Builder.escape(series.name)
 
     ~s(<c:tx>) <>
@@ -470,6 +645,56 @@ defmodule Podium.Chart.XmlWriter do
       ~s(</c:val>)
   end
 
+  # -- XY data elements (scatter / bubble) --
+
+  defp x_val_xml(%XyChartData{} = chart_data, series) do
+    ref = XyChartData.series_x_values_ref(chart_data, series)
+    num_ref_xml("c:xVal", ref, series.x_values)
+  end
+
+  defp x_val_xml(%BubbleChartData{} = chart_data, series) do
+    ref = BubbleChartData.series_x_values_ref(chart_data, series)
+    num_ref_xml("c:xVal", ref, series.x_values)
+  end
+
+  defp y_val_xml(%XyChartData{} = chart_data, series) do
+    ref = XyChartData.series_y_values_ref(chart_data, series)
+    num_ref_xml("c:yVal", ref, series.y_values)
+  end
+
+  defp y_val_xml(%BubbleChartData{} = chart_data, series) do
+    ref = BubbleChartData.series_y_values_ref(chart_data, series)
+    num_ref_xml("c:yVal", ref, series.y_values)
+  end
+
+  defp bubble_size_xml(chart_data, series) do
+    ref = BubbleChartData.series_bubble_sizes_ref(chart_data, series)
+    num_ref_xml("c:bubbleSize", ref, series.bubble_sizes)
+  end
+
+  defp num_ref_xml(element, ref, values) do
+    count = length(values)
+
+    pts =
+      values
+      |> Enum.with_index()
+      |> Enum.map(fn {val, idx} ->
+        ~s(<c:pt idx="#{idx}"><c:v>#{val}</c:v></c:pt>)
+      end)
+      |> Enum.join()
+
+    ~s(<#{element}>) <>
+      ~s(<c:numRef>) <>
+      ~s(<c:f>#{ref}</c:f>) <>
+      ~s(<c:numCache>) <>
+      ~s(<c:formatCode>General</c:formatCode>) <>
+      ~s(<c:ptCount val="#{count}"/>) <>
+      pts <>
+      ~s(</c:numCache>) <>
+      ~s(</c:numRef>) <>
+      ~s(</#{element}>)
+  end
+
   # -- Axes --
 
   defp axes_xml(_chart, %{has_axes: false}), do: ""
@@ -477,6 +702,26 @@ defmodule Podium.Chart.XmlWriter do
   defp axes_xml(chart, %{element: "c:lineChart"}) do
     cat_axis_xml(chart, @line_cat_ax_id, @line_val_ax_id) <>
       val_ax_xml(chart, @line_val_ax_id, @line_cat_ax_id)
+  end
+
+  defp axes_xml(chart, %{element: "c:areaChart"}) do
+    cat_axis_xml(chart, @area_cat_ax_id, @area_val_ax_id) <>
+      val_ax_xml(chart, @area_val_ax_id, @area_cat_ax_id)
+  end
+
+  defp axes_xml(chart, %{element: "c:radarChart"}) do
+    cat_axis_xml(chart, @radar_cat_ax_id, @radar_val_ax_id) <>
+      val_ax_xml(chart, @radar_val_ax_id, @radar_cat_ax_id)
+  end
+
+  defp axes_xml(chart, %{element: "c:scatterChart"}) do
+    val_ax_xml(chart, @scatter_x_ax_id, @scatter_y_ax_id, "b", cross_between: "midCat") <>
+      val_ax_xml(chart, @scatter_y_ax_id, @scatter_x_ax_id, "l", cross_between: "midCat")
+  end
+
+  defp axes_xml(chart, %{element: "c:bubbleChart"}) do
+    val_ax_xml(chart, @scatter_x_ax_id, @scatter_y_ax_id, "b", cross_between: "midCat") <>
+      val_ax_xml(chart, @scatter_y_ax_id, @scatter_x_ax_id, "l", cross_between: "midCat")
   end
 
   defp axes_xml(chart, _config) do
@@ -588,8 +833,18 @@ defmodule Podium.Chart.XmlWriter do
   defp time_unit_value(:months), do: "months"
   defp time_unit_value(:years), do: "years"
 
+  # Standard val_ax_xml using chart_type for axis positions
   defp val_ax_xml(chart, ax_id, cross_ax_id) do
     pos = ChartType.val_ax_pos(chart.chart_type)
+    do_val_ax_xml(chart, ax_id, cross_ax_id, pos, [])
+  end
+
+  # Explicit position val_ax_xml for scatter/bubble (two valAx axes)
+  defp val_ax_xml(chart, ax_id, cross_ax_id, pos, opts) do
+    do_val_ax_xml(chart, ax_id, cross_ax_id, pos, opts)
+  end
+
+  defp do_val_ax_xml(chart, ax_id, cross_ax_id, pos, opts) do
     axis_opts = chart.value_axis || []
     axis_title = Keyword.get(axis_opts, :title)
     num_fmt = Keyword.get(axis_opts, :number_format)
@@ -614,6 +869,12 @@ defmodule Podium.Chart.XmlWriter do
     minor_unit_xml = if minor_unit, do: ~s(<c:minorUnit val="#{minor_unit}"/>), else: ""
     delete_val = if visible, do: "0", else: "1"
 
+    cross_between_xml =
+      case Keyword.get(opts, :cross_between) do
+        nil -> ""
+        val -> ~s(<c:crossBetween val="#{val}"/>)
+      end
+
     ~s(<c:valAx>) <>
       ~s(<c:axId val="#{ax_id}"/>) <>
       scaling_xml <>
@@ -628,6 +889,7 @@ defmodule Podium.Chart.XmlWriter do
       ~s(<c:tickLblPos val="nextTo"/>) <>
       ~s(<c:crossAx val="#{cross_ax_id}"/>) <>
       crosses_xml(crosses) <>
+      cross_between_xml <>
       major_unit_xml <>
       minor_unit_xml <>
       label_rotation_xml(label_rotation) <>
