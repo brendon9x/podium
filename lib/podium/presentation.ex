@@ -656,7 +656,7 @@ defmodule Podium.Presentation do
   defp collect_all_hyperlink_urls(slide) do
     shape_urls =
       Enum.flat_map(slide.shapes, fn shape ->
-        Podium.Text.collect_hyperlink_urls(shape.paragraphs)
+        Podium.Text.collect_hyperlink_urls(shape.paragraphs || [])
       end)
 
     placeholder_urls =

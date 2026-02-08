@@ -27,6 +27,9 @@
 | **Slide notes** | Speaker notes via `Podium.set_notes/2`; auto-creates notes slide and notes master parts; notes visible in Presenter View |
 | **Slide background** | Solid, gradient, pattern, **picture fill** via `:background` option on `add_slide/2` |
 | **Core properties** | title, author, subject, keywords, category, comments, last_modified_by, **created, modified (DateTime with W3CDTF), revision (integer), content_status, language, version** via `Podium.new/1` opts or `set_core_properties/2` |
+| **Auto shapes** | 180+ preset geometries (rounded rect, arrows, stars, callouts, flowchart, etc.) with fill, line, text, rotation; theme-styled by default via `<p:style>` |
+| **Connectors** | Straight, elbow, curved connectors with coordinate-based begin/end points, auto flip calculation, line formatting (color, width, dash style); theme-styled by default |
+| **Text auto-size** | `:none` (`<a:noAutofit/>`), `:text_to_fit_shape` (`<a:normAutofit/>`), `:shape_to_fit_text` (`<a:spAutoFit/>`) on text boxes and auto shapes |
 | **OPC packaging** | Content types, relationships, ZIP round-trip |
 | **Units** | inches, cm, pt → EMU; raw EMU integers also accepted |
 
@@ -47,12 +50,12 @@ All actionable Tier 1 features are implemented. Remaining items are intentionall
 |---------|-------------|--------|--------|
 | **More chart types** | 29 creatable types: area (3), bar/column stacked_100 (2), bubble (2), doughnut (2), line stacked variants (4), pie_exploded, radar (3), scatter (5) | ✅ All 29 types including XyChartData and BubbleChartData for scatter/bubble | ~~Done~~ |
 | **Slide notes** | Full support: auto-create notes slide, notes_text_frame, notes_placeholder | ✅ `set_notes/2` with auto notes master | ~~Done~~ |
-| **Auto shapes** | 180+ preset geometries (rounded rect, arrows, stars, callouts, flowchart, etc.) via MSO_SHAPE enum | text_box only | Medium |
+| **Auto shapes** | 180+ preset geometries (rounded rect, arrows, stars, callouts, flowchart, etc.) via MSO_SHAPE enum | ✅ 180+ presets with fill, line, text, rotation, theme styling | ~~Done~~ |
 | **Hyperlinks** | URL (http/https), email (mailto), file, slide jump — on text runs and shapes | ✅ URL/mailto on text runs with tooltip | ~~Done~~ |
-| **Connectors** | Straight, elbow, curved; begin/end points | None | Medium |
-| **Group shapes** | Nested groups with shared transforms | None | Medium |
-| **Slide background** | Picture fill; follow_master_background flag | ✅ Solid, gradient, pattern, picture fill | ~~Picture fill done~~; follow_master flag |
-| **Text auto-size** | NONE, SHAPE_TO_FIT_TEXT, TEXT_TO_FIT_SHAPE; fit_text with font metrics | None | Medium |
+| **Connectors** | Straight, elbow, curved; begin/end points | ✅ Straight, elbow, curved with coordinate-based API and line formatting | ~~Done~~ |
+| **Group shapes** | Nested groups with shared transforms | None | Deferred — primarily useful for read-modify-write |
+| **Slide background** | Picture fill; follow_master_background flag | ✅ Solid, gradient, pattern, picture fill; follow_master works by default (omitting `<p:bg>`) | ~~Done~~ |
+| **Text auto-size** | NONE, SHAPE_TO_FIT_TEXT, TEXT_TO_FIT_SHAPE; fit_text with font metrics | ✅ `:none`, `:text_to_fit_shape`, `:shape_to_fit_text` on text boxes and auto shapes | ~~Done~~ |
 | **Core properties** | created/modified dates, revision, language, content_status | ✅ All fields including dates, revision, language, content_status, version | ~~Done~~ |
 
 ### Tier 3 — Advanced / Niche
