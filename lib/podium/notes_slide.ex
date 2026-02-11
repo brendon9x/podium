@@ -57,7 +57,7 @@ defmodule Podium.NotesSlide do
       ~s(<p:txBody>) <>
       ~s(<a:bodyPr/>) <>
       ~s(<a:lstStyle/>) <>
-      ~s(<a:p><a:r><a:rPr lang="en-US" dirty="0"/><a:t>#{escaped_text}</a:t></a:r></a:p>) <>
+      ~s(<a:p><a:r><a:rPr lang="en-US" dirty="0"/><a:t>#{escaped_text}</a:t></a:r><a:endParaRPr lang="en-US"/></a:p>) <>
       ~s(</p:txBody>) <>
       ~s(</p:sp>)
   end

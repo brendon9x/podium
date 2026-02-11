@@ -197,7 +197,7 @@ defmodule Podium.Placeholder do
       ~s(<p:txBody>) <>
       ~s(<a:bodyPr/>) <>
       ~s(<a:lstStyle/>) <>
-      ~s(<a:p><a:r><a:rPr lang="en-US" dirty="0"/><a:t>#{escape(ph.field_text)}</a:t></a:r></a:p>) <>
+      ~s(<a:p><a:r><a:rPr lang="en-US" dirty="0"/><a:t>#{escape(ph.field_text)}</a:t></a:r><a:endParaRPr lang="en-US"/></a:p>) <>
       ~s(</p:txBody>) <>
       ~s(</p:sp>)
   end
@@ -216,7 +216,7 @@ defmodule Podium.Placeholder do
       ~s(<p:txBody>) <>
       ~s(<a:bodyPr/>) <>
       ~s(<a:lstStyle/>) <>
-      ~s(<a:p><a:r><a:rPr lang="en-US" dirty="0"/><a:t>#{escape(ph.field_text)}</a:t></a:r></a:p>) <>
+      ~s(<a:p><a:r><a:rPr lang="en-US" dirty="0"/><a:t>#{escape(ph.field_text)}</a:t></a:r><a:endParaRPr lang="en-US"/></a:p>) <>
       ~s(</p:txBody>) <>
       ~s(</p:sp>)
   end
@@ -237,7 +237,7 @@ defmodule Podium.Placeholder do
       ~s(<p:txBody>) <>
       ~s(<a:bodyPr/>) <>
       ~s(<a:lstStyle/>) <>
-      ~s(<a:p><a:fld id="#{fld_id}" type="slidenum"><a:rPr lang="en-US" smtClean="0"/><a:t>&lt;#&gt;</a:t></a:fld></a:p>) <>
+      ~s(<a:p><a:fld id="#{fld_id}" type="slidenum"><a:rPr lang="en-US" smtClean="0"/><a:t>&lt;#&gt;</a:t></a:fld><a:endParaRPr lang="en-US"/></a:p>) <>
       ~s(</p:txBody>) <>
       ~s(</p:sp>)
   end
