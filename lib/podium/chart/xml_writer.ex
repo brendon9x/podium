@@ -77,7 +77,7 @@ defmodule Podium.Chart.XmlWriter do
     ~s(<c:title>) <>
       ~s(<c:tx><c:rich>) <>
       ~s(<a:bodyPr/><a:lstStyle/>) <>
-      ~s(<a:p><a:r><a:rPr lang="en-US" dirty="0"/><a:t>#{escaped}</a:t></a:r></a:p>) <>
+      ~s(<a:p><a:r><a:rPr lang="en-US" dirty="0"/><a:t>#{escaped}</a:t></a:r><a:endParaRPr lang="en-US"/></a:p>) <>
       ~s(</c:rich></c:tx>) <>
       ~s(<c:overlay val="0"/>) <>
       ~s(</c:title>)
@@ -91,7 +91,7 @@ defmodule Podium.Chart.XmlWriter do
     ~s(<c:title>) <>
       ~s(<c:tx><c:rich>) <>
       ~s(<a:bodyPr/><a:lstStyle/>) <>
-      ~s(<a:p><a:r>#{rpr_xml}<a:t>#{escaped}</a:t></a:r></a:p>) <>
+      ~s(<a:p><a:r>#{rpr_xml}<a:t>#{escaped}</a:t></a:r><a:endParaRPr lang="en-US"/></a:p>) <>
       ~s(</c:rich></c:tx>) <>
       ~s(<c:overlay val="0"/>) <>
       ~s(</c:title>)
@@ -932,7 +932,7 @@ defmodule Podium.Chart.XmlWriter do
     ~s(<c:title>) <>
       ~s(<c:tx><c:rich>) <>
       ~s(<a:bodyPr/><a:lstStyle/>) <>
-      ~s(<a:p><a:r><a:rPr lang="en-US" dirty="0"/><a:t>#{escaped}</a:t></a:r></a:p>) <>
+      ~s(<a:p><a:r><a:rPr lang="en-US" dirty="0"/><a:t>#{escaped}</a:t></a:r><a:endParaRPr lang="en-US"/></a:p>) <>
       ~s(</c:rich></c:tx>) <>
       ~s(<c:overlay val="0"/>) <>
       ~s(</c:title>)
@@ -946,7 +946,7 @@ defmodule Podium.Chart.XmlWriter do
     ~s(<c:title>) <>
       ~s(<c:tx><c:rich>) <>
       ~s(<a:bodyPr/><a:lstStyle/>) <>
-      ~s(<a:p><a:r>#{rpr_xml}<a:t>#{escaped}</a:t></a:r></a:p>) <>
+      ~s(<a:p><a:r>#{rpr_xml}<a:t>#{escaped}</a:t></a:r><a:endParaRPr lang="en-US"/></a:p>) <>
       ~s(</c:rich></c:tx>) <>
       ~s(<c:overlay val="0"/>) <>
       ~s(</c:title>)

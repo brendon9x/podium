@@ -82,7 +82,7 @@ defmodule Podium.Text do
   defp paragraph_xml(para, hyperlink_rids) do
     ppr = paragraph_properties_xml(para)
     runs_xml = Enum.map(para.runs, &run_xml(&1, hyperlink_rids)) |> Enum.join()
-    "<a:p>#{ppr}#{runs_xml}</a:p>"
+    "<a:p>#{ppr}#{runs_xml}<a:endParaRPr lang=\"en-US\"/></a:p>"
   end
 
   defp paragraph_properties_xml(para) do
@@ -257,6 +257,18 @@ defmodule Podium.Text do
 
   defp hyperlink_child_xml(nil, _rids), do: ""
 
+  defp hyperlink_child_xml(action, _rids)
+       when action in [:next_slide, :previous_slide, :first_slide, :last_slide, :end_show] do
+    ~s(<a:hlinkClick r:id="" action="ppaction://hlinkshowjump?jump=#{jump_value(action)}"/>)
+  end
+
+  defp hyperlink_child_xml({:slide, %{index: idx}}, rids) do
+    case Map.get(rids, {:slide_jump, idx}) do
+      nil -> ""
+      rid -> ~s(<a:hlinkClick r:id="#{rid}" action="ppaction://hlinksldjump"/>)
+    end
+  end
+
   defp hyperlink_child_xml(url, rids) when is_binary(url) do
     case Map.get(rids, url) do
       nil -> ""
@@ -278,6 +290,12 @@ defmodule Podium.Text do
     end
   end
 
+  defp jump_value(:next_slide), do: "nextslide"
+  defp jump_value(:previous_slide), do: "previousslide"
+  defp jump_value(:first_slide), do: "firstslide"
+  defp jump_value(:last_slide), do: "lastslide"
+  defp jump_value(:end_show), do: "endshow"
+
   @doc """
   Collects all unique hyperlink URLs from normalized paragraphs.
   """
@@ -289,6 +307,24 @@ defmodule Podium.Text do
           nil -> []
           url when is_binary(url) -> [url]
           opts when is_list(opts) -> [Keyword.fetch!(opts, :url)]
+          _ -> []
+        end
+      end)
+    end)
+    |> Enum.uniq()
+  end
+
+  @doc """
+  Collects all slide jump targets from normalized paragraphs.
+  Returns a list of target slide indices.
+  """
+  def collect_slide_jumps(paragraphs) do
+    paragraphs
+    |> Enum.flat_map(fn para ->
+      Enum.flat_map(para.runs, fn run ->
+        case Keyword.get(run.opts, :hyperlink) do
+          {:slide, %{index: idx}} -> [idx]
+          _ -> []
         end
       end)
     end)
