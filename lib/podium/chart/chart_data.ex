@@ -1,5 +1,22 @@
 defmodule Podium.Chart.ChartData do
-  @moduledoc false
+  @moduledoc """
+  Category-based chart data for column, bar, line, pie, area, doughnut, and radar charts.
+
+  Build chart data by creating a new struct, adding categories, then adding one
+  or more named series with values that correspond to the categories.
+
+  ## Example
+
+      alias Podium.Chart.ChartData
+
+      chart_data =
+        ChartData.new()
+        |> ChartData.add_categories(["Q1", "Q2", "Q3", "Q4"])
+        |> ChartData.add_series("Revenue", [12_500, 14_600, 15_200, 18_100], color: "4472C4")
+        |> ChartData.add_series("Expenses", [10_000, 11_500, 12_000, 13_200], color: "ED7D31")
+
+  See the [Charts](charts.md) guide for full documentation.
+  """
 
   defstruct categories: [], series: []
 

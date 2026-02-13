@@ -1,0 +1,202 @@
+# python-pptx to Podium
+
+## Key Differences {: .col-2}
+
+### Functional vs. OOP
+
+python-pptx mutates objects in place. Podium returns new structs -- slide-only functions return the slide, presentation-level functions return `{prs, slide}`.
+
+### Units
+
+python-pptx: `Inches(1)`, `Cm(2.54)`, `Pt(72)`, `Emu(914400)`
+
+Podium: `{1, :inches}`, `{2.54, :cm}`, `{72, :pt}`, `914_400`
+
+## Core {: .col-2}
+
+### Python -- Create, add slide, save
+
+```python
+from pptx import Presentation
+prs = Presentation()
+slide = prs.slides.add_slide(prs.slide_layouts[6])
+prs.save("output.pptx")
+```
+
+### Elixir -- Create, add slide, save
+
+```elixir
+prs = Podium.new()
+{prs, slide} = Podium.add_slide(prs)
+prs = Podium.put_slide(prs, slide)
+Podium.save(prs, "output.pptx")
+```
+
+### Python -- Layouts and placeholders
+
+```python
+slide = prs.slides.add_slide(prs.slide_layouts[0])
+slide.shapes.title.text = "My Title"
+slide.placeholders[1].text = "Subtitle"
+```
+
+### Elixir -- Layouts and placeholders
+
+```elixir
+{prs, slide} = Podium.add_slide(prs, layout: :title_slide)
+slide = slide
+  |> Podium.set_placeholder(:title, "My Title")
+  |> Podium.set_placeholder(:subtitle, "Subtitle")
+```
+
+## Text {: .col-2}
+
+### Python -- Text box with formatting
+
+```python
+from pptx.util import Inches, Pt
+txBox = slide.shapes.add_textbox(
+    Inches(1), Inches(1), Inches(4), Inches(1))
+tf = txBox.text_frame
+tf.text = "Hello"
+p = tf.add_paragraph()
+run = p.add_run()
+run.text = "Bold text"
+run.font.bold = True
+run.font.size = Pt(24)
+run.font.color.rgb = RGBColor(0x00, 0x33, 0x66)
+```
+
+### Elixir -- Text box with formatting
+
+```elixir
+slide = Podium.add_text_box(slide, [
+  ["Hello"],
+  [{"Bold text", bold: true, font_size: 24,
+    color: "003366"}]
+], x: {1, :inches}, y: {1, :inches},
+   width: {4, :inches}, height: {1, :inches})
+```
+
+## Charts {: .col-2}
+
+### Python -- Chart
+
+```python
+from pptx.chart.data import CategoryChartData
+from pptx.enum.chart import XL_CHART_TYPE
+data = CategoryChartData()
+data.categories = ["Q1", "Q2", "Q3"]
+data.add_series("Revenue", (100, 200, 300))
+chart = slide.shapes.add_chart(
+    XL_CHART_TYPE.COLUMN_CLUSTERED,
+    Inches(1), Inches(1),
+    Inches(8), Inches(5), data).chart
+chart.has_legend = True
+```
+
+### Elixir -- Chart
+
+```elixir
+alias Podium.Chart.ChartData
+data = ChartData.new()
+  |> ChartData.add_categories(["Q1", "Q2", "Q3"])
+  |> ChartData.add_series("Revenue", [100, 200, 300])
+{prs, slide} = Podium.add_chart(prs, slide,
+  :column_clustered, data,
+  x: {1, :inches}, y: {1, :inches},
+  width: {8, :inches}, height: {5, :inches},
+  legend: :bottom)
+```
+
+## Shapes {: .col-2}
+
+### Python -- Auto shape
+
+```python
+from pptx.enum.shapes import MSO_SHAPE
+shape = slide.shapes.add_shape(
+    MSO_SHAPE.ROUNDED_RECTANGLE,
+    Inches(1), Inches(1),
+    Inches(3), Inches(2))
+shape.text = "Click here"
+shape.fill.solid()
+shape.fill.fore_color.rgb = RGBColor(0x44, 0x72, 0xC4)
+```
+
+### Elixir -- Auto shape
+
+```elixir
+slide = Podium.add_auto_shape(slide,
+  :rounded_rectangle,
+  x: {1, :inches}, y: {1, :inches},
+  width: {3, :inches}, height: {2, :inches},
+  text: "Click here", fill: "4472C4")
+```
+
+## Tables {: .col-2}
+
+### Python -- Table
+
+```python
+table = slide.shapes.add_table(
+    2, 2, Inches(1), Inches(1),
+    Inches(8), Inches(3)).table
+table.cell(0, 0).text = "Name"
+table.cell(0, 1).text = "Score"
+table.cell(1, 0).text = "Alice"
+table.cell(1, 1).text = "95"
+```
+
+### Elixir -- Table
+
+```elixir
+slide = Podium.add_table(slide, [
+  ["Name", "Score"],
+  ["Alice", "95"]
+], x: {1, :inches}, y: {1, :inches},
+   width: {8, :inches}, height: {3, :inches})
+```
+
+## Images {: .col-2}
+
+### Python -- Image
+
+```python
+pic = slide.shapes.add_picture(
+    "logo.png", Inches(1), Inches(1),
+    width=Inches(3))
+```
+
+### Elixir -- Image
+
+```elixir
+image = File.read!("logo.png")
+{prs, slide} = Podium.add_image(prs, slide, image,
+  x: {1, :inches}, y: {1, :inches},
+  width: {3, :inches})
+```
+
+## Podium Extras {: .col-2}
+
+### Combo charts (Podium-only)
+
+python-pptx can read combo charts but cannot create them.
+
+```elixir
+{prs, slide} = Podium.add_combo_chart(prs, slide,
+  chart_data,
+  [{:column_clustered, series: [0]},
+   {:line_markers, series: [1], secondary_axis: true}],
+  x: {1, :inches}, y: {1, :inches},
+  width: {10, :inches}, height: {5, :inches})
+```
+
+### Table cell borders (Podium-only)
+
+python-pptx does not expose cell borders in its public API.
+
+```elixir
+{"Header", fill: "003366",
+  borders: [bottom: [color: "FF0000", width: {2, :pt}]]}
+```

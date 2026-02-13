@@ -1,5 +1,22 @@
 defmodule Podium.Pattern do
-  @moduledoc false
+  @moduledoc """
+  Maps pattern fill atoms to OOXML preset strings.
+
+  All 54 OOXML pattern presets are supported for use in shape fills, line fills,
+  and slide backgrounds. Common presets include `:lt_horz`, `:lt_vert`,
+  `:dk_dn_diag`, `:cross`, `:diag_cross`, and percentage fills from `:pct_5`
+  through `:pct_90`.
+
+  ## Example
+
+      # Pattern fill on a text box
+      slide = Podium.add_text_box(slide, "Patterned",
+        x: {1, :inches}, y: {1, :inches},
+        width: {4, :inches}, height: {1, :inches},
+        fill: {:pattern, :lt_horz, fg: "000000", bg: "FFFFFF"})
+
+  See the [Shapes and Styling](shapes-and-styling.md) guide for more examples.
+  """
 
   @doc """
   Maps pattern fill atoms to OOXML preset strings for `<a:pattFill prst="...">`.

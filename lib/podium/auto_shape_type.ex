@@ -1,5 +1,15 @@
 defmodule Podium.AutoShapeType do
-  @moduledoc false
+  @moduledoc """
+  Maps auto shape preset atoms to OOXML preset geometry strings.
+
+  Podium supports all 187 preset geometries from the OOXML specification,
+  including rectangles, arrows, stars, callouts, and flowchart symbols.
+
+  Use `all_types/0` to get the full sorted list of available shape presets,
+  and `prst/1` to look up the OOXML preset string for a given atom.
+
+  See the [Shapes and Styling](shapes-and-styling.md) guide for usage examples.
+  """
 
   # Map of atom keys to {prst_string, basename} tuples.
   # Sourced from python-pptx MSO_AUTO_SHAPE_TYPE enum (187 entries).
