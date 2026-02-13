@@ -1,5 +1,23 @@
 defmodule Podium.Chart.BubbleChartData do
-  @moduledoc false
+  @moduledoc """
+  Bubble chart data with X values, Y values, and bubble sizes per series.
+
+  Extends `Podium.Chart.XyChartData` with a third dimension (bubble size)
+  for each data point.
+
+  ## Example
+
+      alias Podium.Chart.BubbleChartData
+
+      data =
+        BubbleChartData.new()
+        |> BubbleChartData.add_series("Markets",
+          [10, 20, 30], [50, 40, 60], [5, 10, 15],
+          color: "4472C4"
+        )
+
+  See the [Charts](charts.md) guide for full documentation.
+  """
 
   defstruct series: []
 

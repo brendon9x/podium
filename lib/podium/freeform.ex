@@ -1,5 +1,24 @@
 defmodule Podium.Freeform do
-  @moduledoc false
+  @moduledoc """
+  Builder for freeform (custom geometry) shapes.
+
+  Freeform shapes let you draw custom vector paths using a builder pattern.
+  Start with `new/3`, add segments with `line_to/3` and `move_to/3`, and
+  close contours with `close/1`. Add the finished shape to a slide with
+  `Podium.add_freeform/3`.
+
+  ## Example
+
+      freeform =
+        Podium.Freeform.new({1, :inches}, {1, :inches})
+        |> Podium.Freeform.line_to({3, :inches}, {1, :inches})
+        |> Podium.Freeform.line_to({2, :inches}, {3, :inches})
+        |> Podium.Freeform.close()
+
+      slide = Podium.add_freeform(slide, freeform, fill: "4472C4")
+
+  See the [Connectors and Freeform Shapes](connectors-and-freeforms.md) guide for more examples.
+  """
 
   alias Podium.Units
 

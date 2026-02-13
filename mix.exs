@@ -1,6 +1,8 @@
 defmodule Podium.MixProject do
   use Mix.Project
 
+  @source_url "https://github.com/USERNAME/podium"
+
   def project do
     [
       app: :podium,
@@ -8,7 +10,11 @@ defmodule Podium.MixProject do
       elixir: "~> 1.18",
       start_permanent: Mix.env() == :prod,
       elixirc_paths: elixirc_paths(Mix.env()),
-      deps: deps()
+      deps: deps(),
+      docs: docs(),
+      name: "Podium",
+      description: "PowerPoint (.pptx) generation for Elixir with editable charts",
+      source_url: @source_url
     ]
   end
 
@@ -26,7 +32,65 @@ defmodule Podium.MixProject do
   defp deps do
     [
       {:elixlsx, "~> 0.6"},
-      {:sweet_xml, "~> 0.7", only: :test}
+      {:sweet_xml, "~> 0.7", only: :test},
+      {:ex_doc, "~> 0.34", only: :dev, runtime: false}
+    ]
+  end
+
+  defp docs do
+    [
+      main: "overview",
+      source_ref: "v0.1.0",
+      source_url: @source_url,
+      extra_section: "GUIDES",
+      formatters: ["html"],
+      assets: %{"guides/assets" => "assets"},
+      extras: extras(),
+      groups_for_extras: groups_for_extras()
+    ]
+  end
+
+  defp extras do
+    [
+      # Introduction
+      "guides/introduction/overview.md",
+      "guides/introduction/installation.md",
+      "guides/introduction/getting-started.md",
+
+      # Core Features
+      "guides/core/presentations-and-slides.md",
+      "guides/core/text-and-formatting.md",
+      "guides/core/shapes-and-styling.md",
+      "guides/core/tables.md",
+      "guides/core/charts.md",
+      "guides/core/images.md",
+      "guides/core/placeholders.md",
+
+      # Advanced Features
+      "guides/advanced/hyperlinks-and-actions.md",
+      "guides/advanced/connectors-and-freeforms.md",
+      "guides/advanced/combo-charts.md",
+      "guides/advanced/video-and-media.md",
+      "guides/advanced/slide-backgrounds-and-notes.md",
+
+      # Recipes
+      "guides/recipes/building-a-report.md",
+      "guides/recipes/data-driven-slides.md",
+      "guides/recipes/styling-patterns.md",
+
+      # Cheatsheets
+      "guides/cheatsheets/quick-reference.cheatmd",
+      "guides/cheatsheets/python-pptx-migration.cheatmd"
+    ]
+  end
+
+  defp groups_for_extras do
+    [
+      Introduction: ~r/guides\/introduction\//,
+      "Core Features": ~r/guides\/core\//,
+      "Advanced Features": ~r/guides\/advanced\//,
+      Recipes: ~r/guides\/recipes\//,
+      Cheatsheets: ~r/guides\/cheatsheets\//
     ]
   end
 end

@@ -1,5 +1,22 @@
 defmodule Podium.Chart.XyChartData do
-  @moduledoc false
+  @moduledoc """
+  XY (scatter) chart data with numeric X and Y value pairs per series.
+
+  Unlike `Podium.Chart.ChartData`, scatter charts don't use named categories.
+  Each series has its own set of X values paired with Y values.
+
+  ## Example
+
+      alias Podium.Chart.XyChartData
+
+      data =
+        XyChartData.new()
+        |> XyChartData.add_series("Observations", [1.0, 2.5, 3.2, 4.8], [5.3, 7.1, 4.9, 8.2],
+          color: "4472C4"
+        )
+
+  See the [Charts](charts.md) guide for full documentation.
+  """
 
   defstruct series: []
 
