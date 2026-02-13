@@ -22,8 +22,14 @@ podium-*.tar
 # Temporary files, for example, from tests.
 /tmp/
 
-# Generated demo output
-demos/*.pptx
+# Generated integration test output
+test/podium/integration/output/*.pptx
+
+# Demo output files
+demos/output/*.pptx
+
+# macOS metadata
+.DS_Store
 
 # Claude Code local settings
 .claude/
