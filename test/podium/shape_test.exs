@@ -532,6 +532,101 @@ defmodule Podium.ShapeTest do
       assert ct_xml =~ "image/png"
     end
 
+    test "word_wrap: false produces wrap=none" do
+      {_prs, slide} = Podium.new() |> Podium.add_slide()
+
+      slide =
+        Podium.add_text_box(slide, "No wrap",
+          x: {1, :inches},
+          y: {1, :inches},
+          width: {4, :inches},
+          height: {1, :inches},
+          word_wrap: false
+        )
+
+      shape = hd(slide.shapes)
+      xml = Podium.Shape.to_xml(shape)
+
+      assert xml =~ ~s(wrap="none")
+      refute xml =~ ~s(wrap="square")
+    end
+
+    test "word_wrap: true produces wrap=square" do
+      {_prs, slide} = Podium.new() |> Podium.add_slide()
+
+      slide =
+        Podium.add_text_box(slide, "Wrap",
+          x: {1, :inches},
+          y: {1, :inches},
+          width: {4, :inches},
+          height: {1, :inches},
+          word_wrap: true
+        )
+
+      shape = hd(slide.shapes)
+      xml = Podium.Shape.to_xml(shape)
+
+      assert xml =~ ~s(wrap="square")
+    end
+
+    test "default word wrap is square (backwards compat)" do
+      {_prs, slide} = Podium.new() |> Podium.add_slide()
+
+      slide =
+        Podium.add_text_box(slide, "Default",
+          x: {1, :inches},
+          y: {1, :inches},
+          width: {4, :inches},
+          height: {1, :inches}
+        )
+
+      shape = hd(slide.shapes)
+      xml = Podium.Shape.to_xml(shape)
+
+      assert xml =~ ~s(wrap="square")
+    end
+
+    test "word_wrap works on auto shapes" do
+      {_prs, slide} = Podium.new() |> Podium.add_slide()
+
+      slide =
+        Podium.add_auto_shape(slide, :rounded_rectangle,
+          x: {1, :inches},
+          y: {1, :inches},
+          width: {4, :inches},
+          height: {1, :inches},
+          text: "No wrap",
+          word_wrap: false
+        )
+
+      shape = hd(slide.shapes)
+      xml = Podium.Shape.to_xml(shape)
+
+      assert xml =~ ~s(wrap="none")
+    end
+
+    test "word_wrap: false end-to-end" do
+      prs = Podium.new()
+      {prs, slide} = Podium.add_slide(prs)
+
+      slide =
+        Podium.add_text_box(slide, "No wrap label",
+          x: {1, :inches},
+          y: {1, :inches},
+          width: {4, :inches},
+          height: {1, :inches},
+          word_wrap: false
+        )
+
+      prs = Podium.put_slide(prs, slide)
+      {:ok, binary} = Podium.save_to_memory(prs)
+
+      parts = PptxHelpers.unzip_pptx_binary(binary)
+      slide_xml = parts["ppt/slides/slide1.xml"]
+
+      assert slide_xml =~ ~s(wrap="none")
+    end
+
     test "no rotation when not specified" do
       {_prs, slide} = Podium.new() |> Podium.add_slide()
 

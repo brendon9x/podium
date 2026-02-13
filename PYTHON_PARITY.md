@@ -15,6 +15,7 @@
 | **Shape rotation** | Clockwise rotation in degrees on text boxes and images |
 | **Images** | PNG, JPEG, BMP, GIF, TIFF, EMF, WMF via magic-byte detection; position, size, cropping (per-side in 1/1000ths of percent); SHA-1 deduplication; rotation; **auto-scale** when size omitted (reads native pixel dimensions + DPI from image headers); aspect-ratio preservation when only width or height given; **image masking** via `:shape` option (ellipse, diamond, roundRect, star5, etc.) |
 | **Tables** | Cell text, rich text cells, solid/gradient/pattern fill, borders (per-side with color/width), padding (per-side), vertical anchor (top/middle/bottom), col_span, row_span, `:merge` placeholders; table style banding flags (`first_row`, `last_row`, `first_col`, `last_col`, `band_row`, `band_col`) |
+| **Table column/row sizing** | Per-column `col_widths` and per-row `row_heights` with `{value, unit}` tuples; even distribution with rounding fix as default |
 | **Placeholders** | All 11 slide layouts (title_slide, title_content, section_header, two_content, comparison, title_only, blank, content_caption, picture_caption, title_vertical_text, vertical_title_text); text placeholders (title, subtitle, content, body, caption, left/right content/heading); picture placeholder on picture_caption layout; chart/table content placeholders (`set_chart_placeholder`/`set_table_placeholder`) with position inherited from template layout; footer, date, slide number as presentation-level settings |
 | **Charts** | 29 types: column (clustered, stacked, stacked_100), bar (clustered, stacked, stacked_100), line (standard, markers, stacked, markers_stacked, stacked_100, markers_stacked_100), pie, pie_exploded, area (standard, stacked, stacked_100), doughnut, doughnut_exploded, radar (standard, filled, markers), scatter (markers, lines, lines_no_markers, smooth, smooth_no_markers), bubble, bubble_3d |
 | **Chart titles** | Plain string or keyword list with text, font_size, bold, italic, color, font |
@@ -24,12 +25,14 @@
 | **Series formatting** | Solid color, pattern fill (54 presets), per-point colors via `point_colors` map, **per-point line format** via `point_formats` map; series markers with style (10 symbols), size, fill, and line properties |
 | **Editable charts** | Embedded Excel workbook via elixlsx with externalData link |
 | **Hyperlinks** | URL (http/https, mailto, file) on text runs via `hyperlink: "url"` or `hyperlink: [url: ..., tooltip: ...]`; external relationships with `TargetMode="External"`; works in text boxes and placeholders |
+| **Click actions** | Slide navigation (`:next_slide`, `:previous_slide`, `:first_slide`, `:last_slide`, `:end_show`) and named slide jump (`{:slide, target}`) on text runs |
 | **Slide notes** | Speaker notes via `Podium.set_notes/2`; auto-creates notes slide and notes master parts; notes visible in Presenter View |
 | **Slide background** | Solid, gradient, pattern, **picture fill** via `:background` option on `add_slide/2` |
 | **Core properties** | title, author, subject, keywords, category, comments, last_modified_by, **created, modified (DateTime with W3CDTF), revision (integer), content_status, language, version** via `Podium.new/1` opts or `set_core_properties/2` |
 | **Auto shapes** | 180+ preset geometries (rounded rect, arrows, stars, callouts, flowchart, etc.) with fill, line, text, rotation; theme-styled by default via `<p:style>` |
 | **Connectors** | Straight, elbow, curved connectors with coordinate-based begin/end points, auto flip calculation, line formatting (color, width, dash style); theme-styled by default |
 | **Text auto-size** | `:none` (`<a:noAutofit/>`), `:text_to_fit_shape` (`<a:normAutofit/>`), `:shape_to_fit_text` (`<a:spAutoFit/>`) on text boxes and auto shapes |
+| **Text word wrap** | `word_wrap: false` for `wrap="none"`, default `wrap="square"` |
 | **OPC packaging** | Content types, relationships, ZIP round-trip |
 | **Video embedding** | `add_movie/4` with poster frame (default or custom), SHA-1 media dedup, RT.VIDEO + RT.MEDIA + RT.IMAGE relationships, `<p:timing>` playback support; matches python-pptx EXPERIMENTAL API |
 | **Freeform shapes** | Custom vector paths via `Freeform` builder: `line_to`, `move_to`, `close`, `add_line_segments`; custom coordinate scales; multiple contours; `<a:custGeom>` with `<a:pathLst>` |
@@ -54,7 +57,7 @@ All actionable Tier 1 features are implemented. Remaining items are intentionall
 | **More chart types** | 29 creatable types: area (3), bar/column stacked_100 (2), bubble (2), doughnut (2), line stacked variants (4), pie_exploded, radar (3), scatter (5) | ✅ All 29 types including XyChartData and BubbleChartData for scatter/bubble | ~~Done~~ |
 | **Slide notes** | Full support: auto-create notes slide, notes_text_frame, notes_placeholder | ✅ `set_notes/2` with auto notes master | ~~Done~~ |
 | **Auto shapes** | 180+ preset geometries (rounded rect, arrows, stars, callouts, flowchart, etc.) via MSO_SHAPE enum | ✅ 180+ presets with fill, line, text, rotation, theme styling | ~~Done~~ |
-| **Hyperlinks** | URL (http/https), email (mailto), file, slide jump — on text runs and shapes | ✅ URL/mailto on text runs with tooltip | ~~Done~~ |
+| **Hyperlinks** | URL (http/https), email (mailto), file, slide jump — on text runs and shapes | ✅ URL/mailto on text runs with tooltip; click actions for slide navigation and jumps | ~~Done~~ |
 | **Connectors** | Straight, elbow, curved; begin/end points | ✅ Straight, elbow, curved with coordinate-based API and line formatting | ~~Done~~ |
 | **Group shapes** | Nested groups with shared transforms | None | Deferred — primarily useful for read-modify-write |
 | **Slide background** | Picture fill; follow_master_background flag | ✅ Solid, gradient, pattern, picture fill; follow_master works by default (omitting `<p:bg>`) | ~~Done~~ |
@@ -65,18 +68,23 @@ All actionable Tier 1 features are implemented. Remaining items are intentionall
 
 | Feature | python-pptx | Podium | Effort |
 |---------|-------------|--------|--------|
-| Open existing .pptx for modification | Yes (core feature, read-modify-write) | No — create-only | Very Large |
 | Video embedding | Yes (EXPERIMENTAL: add_movie with poster frame) | ✅ `add_movie/4` with poster frame, media dedup | ~~Done~~ |
 | Freeform shapes | Yes (custom SVG-like paths via FreeformBuilder) | ✅ `Freeform` builder with line_to, move_to, close, custom scale | ~~Done~~ |
 | Combo/multi-plot charts | Yes (read-only, cannot create) | ✅ `add_combo_chart/5` with secondary axis — **exceeds python-pptx** | ~~Done~~ |
-| Click actions | Yes (PP_ACTION: hyperlink, slide nav, macros, run program, 12+ action types) | No | Medium |
-| Shadow effects | Partial (ShadowFormat on shapes) | No | Medium |
-| Text word wrap | Yes (word_wrap property on TextFrame) | No | Small |
-| Slide master/layout editing | Yes (shapes, placeholders, background on masters/layouts) | No | Large |
-| Slide reorder/delete/duplicate | Yes (index, remove via collection) | No | Small-Medium |
-| OLE object embedding | Yes (add_ole_object with prog_id) | No | Large |
-| Shape adjustments | Yes (AdjustmentCollection for parameterized geometry) | No | Medium |
-| Table column/row sizing | Yes (per-column width, per-row height) | Even distribution only | Small |
+| Click actions | Yes (PP_ACTION: hyperlink, slide nav, macros, run program, 12+ action types) | ✅ Slide navigation (`:next_slide`, `:previous_slide`, `:first_slide`, `:last_slide`, `:end_show`) and named slide jump (`{:slide, target}`) | ~~Done~~ |
+| Text word wrap | Yes (word_wrap property on TextFrame) | ✅ `word_wrap: false` for `wrap="none"`, default `wrap="square"` | ~~Done~~ |
+| Table column/row sizing | Yes (per-column width, per-row height) | ✅ Per-column `col_widths`, per-row `row_heights` with unit tuples | ~~Done~~ |
+
+### Won't Implement
+
+| Feature | Why not |
+|---------|---------|
+| **Open existing .pptx** | Podium is create-only by design. Read-modify-write is a fundamentally different architecture. |
+| **Slide master/layout editing** | Only needed for read-modify-write workflows. Podium resolves positions from the template at parse time. |
+| **Slide reorder/delete/duplicate** | Editing operations, not creation. Users should build slides in the order they want them. |
+| **OLE object embedding** | Extremely niche (embedding Excel/Word objects). No practical demand for create-only presentations. |
+| **Shadow effects** | Purely cosmetic, easily applied in PowerPoint after creation. Not worth the API surface. |
+| **Shape adjustments** | Parameterized geometry knobs (e.g. corner radius). 180+ shapes each with different adjustment handles — massive surface area for minimal value. |
 
 ## Notes
 

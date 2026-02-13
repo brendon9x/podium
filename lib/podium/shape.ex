@@ -22,7 +22,9 @@ defmodule Podium.Shape do
     :margin_bottom,
     :fill_opts,
     :preset,
+    :anchor,
     :auto_size,
+    :word_wrap,
     :path_data
   ]
 
@@ -53,7 +55,9 @@ defmodule Podium.Shape do
       margin_right: margin_emu(Keyword.get(opts, :margin_right)),
       margin_top: margin_emu(Keyword.get(opts, :margin_top)),
       margin_bottom: margin_emu(Keyword.get(opts, :margin_bottom)),
-      auto_size: Keyword.get(opts, :auto_size)
+      anchor: Keyword.get(opts, :anchor),
+      auto_size: Keyword.get(opts, :auto_size),
+      word_wrap: Keyword.get(opts, :word_wrap)
     }
   end
 
@@ -94,7 +98,9 @@ defmodule Podium.Shape do
       margin_right: margin_emu(Keyword.get(opts, :margin_right)),
       margin_top: margin_emu(Keyword.get(opts, :margin_top)),
       margin_bottom: margin_emu(Keyword.get(opts, :margin_bottom)),
-      auto_size: Keyword.get(opts, :auto_size)
+      anchor: Keyword.get(opts, :anchor),
+      auto_size: Keyword.get(opts, :auto_size),
+      word_wrap: Keyword.get(opts, :word_wrap)
     }
   end
 
@@ -306,19 +312,29 @@ defmodule Podium.Shape do
       |> Enum.reject(&is_nil/1)
       |> Enum.join()
 
+    wrap = wrap_value(shape.word_wrap)
+    anchor_attr = anchor_attr(shape.anchor)
     auto_size_child = auto_size_xml(shape.auto_size)
 
     if auto_size_child == "" do
-      ~s(<a:bodyPr wrap="square" rtlCol="0"#{margin_attrs}/>)
+      ~s(<a:bodyPr wrap="#{wrap}" rtlCol="0"#{margin_attrs}#{anchor_attr}/>)
     else
-      ~s(<a:bodyPr wrap="square" rtlCol="0"#{margin_attrs}>#{auto_size_child}</a:bodyPr>)
+      ~s(<a:bodyPr wrap="#{wrap}" rtlCol="0"#{margin_attrs}#{anchor_attr}>#{auto_size_child}</a:bodyPr>)
     end
   end
+
+  defp wrap_value(false), do: "none"
+  defp wrap_value(_), do: "square"
 
   defp auto_size_xml(nil), do: ""
   defp auto_size_xml(:none), do: "<a:noAutofit/>"
   defp auto_size_xml(:text_to_fit_shape), do: "<a:normAutofit/>"
   defp auto_size_xml(:shape_to_fit_text), do: "<a:spAutoFit/>"
+
+  defp anchor_attr(nil), do: ""
+  defp anchor_attr(:top), do: ~s( anchor="t")
+  defp anchor_attr(:middle), do: ~s( anchor="ctr")
+  defp anchor_attr(:bottom), do: ~s( anchor="b")
 
   defp margin_attr(_name, nil), do: nil
   defp margin_attr(name, value), do: ~s( #{name}="#{value}")

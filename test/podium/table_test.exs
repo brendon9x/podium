@@ -300,5 +300,118 @@ defmodule Podium.TableTest do
       # 3_000_000 / 3 cols = 1_000_000 per col
       assert xml =~ ~s(gridCol w="1000000")
     end
+
+    test "explicit col_widths produces correct gridCol elements" do
+      {_prs, slide} = Podium.new() |> Podium.add_slide()
+
+      slide =
+        Podium.add_table(
+          slide,
+          [["Rank", "Description", "Score"]],
+          x: {1, :inches},
+          y: {1, :inches},
+          width: {11, :inches},
+          height: {1, :inches},
+          col_widths: [{1.5, :inches}, {6, :inches}, {3.5, :inches}]
+        )
+
+      table = hd(slide.tables)
+      xml = Podium.Table.to_xml(table)
+
+      # 1.5 inches = 1371600 EMU
+      assert xml =~ ~s(gridCol w="1371600")
+      # 6 inches = 5486400 EMU
+      assert xml =~ ~s(gridCol w="5486400")
+      # 3.5 inches = 3200400 EMU
+      assert xml =~ ~s(gridCol w="3200400")
+    end
+
+    test "explicit row_heights produces correct tr h attributes" do
+      {_prs, slide} = Podium.new() |> Podium.add_slide()
+
+      slide =
+        Podium.add_table(
+          slide,
+          [["Header"], ["Data"]],
+          x: {1, :inches},
+          y: {1, :inches},
+          width: {4, :inches},
+          height: {2, :inches},
+          row_heights: [{0.5, :inches}, {1.5, :inches}]
+        )
+
+      table = hd(slide.tables)
+      xml = Podium.Table.to_xml(table)
+
+      # 0.5 inches = 457200 EMU
+      assert xml =~ ~s(h="457200")
+      # 1.5 inches = 1371600 EMU
+      assert xml =~ ~s(h="1371600")
+    end
+
+    test "even distribution rounding: last column absorbs remainder" do
+      {_prs, slide} = Podium.new() |> Podium.add_slide()
+
+      slide =
+        Podium.add_table(
+          slide,
+          [["A", "B", "C"]],
+          x: {1, :inches},
+          y: {1, :inches},
+          width: 3_000_001,
+          height: 1_000_000
+        )
+
+      table = hd(slide.tables)
+      xml = Podium.Table.to_xml(table)
+
+      # 3_000_001 / 3 = 1_000_000 base, last col gets 1_000_001
+      assert xml =~ ~s(gridCol w="1000001")
+    end
+
+    test "only col_widths provided, rows still even" do
+      {_prs, slide} = Podium.new() |> Podium.add_slide()
+
+      slide =
+        Podium.add_table(
+          slide,
+          [["A", "B"], ["C", "D"]],
+          x: {1, :inches},
+          y: {1, :inches},
+          width: {8, :inches},
+          height: 2_000_000,
+          col_widths: [{3, :inches}, {5, :inches}]
+        )
+
+      table = hd(slide.tables)
+      xml = Podium.Table.to_xml(table)
+
+      # Custom col widths
+      assert xml =~ ~s(gridCol w="2743200")
+      assert xml =~ ~s(gridCol w="4572000")
+      # Even row heights: 2_000_000 / 2 = 1_000_000
+      assert xml =~ ~s(h="1000000")
+    end
+
+    test "raw EMU integers in col_widths work" do
+      {_prs, slide} = Podium.new() |> Podium.add_slide()
+
+      slide =
+        Podium.add_table(
+          slide,
+          [["A", "B"]],
+          x: {1, :inches},
+          y: {1, :inches},
+          width: 5_000_000,
+          height: 1_000_000,
+          col_widths: [2_000_000, 3_000_000]
+        )
+
+      table = hd(slide.tables)
+      xml = Podium.Table.to_xml(table)
+
+      assert xml =~ ~s(gridCol w="2000000")
+      assert xml =~ ~s(gridCol w="3000000")
+    end
   end
 end

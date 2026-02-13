@@ -11,6 +11,8 @@ defmodule Podium.Table do
     :width,
     :height,
     :rows,
+    :col_widths,
+    :row_heights,
     table_style: []
   ]
 
@@ -24,6 +26,18 @@ defmodule Podium.Table do
     - `:merge` placeholder for cells covered by a merge span
   """
   def new(id, rows, opts) do
+    col_widths =
+      case Keyword.get(opts, :col_widths) do
+        nil -> nil
+        ws -> Enum.map(ws, &Units.to_emu/1)
+      end
+
+    row_heights =
+      case Keyword.get(opts, :row_heights) do
+        nil -> nil
+        hs -> Enum.map(hs, &Units.to_emu/1)
+      end
+
     %__MODULE__{
       id: id,
       x: Units.to_emu(Keyword.fetch!(opts, :x)),
@@ -31,6 +45,8 @@ defmodule Podium.Table do
       width: Units.to_emu(Keyword.fetch!(opts, :width)),
       height: Units.to_emu(Keyword.fetch!(opts, :height)),
       rows: rows,
+      col_widths: col_widths,
+      row_heights: row_heights,
       table_style: Keyword.get(opts, :table_style, [])
     }
   end
@@ -44,21 +60,24 @@ defmodule Podium.Table do
 
     row_count = length(table.rows)
     col_count = if row_count > 0, do: length(hd(table.rows)), else: 0
-    row_height = if row_count > 0, do: div(table.height, row_count), else: table.height
-    col_width = if col_count > 0, do: div(table.width, col_count), else: table.width
+
+    col_widths = compute_col_widths(table, col_count)
+    row_heights = compute_row_heights(table, row_count)
 
     # Build merge map: {row, col} => :h_merge | :v_merge | :hv_merge
     merge_map = build_merge_map(table.rows)
 
     grid_cols =
-      1..max(col_count, 1)
-      |> Enum.map(fn _ -> ~s(<a:gridCol w="#{col_width}"/>) end)
+      col_widths
+      |> Enum.map(fn w -> ~s(<a:gridCol w="#{w}"/>) end)
       |> Enum.join()
 
     rows_xml =
       table.rows
       |> Enum.with_index()
-      |> Enum.map(fn {row, row_idx} -> row_xml(row, row_idx, row_height, merge_map) end)
+      |> Enum.map(fn {row, row_idx} ->
+        row_xml(row, row_idx, Enum.at(row_heights, row_idx), merge_map)
+      end)
       |> Enum.join()
 
     ~s(<p:graphicFrame xmlns:a="#{ns_a}" xmlns:p="#{ns_p}">) <>
@@ -221,6 +240,24 @@ defmodule Podium.Table do
 
   defp border_width_attr(nil), do: ""
   defp border_width_attr(width), do: ~s( w="#{Units.to_emu(width)}")
+
+  defp compute_col_widths(%{col_widths: ws}, _n) when is_list(ws), do: ws
+
+  defp compute_col_widths(%{width: w}, n) when n > 0 do
+    base = div(w, n)
+    List.duplicate(base, n - 1) ++ [w - base * (n - 1)]
+  end
+
+  defp compute_col_widths(%{width: w}, _n), do: [w]
+
+  defp compute_row_heights(%{row_heights: hs}, _n) when is_list(hs), do: hs
+
+  defp compute_row_heights(%{height: h}, n) when n > 0 do
+    base = div(h, n)
+    List.duplicate(base, n - 1) ++ [h - base * (n - 1)]
+  end
+
+  defp compute_row_heights(%{height: h}, _n), do: [h]
 
   # Build a map of {row_idx, col_idx} => merge type for cells covered by a span.
   defp build_merge_map(rows) do

@@ -760,6 +760,17 @@ defmodule Podium.Presentation do
         {rels, Map.put(rids, url, rid)}
       end)
 
+    # Collect slide jump targets and create internal slide relationships
+    all_slide_jumps = collect_all_slide_jumps(slide)
+
+    {slide_rels, hyperlink_rids} =
+      Enum.reduce(all_slide_jumps, {slide_rels, hyperlink_rids}, fn target_idx, {rels, rids} ->
+        {rels, rid} =
+          Relationships.add(rels, Constants.rt(:slide), "../slides/slide#{target_idx}.xml")
+
+        {rels, Map.put(rids, {:slide_jump, target_idx}, rid)}
+      end)
+
     # Inject footer/date/slide_number placeholders if set
     slide =
       if prs.footer do
@@ -804,6 +815,23 @@ defmodule Podium.Presentation do
       end)
 
     (shape_urls ++ placeholder_urls) |> Enum.uniq()
+  end
+
+  defp collect_all_slide_jumps(slide) do
+    shape_jumps =
+      Enum.flat_map(slide.shapes, fn shape ->
+        Podium.Text.collect_slide_jumps(shape.paragraphs || [])
+      end)
+
+    placeholder_jumps =
+      Enum.flat_map(slide.placeholders, fn ph ->
+        case ph.kind do
+          :text -> Podium.Text.collect_slide_jumps(ph.paragraphs || [])
+          _ -> []
+        end
+      end)
+
+    (shape_jumps ++ placeholder_jumps) |> Enum.uniq()
   end
 
   defp build_notes_parts(slide, slide_rels, parts, prs) do
