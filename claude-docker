@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+docker run -it \
+  -v "$HOME/.claude:/home/dev/.claude" \
+  -v "$HOME/.claude.json:/home/dev/.claude.json" \
+  -v "$(pwd):/home/dev/app" \
+  podium claude --dangerously-skip-permissions "$@"
