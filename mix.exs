@@ -80,8 +80,7 @@ defmodule Podium.MixProject do
       "guides/recipes/styling-patterns.md",
 
       # Cheatsheets
-      "guides/cheatsheets/quick-reference.cheatmd",
-      "guides/cheatsheets/python-pptx-migration.cheatmd"
+      "guides/cheatsheets/quick-reference.cheatmd"
     ]
   end
 

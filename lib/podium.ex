@@ -448,6 +448,22 @@ defmodule Podium do
   Sets a placeholder's text content on a slide.
 
   The slide must have been created with a layout that has the given placeholder.
+
+  ## Available placeholders by layout
+
+  | Layout | Placeholders |
+  |--------|-------------|
+  | `:title_slide` | `:title`, `:subtitle` |
+  | `:title_content` | `:title`, `:content` |
+  | `:section_header` | `:title`, `:body` |
+  | `:two_content` | `:title`, `:left_content`, `:right_content` |
+  | `:comparison` | `:title`, `:left_heading`, `:left_content`, `:right_heading`, `:right_content` |
+  | `:title_only` | `:title` |
+  | `:blank` | (none) |
+  | `:content_caption` | `:title`, `:content`, `:caption` |
+  | `:picture_caption` | `:title`, `:caption` (use `set_picture_placeholder/3` for `:picture`) |
+  | `:title_vertical_text` | `:title`, `:body` |
+  | `:vertical_title_text` | `:title`, `:body` |
   """
   @spec set_placeholder(Podium.Slide.t(), atom(), rich_text()) :: Podium.Slide.t()
   def set_placeholder(slide, name, text) do
