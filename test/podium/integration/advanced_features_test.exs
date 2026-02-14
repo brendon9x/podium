@@ -8,7 +8,7 @@ defmodule Podium.Integration.AdvancedFeaturesTest do
   describe "word wrap" do
     test "creates slides demonstrating word_wrap: true and false" do
       prs = Podium.new(title: "Word Wrap Test", author: "Podium Test")
-      {prs, slide} = Podium.add_slide(prs)
+      slide = Podium.Slide.new()
 
       slide =
         slide
@@ -69,7 +69,7 @@ defmodule Podium.Integration.AdvancedFeaturesTest do
           fill: "F0F0F0"
         )
 
-      prs = Podium.put_slide(prs, slide)
+      prs = Podium.add_slide(prs, slide)
 
       # Save to disk for manual inspection
       output_path = Path.join(@output_dir, "word_wrap.pptx")
@@ -94,7 +94,7 @@ defmodule Podium.Integration.AdvancedFeaturesTest do
   describe "table sizing" do
     test "creates table with custom column widths and row heights" do
       prs = Podium.new(title: "Table Sizing Test", author: "Podium Test")
-      {prs, slide} = Podium.add_slide(prs)
+      slide = Podium.Slide.new()
 
       slide =
         slide
@@ -111,9 +111,12 @@ defmodule Podium.Integration.AdvancedFeaturesTest do
         |> Podium.add_table(
           [
             [
-              {"Rank", fill: "003366", borders: [bottom: "FFFFFF"]},
-              {"Description", fill: "003366", borders: [bottom: "FFFFFF"]},
-              {"Score", fill: "003366", borders: [bottom: "FFFFFF"]}
+              {[[{"Rank", color: "FFFFFF", bold: true}]],
+               fill: "003366", borders: [bottom: "FFFFFF"]},
+              {[[{"Description", color: "FFFFFF", bold: true}]],
+               fill: "003366", borders: [bottom: "FFFFFF"]},
+              {[[{"Score", color: "FFFFFF", bold: true}]],
+               fill: "003366", borders: [bottom: "FFFFFF"]}
             ],
             ["1", "Implemented text word wrap with wrap=none/square toggle", "100"],
             ["2", "Added per-column widths and per-row heights to tables", "95"],
@@ -134,7 +137,7 @@ defmodule Podium.Integration.AdvancedFeaturesTest do
           ]
         )
 
-      prs = Podium.put_slide(prs, slide)
+      prs = Podium.add_slide(prs, slide)
 
       # Save to disk for manual inspection
       output_path = Path.join(@output_dir, "table_sizing.pptx")
@@ -168,7 +171,7 @@ defmodule Podium.Integration.AdvancedFeaturesTest do
   describe "click actions" do
     test "creates navigation buttons with various hyperlink actions" do
       prs = Podium.new(title: "Click Actions Test", author: "Podium Test")
-      {prs, slide} = Podium.add_slide(prs)
+      slide = Podium.Slide.new()
 
       slide =
         slide
@@ -242,7 +245,7 @@ defmodule Podium.Integration.AdvancedFeaturesTest do
           word_wrap: false
         )
 
-      prs = Podium.put_slide(prs, slide)
+      prs = Podium.add_slide(prs, slide)
 
       # Save to disk for manual inspection
       output_path = Path.join(@output_dir, "click_actions_navigation.pptx")
@@ -272,7 +275,7 @@ defmodule Podium.Integration.AdvancedFeaturesTest do
       prs = Podium.new(title: "Slide Jump Test", author: "Podium Test")
 
       # Create target slides first
-      {prs, slide1} = Podium.add_slide(prs)
+      slide1 = Podium.Slide.new()
 
       slide1 =
         Podium.add_text_box(slide1, "Target Slide 1",
@@ -284,9 +287,9 @@ defmodule Podium.Integration.AdvancedFeaturesTest do
           alignment: :center
         )
 
-      prs = Podium.put_slide(prs, slide1)
+      prs = Podium.add_slide(prs, slide1)
 
-      {prs, slide2} = Podium.add_slide(prs)
+      slide2 = Podium.Slide.new()
 
       slide2 =
         Podium.add_text_box(slide2, "Target Slide 2",
@@ -298,10 +301,10 @@ defmodule Podium.Integration.AdvancedFeaturesTest do
           alignment: :center
         )
 
-      prs = Podium.put_slide(prs, slide2)
+      prs = Podium.add_slide(prs, slide2)
 
       # Create navigation slide with jump buttons
-      {prs, slide3} = Podium.add_slide(prs)
+      slide3 = Podium.Slide.new()
 
       slide3 =
         slide3
@@ -334,7 +337,7 @@ defmodule Podium.Integration.AdvancedFeaturesTest do
                 bold: true, font_size: 18, color: "FFFFFF", hyperlink: {:slide, slide1}}
              ], alignment: :center}
           ],
-          fill: "003366",
+          fill: "ED7D31",
           word_wrap: false
         )
         |> Podium.add_auto_shape(:rounded_rectangle,
@@ -345,14 +348,14 @@ defmodule Podium.Integration.AdvancedFeaturesTest do
           text: [
             {[
                {"Jump to Target Slide 2",
-                bold: true, font_size: 18, color: "FFFFFF", hyperlink: {:slide, slide2}}
+                bold: true, font_size: 18, color: "000000", hyperlink: {:slide, slide2}}
              ], alignment: :center}
           ],
-          fill: "4472C4",
+          fill: "FFC000",
           word_wrap: false
         )
 
-      prs = Podium.put_slide(prs, slide3)
+      prs = Podium.add_slide(prs, slide3)
 
       # Save to disk for manual inspection
       output_path = Path.join(@output_dir, "click_actions_slide_jump.pptx")
@@ -388,7 +391,7 @@ defmodule Podium.Integration.AdvancedFeaturesTest do
       prs = Podium.new(title: "Tier 3 Extras Full Demo", author: "Podium Integration Test")
 
       # Slide 1: Word Wrap
-      {prs, slide1} = Podium.add_slide(prs)
+      slide1 = Podium.Slide.new()
 
       slide1 =
         slide1
@@ -422,10 +425,10 @@ defmodule Podium.Integration.AdvancedFeaturesTest do
           fill: "FFF3E0"
         )
 
-      prs = Podium.put_slide(prs, slide1)
+      prs = Podium.add_slide(prs, slide1)
 
       # Slide 2: Table Sizing
-      {prs, slide2} = Podium.add_slide(prs)
+      slide2 = Podium.Slide.new()
 
       slide2 =
         slide2
@@ -442,9 +445,12 @@ defmodule Podium.Integration.AdvancedFeaturesTest do
         |> Podium.add_table(
           [
             [
-              {"Rank", fill: "003366", borders: [bottom: "FFFFFF"]},
-              {"Description", fill: "003366", borders: [bottom: "FFFFFF"]},
-              {"Score", fill: "003366", borders: [bottom: "FFFFFF"]}
+              {[[{"Rank", color: "FFFFFF", bold: true}]],
+               fill: "003366", borders: [bottom: "FFFFFF"]},
+              {[[{"Description", color: "FFFFFF", bold: true}]],
+               fill: "003366", borders: [bottom: "FFFFFF"]},
+              {[[{"Score", color: "FFFFFF", bold: true}]],
+               fill: "003366", borders: [bottom: "FFFFFF"]}
             ],
             ["1", "Implemented text word wrap", "100"],
             ["2", "Added table sizing", "95"],
@@ -458,10 +464,10 @@ defmodule Podium.Integration.AdvancedFeaturesTest do
           row_heights: [{0.6, :inches}, {0.85, :inches}, {0.85, :inches}, {0.85, :inches}]
         )
 
-      prs = Podium.put_slide(prs, slide2)
+      prs = Podium.add_slide(prs, slide2)
 
       # Slide 3: Navigation buttons
-      {prs, slide3} = Podium.add_slide(prs)
+      slide3 = Podium.Slide.new()
 
       slide3 =
         slide3
@@ -496,10 +502,10 @@ defmodule Podium.Integration.AdvancedFeaturesTest do
           word_wrap: false
         )
 
-      prs = Podium.put_slide(prs, slide3)
+      prs = Podium.add_slide(prs, slide3)
 
       # Slide 4: Slide Jump
-      {prs, slide4} = Podium.add_slide(prs)
+      slide4 = Podium.Slide.new()
 
       slide4 =
         slide4
@@ -524,7 +530,7 @@ defmodule Podium.Integration.AdvancedFeaturesTest do
                 bold: true, font_size: 18, color: "FFFFFF", hyperlink: {:slide, slide1}}
              ], alignment: :center}
           ],
-          fill: "003366",
+          fill: "ED7D31",
           word_wrap: false
         )
         |> Podium.add_auto_shape(:rounded_rectangle,
@@ -535,17 +541,17 @@ defmodule Podium.Integration.AdvancedFeaturesTest do
           text: [
             {[
                {"Jump to Table Sizing (Slide 2)",
-                bold: true, font_size: 18, color: "FFFFFF", hyperlink: {:slide, slide2}}
+                bold: true, font_size: 18, color: "000000", hyperlink: {:slide, slide2}}
              ], alignment: :center}
           ],
-          fill: "4472C4",
+          fill: "FFC000",
           word_wrap: false
         )
 
-      prs = Podium.put_slide(prs, slide4)
+      prs = Podium.add_slide(prs, slide4)
 
       # Slide 5: Summary
-      {prs, slide5} = Podium.add_slide(prs)
+      slide5 = Podium.Slide.new()
 
       slide5 =
         slide5
@@ -590,11 +596,11 @@ defmodule Podium.Integration.AdvancedFeaturesTest do
                 bold: true, font_size: 16, color: "FFFFFF", hyperlink: :first_slide}
              ], alignment: :center}
           ],
-          fill: "4472C4",
+          fill: "70AD47",
           word_wrap: false
         )
 
-      prs = Podium.put_slide(prs, slide5)
+      prs = Podium.add_slide(prs, slide5)
 
       # Save to disk for manual inspection
       output_path = Path.join(@output_dir, "advanced_features_full.pptx")

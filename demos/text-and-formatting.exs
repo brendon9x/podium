@@ -3,11 +3,9 @@ File.mkdir_p!("demos/output")
 prs = Podium.new()
 
 # Slide 1: Mixed formatting -- bold, italic, colors, sizes in one paragraph
-{prs, s1} = Podium.add_slide(prs)
-
 s1 =
-  Podium.add_text_box(
-    s1,
+  Podium.Slide.new()
+  |> Podium.add_text_box(
     [
       [{"Q1 Revenue Report", bold: true, font_size: 32, color: "003366"}],
       [{"Prepared by ", font_size: 14}, {"Engineering", bold: true, italic: true}],
@@ -25,14 +23,10 @@ s1 =
     height: {3, :inches}
   )
 
-prs = Podium.put_slide(prs, s1)
-
 # Slide 2: Bullet points with nested levels + numbered list
-{prs, s2} = Podium.add_slide(prs)
-
 s2 =
-  Podium.add_text_box(
-    s2,
+  Podium.Slide.new()
+  |> Podium.add_text_box(
     [
       {[{"Key Results", bold: true, font_size: 24, color: "003366"}], space_after: 8},
       {["Revenue up 35% year-over-year"], bullet: true},
@@ -51,13 +45,9 @@ s2 =
     height: {6, :inches}
   )
 
-prs = Podium.put_slide(prs, s2)
-
 # Slide 3: Superscript/subscript + underline styles
-{prs, s3} = Podium.add_slide(prs)
-
 s3 =
-  s3
+  Podium.Slide.new()
   |> Podium.add_text_box(
     [
       {[{"Superscript & Subscript", bold: true, font_size: 24, color: "003366"}],
@@ -91,13 +81,9 @@ s3 =
     height: {2.5, :inches}
   )
 
-prs = Podium.put_slide(prs, s3)
-
 # Slide 4: "Putting It All Together" -- gradient header bar + bulleted content
-{prs, s4} = Podium.add_slide(prs)
-
 s4 =
-  s4
+  Podium.Slide.new()
   |> Podium.add_text_box(
     [
       {[{"Q4 2025 Summary", bold: true, font_size: 28, color: "003366"}],
@@ -127,7 +113,12 @@ s4 =
     height: {5, :inches}
   )
 
-prs = Podium.put_slide(prs, s4)
+prs =
+  prs
+  |> Podium.add_slide(s1)
+  |> Podium.add_slide(s2)
+  |> Podium.add_slide(s3)
+  |> Podium.add_slide(s4)
+  |> Podium.save("demos/output/text-and-formatting.pptx")
 
-:ok = Podium.save(prs, "demos/output/text-and-formatting.pptx")
 IO.puts("Generated demos/output/text-and-formatting.pptx")

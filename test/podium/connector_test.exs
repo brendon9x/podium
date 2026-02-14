@@ -168,18 +168,18 @@ defmodule Podium.ConnectorTest do
 
   describe "integration" do
     test "valid pptx with connectors" do
-      prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
-
       slide =
-        slide
+        Podium.Slide.new()
         |> Podium.add_connector(:straight, {1, :inches}, {1, :inches}, {5, :inches}, {3, :inches})
         |> Podium.add_connector(:elbow, {1, :inches}, {4, :inches}, {5, :inches}, {6, :inches},
           line: [color: "FF0000", width: {2, :pt}]
         )
         |> Podium.add_connector(:curved, {6, :inches}, {1, :inches}, {10, :inches}, {4, :inches})
 
-      prs = Podium.put_slide(prs, slide)
+      prs =
+        Podium.new()
+        |> Podium.add_slide(slide)
+
       {:ok, binary} = Podium.save_to_memory(prs)
 
       parts = PptxHelpers.unzip_pptx_binary(binary)

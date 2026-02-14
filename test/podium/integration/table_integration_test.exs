@@ -8,7 +8,7 @@ defmodule Podium.Integration.TableIntegrationTest do
   describe "table basics" do
     test "creates valid pptx with table containing rich text and merging" do
       prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
+      slide = Podium.Slide.new()
 
       slide =
         slide
@@ -24,7 +24,7 @@ defmodule Podium.Integration.TableIntegrationTest do
           [
             # Header row: merged title spanning all columns
             [
-              {"Department Summary — 2025",
+              {[[{"Department Summary — 2025", bold: true, color: "FFFFFF"}]],
                col_span: 4, fill: "003366", anchor: :middle, padding: [left: {0.1, :inches}]},
               :merge,
               :merge,
@@ -32,13 +32,13 @@ defmodule Podium.Integration.TableIntegrationTest do
             ],
             # Column headers with fill and borders
             [
-              {"Department",
+              {[[{"Department", bold: true, color: "FFFFFF"}]],
                fill: "4472C4", borders: [bottom: [color: "003366", width: {2, :pt}]]},
-              {"Headcount",
+              {[[{"Headcount", bold: true, color: "FFFFFF"}]],
                fill: "4472C4", borders: [bottom: [color: "003366", width: {2, :pt}]]},
-              {"Budget ($K)",
+              {[[{"Budget ($K)", bold: true, color: "FFFFFF"}]],
                fill: "4472C4", borders: [bottom: [color: "003366", width: {2, :pt}]]},
-              {"Satisfaction",
+              {[[{"Satisfaction", bold: true, color: "FFFFFF"}]],
                fill: "4472C4", borders: [bottom: [color: "003366", width: {2, :pt}]]}
             ],
             # Engineering spans 2 rows vertically with rich text
@@ -66,10 +66,10 @@ defmodule Podium.Integration.TableIntegrationTest do
           height: {4.5, :inches}
         )
 
-      prs = Podium.put_slide(prs, slide)
+      prs = Podium.add_slide(prs, slide)
 
       # Save to disk for manual inspection
-      output_path = Path.join(@output_dir, "table_integration.pptx")
+      output_path = Path.join(@output_dir, "table_rich_text_merging.pptx")
       File.mkdir_p!(@output_dir)
       assert :ok = Podium.save(prs, output_path)
 
@@ -89,7 +89,7 @@ defmodule Podium.Integration.TableIntegrationTest do
   describe "table cell fills" do
     test "creates valid pptx with gradient, pattern, and solid cell fills" do
       prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
+      slide = Podium.Slide.new()
 
       slide =
         slide
@@ -119,9 +119,9 @@ defmodule Podium.Integration.TableIntegrationTest do
           table_style: [first_row: true, band_row: true, band_col: true]
         )
 
-      prs = Podium.put_slide(prs, slide)
+      prs = Podium.add_slide(prs, slide)
 
-      output_path = Path.join(@output_dir, "table_integration.pptx")
+      output_path = Path.join(@output_dir, "table_cell_fills.pptx")
       File.mkdir_p!(@output_dir)
       assert :ok = Podium.save(prs, output_path)
 
@@ -142,7 +142,7 @@ defmodule Podium.Integration.TableIntegrationTest do
   describe "table borders and styling" do
     test "creates valid pptx with custom table borders" do
       prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
+      slide = Podium.Slide.new()
 
       slide =
         Podium.add_table(
@@ -160,9 +160,9 @@ defmodule Podium.Integration.TableIntegrationTest do
           height: {2, :inches}
         )
 
-      prs = Podium.put_slide(prs, slide)
+      prs = Podium.add_slide(prs, slide)
 
-      output_path = Path.join(@output_dir, "table_integration.pptx")
+      output_path = Path.join(@output_dir, "table_borders.pptx")
       File.mkdir_p!(@output_dir)
       assert :ok = Podium.save(prs, output_path)
 
@@ -178,7 +178,7 @@ defmodule Podium.Integration.TableIntegrationTest do
   describe "table cell padding and alignment" do
     test "creates valid pptx with custom padding and vertical alignment" do
       prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
+      slide = Podium.Slide.new()
 
       slide =
         Podium.add_table(
@@ -196,9 +196,9 @@ defmodule Podium.Integration.TableIntegrationTest do
           height: {2, :inches}
         )
 
-      prs = Podium.put_slide(prs, slide)
+      prs = Podium.add_slide(prs, slide)
 
-      output_path = Path.join(@output_dir, "table_integration.pptx")
+      output_path = Path.join(@output_dir, "table_padding_alignment.pptx")
       File.mkdir_p!(@output_dir)
       assert :ok = Podium.save(prs, output_path)
 

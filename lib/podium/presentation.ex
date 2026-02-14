@@ -3,12 +3,13 @@ defmodule Podium.Presentation do
   Internal module managing presentation state, slide collection, and serialization.
 
   This module handles the lifecycle of a presentation: creating from a template,
-  adding slides, registering charts/images/videos, and building the final OPC
-  package. Most users interact through the `Podium` facade module.
+  adding slides, and building the final OPC package. Index allocation for slides,
+  charts, images, and media is deferred to serialization time via `resolve_indices/1`.
+  Most users interact through the `Podium` facade module.
   """
 
   alias Podium.Chart
-  alias Podium.Chart.{ComboChart, XlsxWriter, XmlWriter}
+  alias Podium.Chart.{XlsxWriter, XmlWriter}
 
   alias Podium.{
     CoreProperties,
@@ -23,8 +24,6 @@ defmodule Podium.Presentation do
 
   alias Podium.OPC.{Constants, ContentTypes, Package, Relationships}
 
-  @blank_layout_index 7
-
   @default_slide_width 12_192_000
   @default_slide_height 6_858_000
   @template_width 9_144_000
@@ -33,12 +32,6 @@ defmodule Podium.Presentation do
     :template_parts,
     :content_types,
     slides: [],
-    next_slide_index: 1,
-    next_chart_index: 1,
-    next_image_index: 1,
-    next_media_index: 1,
-    image_hashes: %{},
-    media_hashes: %{},
     pres_rels: nil,
     slide_width: @default_slide_width,
     slide_height: @default_slide_height,
@@ -53,12 +46,6 @@ defmodule Podium.Presentation do
           template_parts: map() | nil,
           content_types: Podium.OPC.ContentTypes.t() | nil,
           slides: [Podium.Slide.t()],
-          next_slide_index: pos_integer(),
-          next_chart_index: pos_integer(),
-          next_image_index: pos_integer(),
-          next_media_index: pos_integer(),
-          image_hashes: %{String.t() => pos_integer()},
-          media_hashes: %{String.t() => pos_integer()},
           pres_rels: Podium.OPC.Relationships.t() | nil,
           slide_width: non_neg_integer(),
           slide_height: non_neg_integer(),
@@ -123,260 +110,12 @@ defmodule Podium.Presentation do
   end
 
   @doc """
-  Adds a new blank slide and returns the updated presentation with the slide.
+  Adds a slide to the presentation. Returns the updated presentation.
   """
-  @spec add_slide(t(), keyword()) :: {t(), Podium.Slide.t()}
-  def add_slide(%__MODULE__{} = prs, opts \\ []) do
-    layout =
-      cond do
-        Keyword.has_key?(opts, :layout) -> Keyword.get(opts, :layout)
-        Keyword.has_key?(opts, :layout_index) -> Keyword.get(opts, :layout_index)
-        true -> @blank_layout_index
-      end
-
-    layout_index = resolve_layout_index(layout)
-    slide_index = prs.next_slide_index
-
-    # Add slide relationship to presentation — store the assigned rId
-    {pres_rels, rid} =
-      Relationships.add(prs.pres_rels, Constants.rt(:slide), "slides/slide#{slide_index}.xml")
-
-    background = Keyword.get(opts, :background)
-
-    # Handle picture background: store as {:picture, binary} on the slide
-    {background, background_image} =
-      case background do
-        {:picture, binary} when is_binary(binary) ->
-          ext = detect_fill_extension(binary)
-          {{:picture, binary}, {binary, ext}}
-
-        other ->
-          {other, nil}
-      end
-
-    slide = Slide.new(index: slide_index, layout_index: layout_index)
-    slide = %{slide | pres_rid: rid, background: background, background_image: background_image}
-
-    content_types =
-      ContentTypes.add_override(
-        prs.content_types,
-        "/ppt/slides/slide#{slide_index}.xml",
-        Constants.ct(:slide)
-      )
-
-    # Register content type for background image extension
-    content_types =
-      case background_image do
-        {_binary, ext} -> ContentTypes.add_default(content_types, ext, content_type(ext))
-        nil -> content_types
-      end
-
-    prs = %{
-      prs
-      | slides: prs.slides ++ [slide],
-        next_slide_index: slide_index + 1,
-        pres_rels: pres_rels,
-        content_types: content_types
-    }
-
-    {prs, slide}
+  @spec add_slide(t(), Podium.Slide.t()) :: t()
+  def add_slide(%__MODULE__{} = prs, %Slide{} = slide) do
+    %{prs | slides: prs.slides ++ [slide]}
   end
-
-  @doc """
-  Adds a chart to a slide and returns the updated {presentation, slide}.
-  The slide is automatically updated within the presentation.
-  """
-  @spec add_chart(t(), Podium.Slide.t(), atom(), struct(), keyword()) :: {t(), Podium.Slide.t()}
-  def add_chart(%__MODULE__{} = prs, %Slide{} = slide, chart_type, chart_data, opts) do
-    chart_index = prs.next_chart_index
-
-    slide = Slide.add_chart(slide, chart_type, chart_data, chart_index, opts)
-
-    content_types =
-      prs.content_types
-      |> ContentTypes.add_override("/ppt/charts/chart#{chart_index}.xml", Constants.ct(:chart))
-      |> ContentTypes.add_default("xlsx", Constants.ct(:xlsx))
-
-    # Auto-update the slide within prs.slides
-    slides = replace_slide(prs.slides, slide)
-
-    prs = %{
-      prs
-      | slides: slides,
-        next_chart_index: chart_index + 1,
-        content_types: content_types
-    }
-
-    {prs, slide}
-  end
-
-  @doc """
-  Adds a combo chart to a slide. Returns `{presentation, slide}`.
-  """
-  @spec add_combo_chart(
-          t(),
-          Podium.Slide.t(),
-          Podium.Chart.ChartData.t(),
-          [{atom(), keyword()}],
-          keyword()
-        ) ::
-          {t(), Podium.Slide.t()}
-  def add_combo_chart(%__MODULE__{} = prs, %Slide{} = slide, chart_data, plot_specs, opts) do
-    chart_index = prs.next_chart_index
-    combo = ComboChart.new(chart_data, plot_specs)
-    chart = Chart.new_combo(combo, chart_index, opts)
-
-    slide = %{
-      slide
-      | charts: slide.charts ++ [chart],
-        next_shape_id: slide.next_shape_id + 1
-    }
-
-    content_types =
-      prs.content_types
-      |> ContentTypes.add_override("/ppt/charts/chart#{chart_index}.xml", Constants.ct(:chart))
-      |> ContentTypes.add_default("xlsx", Constants.ct(:xlsx))
-
-    slides = replace_slide(prs.slides, slide)
-
-    prs = %{
-      prs
-      | slides: slides,
-        next_chart_index: chart_index + 1,
-        content_types: content_types
-    }
-
-    {prs, slide}
-  end
-
-  @doc """
-  Adds an image to a slide. Returns `{presentation, slide}`.
-  """
-  @spec add_image(t(), Podium.Slide.t(), binary(), keyword()) :: {t(), Podium.Slide.t()}
-  def add_image(%__MODULE__{} = prs, %Slide{} = slide, binary, opts) do
-    image_index = prs.next_image_index
-    image = Image.new(binary, image_index, opts)
-
-    # Deduplication: reuse existing image index if same binary was already added
-    {image, next_index, image_hashes} =
-      case Map.get(prs.image_hashes, image.sha1) do
-        nil ->
-          hashes = Map.put(prs.image_hashes, image.sha1, image_index)
-          {image, image_index + 1, hashes}
-
-        existing_index ->
-          deduped = %{image | image_index: existing_index}
-          {deduped, image_index, prs.image_hashes}
-      end
-
-    slide = Slide.add_image(slide, image)
-
-    content_types =
-      ContentTypes.add_default(prs.content_types, image.extension, content_type(image.extension))
-
-    slides = replace_slide(prs.slides, slide)
-
-    prs = %{
-      prs
-      | slides: slides,
-        next_image_index: next_index,
-        content_types: content_types,
-        image_hashes: image_hashes
-    }
-
-    {prs, slide}
-  end
-
-  @doc """
-  Adds a video to a slide. Returns `{presentation, slide}`.
-  """
-  @spec add_movie(t(), Podium.Slide.t(), binary(), keyword()) :: {t(), Podium.Slide.t()}
-  def add_movie(%__MODULE__{} = prs, %Slide{} = slide, binary, opts) when is_binary(binary) do
-    sha1 = :crypto.hash(:sha, binary) |> Base.encode16(case: :lower)
-    mime_type = Keyword.get(opts, :mime_type, "video/unknown")
-
-    # Dedup media files by SHA1
-    {media_index, next_media, media_hashes} =
-      case Map.get(prs.media_hashes, sha1) do
-        nil ->
-          idx = prs.next_media_index
-          {idx, idx + 1, Map.put(prs.media_hashes, sha1, idx)}
-
-        existing_index ->
-          {existing_index, prs.next_media_index, prs.media_hashes}
-      end
-
-    # Poster frame uses image dedup
-    poster_binary = Keyword.get(opts, :poster_frame)
-    poster_sha1 = :crypto.hash(:sha, poster_binary || <<>>) |> Base.encode16(case: :lower)
-
-    {poster_index, next_image, image_hashes} =
-      if poster_binary do
-        case Map.get(prs.image_hashes, poster_sha1) do
-          nil ->
-            idx = prs.next_image_index
-            {idx, idx + 1, Map.put(prs.image_hashes, poster_sha1, idx)}
-
-          existing ->
-            {existing, prs.next_image_index, prs.image_hashes}
-        end
-      else
-        # Default poster - allocate a new image index (no dedup for default)
-        idx = prs.next_image_index
-        {idx, idx + 1, prs.image_hashes}
-      end
-
-    video = Video.new(binary, media_index, poster_index, opts)
-
-    slide = Slide.add_video(slide, video)
-
-    # Register content types
-    video_ext = video.extension
-    poster_ext = video.poster_frame.extension
-
-    content_types =
-      prs.content_types
-      |> ContentTypes.add_default(video_ext, mime_type)
-      |> ContentTypes.add_default(poster_ext, content_type(poster_ext))
-
-    slides = replace_slide(prs.slides, slide)
-
-    prs = %{
-      prs
-      | slides: slides,
-        next_media_index: next_media,
-        next_image_index: next_image,
-        media_hashes: media_hashes,
-        image_hashes: image_hashes,
-        content_types: content_types
-    }
-
-    {prs, slide}
-  end
-
-  @doc """
-  Adds a text box with a picture fill to a slide. Returns `{presentation, slide}`.
-  """
-  @spec add_picture_fill_text_box(t(), Podium.Slide.t(), Podium.rich_text(), binary(), keyword()) ::
-          {t(), Podium.Slide.t()}
-  def add_picture_fill_text_box(%__MODULE__{} = prs, %Slide{} = slide, text, image_binary, opts) do
-    extension = detect_fill_extension(image_binary)
-
-    content_types =
-      ContentTypes.add_default(prs.content_types, extension, content_type(extension))
-
-    slide = Slide.add_picture_fill_text_box(slide, text, image_binary, opts)
-    slides = replace_slide(prs.slides, slide)
-
-    prs = %{prs | slides: slides, content_types: content_types}
-    {prs, slide}
-  end
-
-  defp detect_fill_extension(<<0x89, 0x50, 0x4E, 0x47, _::binary>>), do: "png"
-  defp detect_fill_extension(<<0xFF, 0xD8, _::binary>>), do: "jpeg"
-  defp detect_fill_extension(<<0x42, 0x4D, _::binary>>), do: "bmp"
-  defp detect_fill_extension(<<0x47, 0x49, 0x46, _::binary>>), do: "gif"
-  defp detect_fill_extension(_), do: "png"
 
   @doc """
   Sets presentation-level footer, date, and slide number options.
@@ -395,58 +134,13 @@ defmodule Podium.Presentation do
   end
 
   @doc """
-  Sets a picture placeholder on a slide. Returns `{presentation, slide}`.
-  Registers the image binary and stores the picture placeholder entry.
-  """
-  @spec set_picture_placeholder(t(), Podium.Slide.t(), atom(), binary()) ::
-          {t(), Podium.Slide.t()}
-  def set_picture_placeholder(%__MODULE__{} = prs, %Slide{} = slide, name, binary)
-      when is_atom(name) and is_binary(binary) do
-    layout_atom = layout_atom(slide.layout_index)
-    ph = Placeholder.new_picture(layout_atom, name)
-
-    extension = detect_fill_extension(binary)
-    image_index = prs.next_image_index
-    sha1 = :crypto.hash(:sha, binary) |> Base.encode16(case: :lower)
-
-    {actual_index, next_index, image_hashes} =
-      case Map.get(prs.image_hashes, sha1) do
-        nil ->
-          hashes = Map.put(prs.image_hashes, sha1, image_index)
-          {image_index, image_index + 1, hashes}
-
-        existing_index ->
-          {existing_index, image_index, prs.image_hashes}
-      end
-
-    picture_entry = {ph, binary, extension, actual_index}
-    slide = %{slide | picture_placeholders: slide.picture_placeholders ++ [picture_entry]}
-
-    content_types =
-      ContentTypes.add_default(prs.content_types, extension, content_type(extension))
-
-    slides = replace_slide(prs.slides, slide)
-
-    prs = %{
-      prs
-      | slides: slides,
-        next_image_index: next_index,
-        content_types: content_types,
-        image_hashes: image_hashes
-    }
-
-    {prs, slide}
-  end
-
-  @doc """
-  Places a chart into a content placeholder. Returns `{presentation, slide}`.
+  Places a chart into a content placeholder. Returns the updated slide.
 
   The placeholder must be a content placeholder (type: nil) on a layout that supports it.
-  Position is inherited from the template layout. Any user-supplied x/y/width/height in opts
-  are silently dropped.
+  Position is inherited from the template layout.
   """
   @spec set_chart_placeholder(t(), Podium.Slide.t(), atom(), atom(), struct(), keyword()) ::
-          {t(), Podium.Slide.t()}
+          Podium.Slide.t()
   def set_chart_placeholder(
         %__MODULE__{} = prs,
         %Slide{} = slide,
@@ -457,7 +151,7 @@ defmodule Podium.Presentation do
       )
       when is_atom(name) do
     layout_index = slide.layout_index
-    layout = layout_atom(layout_index)
+    layout = Slide.layout_atom(layout_index)
     validate_content_placeholder!(layout, name)
     pos = lookup_position!(prs, layout_index, layout, name)
     scaled = scale_position(pos, prs.slide_width)
@@ -467,22 +161,21 @@ defmodule Podium.Presentation do
       |> Keyword.drop([:x, :y, :width, :height])
       |> Keyword.merge(x: scaled.x, y: scaled.y, width: scaled.cx, height: scaled.cy)
 
-    add_chart(prs, slide, chart_type, chart_data, chart_opts)
+    Slide.add_chart(slide, chart_type, chart_data, chart_opts)
   end
 
   @doc """
-  Places a table into a content placeholder. Returns `{presentation, slide}`.
+  Places a table into a content placeholder. Returns the updated slide.
 
   The placeholder must be a content placeholder (type: nil) on a layout that supports it.
-  Position is inherited from the template layout. Any user-supplied x/y/width/height in opts
-  are silently dropped.
+  Position is inherited from the template layout.
   """
   @spec set_table_placeholder(t(), Podium.Slide.t(), atom(), [[term()]], keyword()) ::
-          {t(), Podium.Slide.t()}
+          Podium.Slide.t()
   def set_table_placeholder(%__MODULE__{} = prs, %Slide{} = slide, name, rows, opts \\ [])
       when is_atom(name) do
     layout_index = slide.layout_index
-    layout = layout_atom(layout_index)
+    layout = Slide.layout_atom(layout_index)
     validate_content_placeholder!(layout, name)
     pos = lookup_position!(prs, layout_index, layout, name)
     scaled = scale_position(pos, prs.slide_width)
@@ -492,10 +185,7 @@ defmodule Podium.Presentation do
       |> Keyword.drop([:x, :y, :width, :height])
       |> Keyword.merge(x: scaled.x, y: scaled.y, width: scaled.cx, height: scaled.cy)
 
-    slide = Slide.add_table(slide, rows, table_opts)
-    slides = replace_slide(prs.slides, slide)
-    prs = %{prs | slides: slides}
-    {prs, slide}
+    Slide.add_table(slide, rows, table_opts)
   end
 
   defp validate_content_placeholder!(layout, name) do
@@ -545,11 +235,16 @@ defmodule Podium.Presentation do
   end
 
   @doc """
-  Replaces a slide in the presentation (by matching slide index).
+  Replaces a slide in the presentation (by matching slide ref).
   """
   @spec put_slide(t(), Podium.Slide.t()) :: t()
   def put_slide(%__MODULE__{} = prs, %Slide{} = slide) do
-    %{prs | slides: replace_slide(prs.slides, slide)}
+    slides =
+      Enum.map(prs.slides, fn existing ->
+        if existing.ref == slide.ref, do: slide, else: existing
+      end)
+
+    %{prs | slides: slides}
   end
 
   @doc """
@@ -578,34 +273,11 @@ defmodule Podium.Presentation do
   defp content_type("emf"), do: Constants.ct(:emf)
   defp content_type("wmf"), do: Constants.ct(:wmf)
 
-  defp resolve_layout_index(:title_slide), do: 1
-  defp resolve_layout_index(:title_content), do: 2
-  defp resolve_layout_index(:section_header), do: 3
-  defp resolve_layout_index(:two_content), do: 4
-  defp resolve_layout_index(:comparison), do: 5
-  defp resolve_layout_index(:title_only), do: 6
-  defp resolve_layout_index(:blank), do: @blank_layout_index
-  defp resolve_layout_index(:content_caption), do: 8
-  defp resolve_layout_index(:picture_caption), do: 9
-  defp resolve_layout_index(:title_vertical_text), do: 10
-  defp resolve_layout_index(:vertical_title_text), do: 11
-  defp resolve_layout_index(index) when is_integer(index), do: index
-
-  defp layout_atom(1), do: :title_slide
-  defp layout_atom(2), do: :title_content
-  defp layout_atom(3), do: :section_header
-  defp layout_atom(4), do: :two_content
-  defp layout_atom(5), do: :comparison
-  defp layout_atom(6), do: :title_only
-  defp layout_atom(7), do: :blank
-  defp layout_atom(8), do: :content_caption
-  defp layout_atom(9), do: :picture_caption
-  defp layout_atom(10), do: :title_vertical_text
-  defp layout_atom(11), do: :vertical_title_text
-
-  defp layout_atom(n) when is_integer(n) do
-    raise ArgumentError, "unknown layout index #{n}; expected 1..11"
-  end
+  defp detect_fill_extension(<<0x89, 0x50, 0x4E, 0x47, _::binary>>), do: "png"
+  defp detect_fill_extension(<<0xFF, 0xD8, _::binary>>), do: "jpeg"
+  defp detect_fill_extension(<<0x42, 0x4D, _::binary>>), do: "bmp"
+  defp detect_fill_extension(<<0x47, 0x49, 0x46, _::binary>>), do: "gif"
+  defp detect_fill_extension(_), do: "png"
 
   defp next_theme_index(parts) do
     parts
@@ -621,19 +293,201 @@ defmodule Podium.Presentation do
     |> Kernel.+(1)
   end
 
-  defp replace_slide(slides, %Slide{} = slide) do
-    Enum.map(slides, fn existing ->
-      if existing.index == slide.index, do: slide, else: existing
-    end)
+  # --- Index resolution at serialization time ---
+
+  defp resolve_indices(prs) do
+    acc = %{
+      next_slide: 1,
+      next_chart: 1,
+      next_image: 1,
+      next_media: 1,
+      image_hashes: %{},
+      media_hashes: %{},
+      content_types: prs.content_types,
+      pres_rels: prs.pres_rels
+    }
+
+    {slides, acc} = Enum.map_reduce(prs.slides, acc, &resolve_slide/2)
+
+    %{
+      prs
+      | slides: slides,
+        content_types: acc.content_types,
+        pres_rels: acc.pres_rels
+    }
+  end
+
+  defp resolve_slide(slide, acc) do
+    slide_index = acc.next_slide
+
+    # Add slide relationship to presentation
+    {pres_rels, rid} =
+      Relationships.add(acc.pres_rels, Constants.rt(:slide), "slides/slide#{slide_index}.xml")
+
+    slide = %{slide | index: slide_index, pres_rid: rid}
+
+    # Register slide content type override
+    content_types =
+      ContentTypes.add_override(
+        acc.content_types,
+        "/ppt/slides/slide#{slide_index}.xml",
+        Constants.ct(:slide)
+      )
+
+    acc = %{acc | next_slide: slide_index + 1, pres_rels: pres_rels, content_types: content_types}
+
+    # Assign chart indices
+    {charts, acc} =
+      Enum.map_reduce(slide.charts, acc, fn chart, a ->
+        idx = a.next_chart
+
+        ct =
+          a.content_types
+          |> ContentTypes.add_override("/ppt/charts/chart#{idx}.xml", Constants.ct(:chart))
+          |> ContentTypes.add_default("xlsx", Constants.ct(:xlsx))
+
+        {%{chart | chart_index: idx}, %{a | next_chart: idx + 1, content_types: ct}}
+      end)
+
+    slide = %{slide | charts: charts}
+
+    # Assign image indices with SHA1 dedup
+    {images, acc} =
+      Enum.map_reduce(slide.images, acc, fn image, a ->
+        case Map.get(a.image_hashes, image.sha1) do
+          nil ->
+            idx = a.next_image
+            hashes = Map.put(a.image_hashes, image.sha1, idx)
+
+            ct =
+              ContentTypes.add_default(
+                a.content_types,
+                image.extension,
+                content_type(image.extension)
+              )
+
+            {%{image | image_index: idx},
+             %{a | next_image: idx + 1, image_hashes: hashes, content_types: ct}}
+
+          existing_idx ->
+            ct =
+              ContentTypes.add_default(
+                a.content_types,
+                image.extension,
+                content_type(image.extension)
+              )
+
+            {%{image | image_index: existing_idx}, %{a | content_types: ct}}
+        end
+      end)
+
+    slide = %{slide | images: images}
+
+    # Assign picture placeholder indices with SHA1 dedup (shared image hash space)
+    {picture_placeholders, acc} =
+      Enum.map_reduce(slide.picture_placeholders, acc, fn {ph, binary, ext}, a ->
+        sha1 = :crypto.hash(:sha, binary) |> Base.encode16(case: :lower)
+
+        case Map.get(a.image_hashes, sha1) do
+          nil ->
+            idx = a.next_image
+            hashes = Map.put(a.image_hashes, sha1, idx)
+
+            ct = ContentTypes.add_default(a.content_types, ext, content_type(ext))
+
+            {{ph, binary, ext, idx},
+             %{a | next_image: idx + 1, image_hashes: hashes, content_types: ct}}
+
+          existing_idx ->
+            ct = ContentTypes.add_default(a.content_types, ext, content_type(ext))
+            {{ph, binary, ext, existing_idx}, %{a | content_types: ct}}
+        end
+      end)
+
+    slide = %{slide | picture_placeholders: picture_placeholders}
+
+    # Assign video media indices with SHA1 dedup + poster image indices
+    {videos, acc} =
+      Enum.map_reduce(slide.videos, acc, fn video, a ->
+        # Dedup media by SHA1
+        {media_idx, a} =
+          case Map.get(a.media_hashes, video.sha1) do
+            nil ->
+              idx = a.next_media
+              hashes = Map.put(a.media_hashes, video.sha1, idx)
+              {idx, %{a | next_media: idx + 1, media_hashes: hashes}}
+
+            existing_idx ->
+              {existing_idx, a}
+          end
+
+        # Dedup poster frame image by SHA1
+        poster = video.poster_frame
+        poster_sha1 = :crypto.hash(:sha, poster.binary) |> Base.encode16(case: :lower)
+
+        {poster_idx, a} =
+          case Map.get(a.image_hashes, poster_sha1) do
+            nil ->
+              idx = a.next_image
+              hashes = Map.put(a.image_hashes, poster_sha1, idx)
+              {idx, %{a | next_image: idx + 1, image_hashes: hashes}}
+
+            existing_idx ->
+              {existing_idx, a}
+          end
+
+        # Register content types
+        ct =
+          a.content_types
+          |> ContentTypes.add_default(video.extension, video.mime_type)
+          |> ContentTypes.add_default(poster.extension, content_type(poster.extension))
+
+        video = %{
+          video
+          | media_index: media_idx,
+            poster_frame: %{poster | image_index: poster_idx}
+        }
+
+        {video, %{a | content_types: ct}}
+      end)
+
+    slide = %{slide | videos: videos}
+
+    # Register background image extension content type
+    acc =
+      case slide.background_image do
+        {_binary, ext} ->
+          ct = ContentTypes.add_default(acc.content_types, ext, content_type(ext))
+          %{acc | content_types: ct}
+
+        nil ->
+          acc
+      end
+
+    # Register fill image extension content types
+    acc =
+      Enum.reduce(slide.fill_images, acc, fn {_shape_id, binary, _ext}, a ->
+        ext = detect_fill_extension(binary)
+        ct = ContentTypes.add_default(a.content_types, ext, content_type(ext))
+        %{a | content_types: ct}
+      end)
+
+    {slide, acc}
   end
 
   defp build_parts(%__MODULE__{} = prs) do
+    # Resolve all indices at serialization time
+    prs = resolve_indices(prs)
+
     parts = scale_layout_coordinates(prs.template_parts, prs.slide_width)
+
+    # Build ref_to_index map for slide jump resolution
+    ref_to_index = Map.new(prs.slides, &{&1.ref, &1.index})
 
     # Process each slide: generate slide XML, slide rels, chart parts, image parts
     {parts, prs} =
       Enum.reduce(prs.slides, {parts, prs}, fn slide, {acc, prs_acc} ->
-        build_slide_parts(slide, acc, prs_acc)
+        build_slide_parts(slide, acc, prs_acc, ref_to_index)
       end)
 
     # Update presentation.xml to include slide references
@@ -657,7 +511,7 @@ defmodule Podium.Presentation do
     parts
   end
 
-  defp build_slide_parts(slide, parts, prs) do
+  defp build_slide_parts(slide, parts, prs, ref_to_index) do
     # Start with slide layout relationship
     slide_rels = Relationships.new()
 
@@ -817,11 +671,13 @@ defmodule Podium.Presentation do
     all_slide_jumps = collect_all_slide_jumps(slide)
 
     {slide_rels, hyperlink_rids} =
-      Enum.reduce(all_slide_jumps, {slide_rels, hyperlink_rids}, fn target_idx, {rels, rids} ->
+      Enum.reduce(all_slide_jumps, {slide_rels, hyperlink_rids}, fn ref, {rels, rids} ->
+        target_idx = Map.fetch!(ref_to_index, ref)
+
         {rels, rid} =
           Relationships.add(rels, Constants.rt(:slide), "../slides/slide#{target_idx}.xml")
 
-        {rels, Map.put(rids, {:slide_jump, target_idx}, rid)}
+        {rels, Map.put(rids, {:slide_jump, ref}, rid)}
       end)
 
     # Inject footer/date/slide_number placeholders if set

@@ -227,15 +227,15 @@ defmodule Podium.FreeformTest do
 
   describe "Podium.add_freeform/3" do
     test "adds freeform to slide" do
-      prs = Podium.new()
-      {_prs, slide} = Podium.add_slide(prs)
+      slide = Podium.Slide.new()
 
-      slide =
+      freeform =
         Freeform.new({1, :inches}, {1, :inches})
         |> Freeform.line_to({3, :inches}, {1, :inches})
         |> Freeform.line_to({2, :inches}, {2.5, :inches})
         |> Freeform.close()
-        |> Podium.add_freeform(slide, fill: "4472C4")
+
+      slide = Podium.add_freeform(slide, freeform, fill: "4472C4")
 
       assert length(slide.shapes) == 1
       assert hd(slide.shapes).type == :freeform
@@ -244,17 +244,20 @@ defmodule Podium.FreeformTest do
 
   describe "integration" do
     test "save and unzip produces valid pptx" do
-      prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
+      slide = Podium.Slide.new()
 
-      slide =
+      freeform =
         Freeform.new({1, :inches}, {1, :inches})
         |> Freeform.line_to({3, :inches}, {1, :inches})
         |> Freeform.line_to({2, :inches}, {2.5, :inches})
         |> Freeform.close()
-        |> Podium.add_freeform(slide, fill: "4472C4")
 
-      prs = Podium.put_slide(prs, slide)
+      slide = Podium.add_freeform(slide, freeform, fill: "4472C4")
+
+      prs =
+        Podium.new()
+        |> Podium.add_slide(slide)
+
       {:ok, binary} = Podium.save_to_memory(prs)
 
       parts = PptxHelpers.unzip_pptx_binary(binary)

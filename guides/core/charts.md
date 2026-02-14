@@ -1,6 +1,6 @@
 # Charts
 
-Add data visualizations to slides with `Podium.add_chart/5`. Podium supports 29 chart
+Add data visualizations to slides with `Podium.add_chart/4`. Podium supports 29 chart
 types with editable data backed by embedded Excel workbooks -- your audience can
 double-click any chart in PowerPoint and modify the underlying data.
 
@@ -16,7 +16,7 @@ chart_data =
   |> ChartData.add_categories(["Q1", "Q2", "Q3", "Q4"])
   |> ChartData.add_series("Revenue", [12_500, 14_600, 15_200, 18_100])
 
-{prs, slide} = Podium.add_chart(prs, slide, :column_clustered, chart_data,
+slide = Podium.add_chart(slide, :column_clustered, chart_data,
   x: {0.5, :inches}, y: {1, :inches},
   width: {9, :inches}, height: {5, :inches})
 ```
@@ -62,14 +62,14 @@ A `ChartData` struct supports up to 25 series. All values must be numbers.
 
 ## Adding a Chart
 
-Use `Podium.add_chart/5` to place a chart on a slide. The function takes the
-presentation, slide, chart type atom, chart data, and a keyword list of options.
-It returns `{presentation, slide}`.
+Use `Podium.add_chart/4` to place a chart on a slide. The function takes the
+slide, chart type atom, chart data, and a keyword list of options.
+It returns the updated slide.
 
 ![Column clustered chart with axis config and data labels](assets/core/charts/column-clustered.png)
 
 ```elixir
-{prs, slide} = Podium.add_chart(prs, slide, :bar_clustered, data,
+slide = Podium.add_chart(slide, :bar_clustered, data,
   x: {0.5, :inches}, y: {1, :inches},
   width: {12, :inches}, height: {5.5, :inches},
   title: "Department Overview",
@@ -117,7 +117,7 @@ channel_data =
   |> ChartData.add_series("Chat", [180, 200, 220, 250, 280, 310], color: "ED7D31")
   |> ChartData.add_series("Phone", [100, 95, 90, 85, 80, 75], color: "A5A5A5")
 
-{prs, slide} = Podium.add_chart(prs, slide, :bar_stacked, channel_data,
+slide = Podium.add_chart(slide, :bar_stacked, channel_data,
   x: {0.5, :inches}, y: {1, :inches},
   width: {12, :inches}, height: {5.5, :inches},
   title: "Support Tickets by Channel",
@@ -144,7 +144,7 @@ trend_data =
   |> ChartData.add_series("Web", [45, 48, 52, 55, 60, 63], color: "4472C4")
   |> ChartData.add_series("Mobile", [30, 35, 38, 42, 50, 55], color: "ED7D31")
 
-{prs, slide} = Podium.add_chart(prs, slide, :line_markers, trend_data,
+slide = Podium.add_chart(slide, :line_markers, trend_data,
   x: {0.5, :inches}, y: {1, :inches},
   width: {12, :inches}, height: {5.5, :inches},
   title: "Monthly Active Users",
@@ -172,7 +172,7 @@ market_data =
   |> ChartData.add_series("Revenue", [42, 28, 18, 12],
     point_colors: %{0 => "2E75B6", 1 => "BDD7EE", 2 => "ED7D31", 3 => "FBE5D6"})
 
-{prs, slide} = Podium.add_chart(prs, slide, :pie, market_data,
+slide = Podium.add_chart(slide, :pie, market_data,
   x: {2, :inches}, y: {1, :inches},
   width: {9, :inches}, height: {5.5, :inches},
   title: "Revenue by Region",
@@ -205,7 +205,7 @@ skill_data =
   |> ChartData.add_series("Model A", [80, 90, 70, 85, 75], color: "4472C4")
   |> ChartData.add_series("Model B", [70, 65, 95, 70, 90], color: "ED7D31")
 
-{prs, slide} = Podium.add_chart(prs, slide, :radar_filled, skill_data,
+slide = Podium.add_chart(slide, :radar_filled, skill_data,
   x: {2, :inches}, y: {1, :inches},
   width: {9, :inches}, height: {5.5, :inches},
   title: "Product Comparison",
@@ -219,12 +219,12 @@ Pass `nil` (the default) for no title.
 
 ```elixir
 # Plain title
-Podium.add_chart(prs, slide, :column_clustered, data,
+Podium.add_chart(slide, :column_clustered, data,
   x: {0.5, :inches}, y: {1, :inches}, width: {12, :inches}, height: {5, :inches},
   title: "Quarterly Revenue")
 
 # Formatted title
-Podium.add_chart(prs, slide, :column_clustered, data,
+Podium.add_chart(slide, :column_clustered, data,
   x: {0.5, :inches}, y: {1, :inches}, width: {12, :inches}, height: {5, :inches},
   title: [text: "Quarterly Revenue", font_size: 18, bold: true, color: "003366", font: "Arial"])
 ```
@@ -278,7 +278,7 @@ Available label content: `:value`, `:category`, `:series`, `:percent`.
 Customize the category (horizontal) axis with the `:category_axis` option.
 
 ```elixir
-{prs, slide} = Podium.add_chart(prs, slide, :column_clustered, data,
+slide = Podium.add_chart(slide, :column_clustered, data,
   x: {0.5, :inches}, y: {1, :inches}, width: {12, :inches}, height: {5, :inches},
   category_axis: [
     title: "Quarter",
@@ -311,7 +311,7 @@ category_axis: [title: [text: "Quarter", font_size: 12, bold: true, color: "3333
 Customize the value (numeric) axis with the `:value_axis` option.
 
 ```elixir
-{prs, slide} = Podium.add_chart(prs, slide, :column_clustered, data,
+slide = Podium.add_chart(slide, :column_clustered, data,
   x: {0.5, :inches}, y: {1, :inches}, width: {12, :inches}, height: {5, :inches},
   value_axis: [
     title: "Amount ($)",
@@ -432,7 +432,7 @@ xy_data =
   |> XyChartData.add_series("Series B", [1, 2, 3, 4, 5], [1.5, 3.2, 2.8, 4.5, 3.9],
     color: "ED7D31")
 
-{prs, slide} = Podium.add_chart(prs, slide, :scatter, xy_data,
+slide = Podium.add_chart(slide, :scatter, xy_data,
   x: {0.5, :inches}, y: {1, :inches},
   width: {12, :inches}, height: {5.5, :inches},
   title: "Scatter Analysis")
@@ -469,7 +469,7 @@ bubble_data =
     [2, 4, 6, 8], [20, 15, 30, 10], [10, 6, 14, 8],
     color: "ED7D31")
 
-{prs, slide} = Podium.add_chart(prs, slide, :bubble, bubble_data,
+slide = Podium.add_chart(slide, :bubble, bubble_data,
   x: {0.5, :inches}, y: {1, :inches},
   width: {12, :inches}, height: {5.5, :inches},
   title: "Market Opportunity Analysis")
@@ -494,7 +494,7 @@ date_data =
   |> ChartData.add_categories(["2025-01", "2025-04", "2025-07", "2025-10", "2026-01"])
   |> ChartData.add_series("Sales", [120, 145, 190, 210, 250], color: "4472C4")
 
-{prs, slide} = Podium.add_chart(prs, slide, :line_markers, date_data,
+slide = Podium.add_chart(slide, :line_markers, date_data,
   x: {0.5, :inches}, y: {1, :inches},
   width: {12, :inches}, height: {5.5, :inches},
   title: "Quarterly Sales",

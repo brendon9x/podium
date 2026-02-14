@@ -73,7 +73,21 @@ defmodule Podium.Text do
   defp normalize_run(:line_break), do: %{text: :line_break, opts: []}
   defp normalize_run(text) when is_binary(text), do: %{text: text, opts: []}
   defp normalize_run({text}) when is_binary(text), do: %{text: text, opts: []}
-  defp normalize_run({text, opts}) when is_binary(text), do: %{text: text, opts: opts}
+
+  defp normalize_run({text, opts}) when is_binary(text) do
+    opts = normalize_hyperlink_opt(opts)
+    %{text: text, opts: opts}
+  end
+
+  defp normalize_hyperlink_opt(opts) do
+    case Keyword.get(opts, :hyperlink) do
+      {:slide, %Podium.Slide{ref: ref}} ->
+        Keyword.put(opts, :hyperlink, {:slide_ref, ref})
+
+      _ ->
+        opts
+    end
+  end
 
   @doc """
   Generates the XML for a list of normalized paragraphs (the <a:p> elements).
@@ -269,8 +283,8 @@ defmodule Podium.Text do
     ~s(<a:hlinkClick r:id="" action="ppaction://hlinkshowjump?jump=#{jump_value(action)}"/>)
   end
 
-  defp hyperlink_child_xml({:slide, %{index: idx}}, rids) do
-    case Map.get(rids, {:slide_jump, idx}) do
+  defp hyperlink_child_xml({:slide_ref, ref}, rids) do
+    case Map.get(rids, {:slide_jump, ref}) do
       nil -> ""
       rid -> ~s(<a:hlinkClick r:id="#{rid}" action="ppaction://hlinksldjump"/>)
     end
@@ -323,16 +337,16 @@ defmodule Podium.Text do
   end
 
   @doc """
-  Collects all slide jump targets from normalized paragraphs.
-  Returns a list of target slide indices.
+  Collects all slide jump target refs from normalized paragraphs.
+  Returns a list of target slide refs.
   """
-  @spec collect_slide_jumps([map()]) :: [pos_integer()]
+  @spec collect_slide_jumps([map()]) :: [reference()]
   def collect_slide_jumps(paragraphs) do
     paragraphs
     |> Enum.flat_map(fn para ->
       Enum.flat_map(para.runs, fn run ->
         case Keyword.get(run.opts, :hyperlink) do
-          {:slide, %{index: idx}} -> [idx]
+          {:slide_ref, ref} -> [ref]
           _ -> []
         end
       end)

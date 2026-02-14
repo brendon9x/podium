@@ -177,16 +177,18 @@ defmodule Podium.Chart.AreaDoughnutRadarTest do
         |> ChartData.add_categories(["A", "B", "C"])
         |> ChartData.add_series("S1", [30, 50, 20])
 
-      prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
-
-      {prs, _slide} =
-        Podium.add_chart(prs, slide, :doughnut, chart_data,
+      slide =
+        Podium.Slide.new()
+        |> Podium.add_chart(:doughnut, chart_data,
           x: {1, :inches},
           y: {1, :inches},
           width: {6, :inches},
           height: {4, :inches}
         )
+
+      prs =
+        Podium.new()
+        |> Podium.add_slide(slide)
 
       {:ok, binary} = Podium.save_to_memory(prs)
       parts = Podium.Test.PptxHelpers.unzip_pptx_binary(binary)

@@ -95,11 +95,9 @@ internal PowerPoint actions that don't require external relationships.
 
 ```elixir
 prs = Podium.new()
-{prs, slide1} = Podium.add_slide(prs)
-{prs, slide2} = Podium.add_slide(prs)
 
 slide1 =
-  slide1
+  Podium.Slide.new()
   |> Podium.add_text_box(
     [[{"Next Slide -->", bold: true, hyperlink: :next_slide}]],
     x: {1, :inches}, y: {1, :inches},
@@ -109,34 +107,44 @@ slide1 =
     x: {5, :inches}, y: {1, :inches},
     width: {3, :inches}, height: {0.5, :inches})
 
-slide2 = Podium.add_text_box(slide2,
-  [[{"<-- Previous", bold: true, hyperlink: :previous_slide}]],
-  x: {1, :inches}, y: {1, :inches},
-  width: {3, :inches}, height: {0.5, :inches})
+slide2 =
+  Podium.Slide.new()
+  |> Podium.add_text_box(
+    [[{"<-- Previous", bold: true, hyperlink: :previous_slide}]],
+    x: {1, :inches}, y: {1, :inches},
+    width: {3, :inches}, height: {0.5, :inches})
 
-prs = prs |> Podium.put_slide(slide1) |> Podium.put_slide(slide2)
+prs =
+  prs
+  |> Podium.add_slide(slide1)
+  |> Podium.add_slide(slide2)
 ```
 
 ## Jumping to a Specific Slide
 
 Link to a specific slide by passing a `{:slide, slide_struct}` tuple. Use the
-slide struct returned by `Podium.add_slide/2`:
+slide struct returned by `Podium.Slide.new/0`:
 
 ```elixir
 prs = Podium.new()
-{prs, intro_slide} = Podium.add_slide(prs)
-{prs, data_slide} = Podium.add_slide(prs)
-{prs, nav_slide} = Podium.add_slide(prs)
+intro_slide = Podium.Slide.new()
+data_slide = Podium.Slide.new()
 
-nav_slide = Podium.add_text_box(nav_slide, [
-  [{"Go to Introduction", color: "0563C1", underline: true,
-    hyperlink: {:slide, intro_slide}}],
-  [{"Go to Data Analysis", color: "0563C1", underline: true,
-    hyperlink: {:slide, data_slide}}]
-], x: {1, :inches}, y: {1, :inches},
-   width: {6, :inches}, height: {1, :inches})
+nav_slide =
+  Podium.Slide.new()
+  |> Podium.add_text_box([
+    [{"Go to Introduction", color: "0563C1", underline: true,
+      hyperlink: {:slide, intro_slide}}],
+    [{"Go to Data Analysis", color: "0563C1", underline: true,
+      hyperlink: {:slide, data_slide}}]
+  ], x: {1, :inches}, y: {1, :inches},
+     width: {6, :inches}, height: {1, :inches})
 
-prs = Podium.put_slide(prs, nav_slide)
+prs =
+  prs
+  |> Podium.add_slide(intro_slide)
+  |> Podium.add_slide(data_slide)
+  |> Podium.add_slide(nav_slide)
 ```
 
 Podium creates an internal slide-to-slide relationship in the PPTX package. The
@@ -163,12 +171,12 @@ This creates a blue rounded rectangle that acts as a navigation button.
 Hyperlinks also work inside placeholder text:
 
 ```elixir
-{prs, slide} = Podium.add_slide(prs, layout: :title_content)
-
-slide = Podium.set_placeholder(slide, :content, [
-  [{"Click here for details", color: "0563C1", underline: true,
-    hyperlink: "https://reports.example.com"}]
-])
+slide =
+  Podium.Slide.new(:title_content)
+  |> Podium.set_placeholder(:content, [
+    [{"Click here for details", color: "0563C1", underline: true,
+      hyperlink: "https://reports.example.com"}]
+  ])
 ```
 
 ## Where Hyperlinks Work
@@ -193,13 +201,12 @@ Combine slide jumps to build a clickable table of contents:
 
 ```elixir
 prs = Podium.new()
-{prs, toc_slide} = Podium.add_slide(prs)
-{prs, finance_slide} = Podium.add_slide(prs)
-{prs, ops_slide} = Podium.add_slide(prs)
-{prs, summary_slide} = Podium.add_slide(prs)
+finance_slide = Podium.Slide.new()
+ops_slide = Podium.Slide.new()
+summary_slide = Podium.Slide.new()
 
 toc_slide =
-  toc_slide
+  Podium.Slide.new()
   |> Podium.add_text_box(
     [{[{"Table of Contents", bold: true, font_size: 28}], alignment: :center}],
     x: {2, :inches}, y: {0.5, :inches},
@@ -214,7 +221,12 @@ toc_slide =
   ], x: {2, :inches}, y: {1.8, :inches},
      width: {9, :inches}, height: {3, :inches})
 
-prs = Podium.put_slide(prs, toc_slide)
+prs =
+  prs
+  |> Podium.add_slide(toc_slide)
+  |> Podium.add_slide(finance_slide)
+  |> Podium.add_slide(ops_slide)
+  |> Podium.add_slide(summary_slide)
 ```
 
 Each line jumps directly to the corresponding slide during the slideshow.

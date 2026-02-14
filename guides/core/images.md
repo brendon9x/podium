@@ -1,6 +1,6 @@
 # Images
 
-Add images to slides with `Podium.add_image/4`. Podium auto-detects the image format,
+Add images to slides with `Podium.add_image/3`. Podium auto-detects the image format,
 can scale from native dimensions, and deduplicates identical images by SHA-1 hash.
 
 > #### Try it yourself {: .tip}
@@ -10,29 +10,29 @@ can scale from native dimensions, and deduplicates identical images by SHA-1 has
 ```elixir
 image_data = File.read!("logo.png")
 
-{prs, slide} = Podium.add_image(prs, slide, image_data,
+slide = Podium.add_image(slide, image_data,
   x: {1, :inches}, y: {1, :inches},
   width: {4, :inches})
 ```
 
 ## Adding an Image
 
-`Podium.add_image/4` takes the presentation, slide, image binary, and options.
-It returns `{presentation, slide}`:
+`Podium.add_image/3` takes the slide, image binary, and options.
+It returns the updated slide:
 
 ![Basic image placement with explicit dimensions](assets/core/images/basic-placement.png)
 
 ```elixir
 prs = Podium.new()
-{prs, slide} = Podium.add_slide(prs)
+slide = Podium.Slide.new()
 
 logo = File.read!("company_logo.png")
 
-{prs, slide} = Podium.add_image(prs, slide, logo,
+slide = Podium.add_image(slide, logo,
   x: {4, :inches}, y: {2.5, :inches},
   width: {5, :inches}, height: {3, :inches})
 
-prs = Podium.put_slide(prs, slide)
+prs = Podium.add_slide(prs, slide)
 Podium.save(prs, "with_image.pptx")
 ```
 
@@ -63,7 +63,7 @@ How Podium resolves image dimensions depends on which size options you provide:
 **Both width and height** -- uses the explicit dimensions:
 
 ```elixir
-{prs, slide} = Podium.add_image(prs, slide, photo,
+slide = Podium.add_image(slide, photo,
   x: {1, :inches}, y: {1, :inches},
   width: {6, :inches}, height: {4, :inches})
 ```
@@ -71,7 +71,7 @@ How Podium resolves image dimensions depends on which size options you provide:
 **Width only** -- height is calculated to preserve the aspect ratio:
 
 ```elixir
-{prs, slide} = Podium.add_image(prs, slide, photo,
+slide = Podium.add_image(slide, photo,
   x: {1, :inches}, y: {1, :inches},
   width: {6, :inches})
 ```
@@ -79,7 +79,7 @@ How Podium resolves image dimensions depends on which size options you provide:
 **Height only** -- width is calculated to preserve the aspect ratio:
 
 ```elixir
-{prs, slide} = Podium.add_image(prs, slide, photo,
+slide = Podium.add_image(slide, photo,
   x: {1, :inches}, y: {1, :inches},
   height: {4, :inches})
 ```
@@ -94,7 +94,7 @@ Crop any side of an image with the `:crop` option. Values are in 1/1000ths
 of a percent (0 to 100,000):
 
 ```elixir
-{prs, slide} = Podium.add_image(prs, slide, photo,
+slide = Podium.add_image(slide, photo,
   x: {1, :inches}, y: {1, :inches},
   width: {6, :inches}, height: {4, :inches},
   crop: [left: 10_000, top: 5_000, right: 10_000, bottom: 5_000])
@@ -111,7 +111,7 @@ mask the image with a shape preset:
 
 ```elixir
 # Circular profile photo
-{prs, slide} = Podium.add_image(prs, slide, headshot,
+slide = Podium.add_image(slide, headshot,
   x: {5, :inches}, y: {2, :inches},
   width: {3, :inches}, height: {3, :inches},
   shape: :ellipse)
@@ -128,7 +128,7 @@ Rotate an image with the `:rotation` option, specified in degrees clockwise:
 ![Image rotated 15 degrees](assets/core/images/image-rotation.png)
 
 ```elixir
-{prs, slide} = Podium.add_image(prs, slide, badge,
+slide = Podium.add_image(slide, badge,
   x: {4, :inches}, y: {2, :inches},
   width: {3, :inches}, height: {3, :inches},
   rotation: 15)

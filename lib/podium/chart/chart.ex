@@ -30,7 +30,7 @@ defmodule Podium.Chart do
   @type t :: %__MODULE__{
           chart_type: Podium.chart_type() | :combo,
           chart_data: struct(),
-          chart_index: pos_integer(),
+          chart_index: pos_integer() | nil,
           x: non_neg_integer(),
           y: non_neg_integer(),
           width: non_neg_integer(),
@@ -47,12 +47,12 @@ defmodule Podium.Chart do
   @doc """
   Creates a new chart.
   """
-  @spec new(atom(), struct(), pos_integer(), keyword()) :: t()
-  def new(chart_type, chart_data, chart_index, opts) do
+  @spec new(atom(), struct(), keyword()) :: t()
+  def new(chart_type, chart_data, opts) do
     %__MODULE__{
       chart_type: chart_type,
       chart_data: chart_data,
-      chart_index: chart_index,
+      chart_index: nil,
       x: Units.to_emu(Keyword.fetch!(opts, :x)),
       y: Units.to_emu(Keyword.fetch!(opts, :y)),
       width: Units.to_emu(Keyword.fetch!(opts, :width)),
@@ -68,12 +68,12 @@ defmodule Podium.Chart do
   @doc """
   Creates a new combo chart.
   """
-  @spec new_combo(Podium.Chart.ComboChart.t(), pos_integer(), keyword()) :: t()
-  def new_combo(%Podium.Chart.ComboChart{} = combo, chart_index, opts) do
+  @spec new_combo(Podium.Chart.ComboChart.t(), keyword()) :: t()
+  def new_combo(%Podium.Chart.ComboChart{} = combo, opts) do
     %__MODULE__{
       chart_type: :combo,
       chart_data: combo.chart_data,
-      chart_index: chart_index,
+      chart_index: nil,
       combo: combo,
       x: Units.to_emu(Keyword.fetch!(opts, :x)),
       y: Units.to_emu(Keyword.fetch!(opts, :y)),

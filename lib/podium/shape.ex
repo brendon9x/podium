@@ -129,7 +129,7 @@ defmodule Podium.Shape do
       margin_right: margin_emu(Keyword.get(opts, :margin_right)),
       margin_top: margin_emu(Keyword.get(opts, :margin_top)),
       margin_bottom: margin_emu(Keyword.get(opts, :margin_bottom)),
-      anchor: Keyword.get(opts, :anchor),
+      anchor: auto_shape_anchor(text, opts),
       auto_size: Keyword.get(opts, :auto_size),
       word_wrap: Keyword.get(opts, :word_wrap)
     }
@@ -374,6 +374,9 @@ defmodule Podium.Shape do
 
   defp margin_emu(nil), do: nil
   defp margin_emu(value), do: Units.to_emu(value)
+
+  defp auto_shape_anchor(nil, opts), do: Keyword.get(opts, :anchor)
+  defp auto_shape_anchor(_text, opts), do: Keyword.get(opts, :anchor, :middle)
 
   defp rotation_attr(nil), do: ""
   defp rotation_attr(degrees), do: ~s( rot="#{round(degrees * 60_000)}")

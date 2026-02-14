@@ -13,17 +13,17 @@ defmodule Podium.PlaceholderTest do
 
   describe "set_placeholder/3" do
     test "sets title and subtitle on title_slide layout" do
-      prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs, layout: :title_slide)
-
       slide =
-        slide
+        Podium.Slide.new(:title_slide)
         |> Podium.set_placeholder(:title, "Annual Report 2025")
         |> Podium.set_placeholder(:subtitle, "Engineering Division")
 
       assert length(slide.placeholders) == 2
 
-      prs = Podium.put_slide(prs, slide)
+      prs =
+        Podium.new()
+        |> Podium.add_slide(slide)
+
       {:ok, binary} = Podium.save_to_memory(prs)
 
       parts = PptxHelpers.unzip_pptx_binary(binary)
@@ -36,15 +36,15 @@ defmodule Podium.PlaceholderTest do
     end
 
     test "sets title and content on title_content layout" do
-      prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs, layout: :title_content)
-
       slide =
-        slide
+        Podium.Slide.new(:title_content)
         |> Podium.set_placeholder(:title, "Slide Title")
         |> Podium.set_placeholder(:content, "Some body content")
 
-      prs = Podium.put_slide(prs, slide)
+      prs =
+        Podium.new()
+        |> Podium.add_slide(slide)
+
       {:ok, binary} = Podium.save_to_memory(prs)
 
       parts = PptxHelpers.unzip_pptx_binary(binary)
@@ -58,12 +58,14 @@ defmodule Podium.PlaceholderTest do
     end
 
     test "content placeholder on title_content emits no type attribute" do
-      prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs, layout: :title_content)
+      slide =
+        Podium.Slide.new(:title_content)
+        |> Podium.set_placeholder(:content, "Content here")
 
-      slide = Podium.set_placeholder(slide, :content, "Content here")
+      prs =
+        Podium.new()
+        |> Podium.add_slide(slide)
 
-      prs = Podium.put_slide(prs, slide)
       {:ok, binary} = Podium.save_to_memory(prs)
 
       parts = PptxHelpers.unzip_pptx_binary(binary)
@@ -75,12 +77,14 @@ defmodule Podium.PlaceholderTest do
     end
 
     test "accepts integer layout index" do
-      prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs, layout: 1)
+      slide =
+        Podium.Slide.new(1)
+        |> Podium.set_placeholder(:title, "Title")
 
-      slide = Podium.set_placeholder(slide, :title, "Title")
+      prs =
+        Podium.new()
+        |> Podium.add_slide(slide)
 
-      prs = Podium.put_slide(prs, slide)
       {:ok, binary} = Podium.save_to_memory(prs)
 
       parts = PptxHelpers.unzip_pptx_binary(binary)
@@ -89,8 +93,7 @@ defmodule Podium.PlaceholderTest do
     end
 
     test "raises on unknown placeholder" do
-      prs = Podium.new()
-      {_prs, slide} = Podium.add_slide(prs, layout: :blank)
+      slide = Podium.Slide.new(:blank)
 
       assert_raise ArgumentError, ~r/unknown placeholder/, fn ->
         Podium.set_placeholder(slide, :title, "This should fail")
@@ -98,13 +101,14 @@ defmodule Podium.PlaceholderTest do
     end
 
     test "placeholder text supports rich text" do
-      prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs, layout: :title_slide)
-
       slide =
-        Podium.set_placeholder(slide, :title, [[{"Bold Title", bold: true, font_size: 44}]])
+        Podium.Slide.new(:title_slide)
+        |> Podium.set_placeholder(:title, [[{"Bold Title", bold: true, font_size: 44}]])
 
-      prs = Podium.put_slide(prs, slide)
+      prs =
+        Podium.new()
+        |> Podium.add_slide(slide)
+
       {:ok, binary} = Podium.save_to_memory(prs)
 
       parts = PptxHelpers.unzip_pptx_binary(binary)
@@ -116,8 +120,10 @@ defmodule Podium.PlaceholderTest do
     end
 
     test "slide rels reference correct layout" do
-      prs = Podium.new()
-      {prs, _slide} = Podium.add_slide(prs, layout: :title_slide)
+      prs =
+        Podium.new()
+        |> Podium.add_slide(Podium.Slide.new(:title_slide))
+
       {:ok, binary} = Podium.save_to_memory(prs)
 
       parts = PptxHelpers.unzip_pptx_binary(binary)
@@ -145,8 +151,10 @@ defmodule Podium.PlaceholderTest do
 
     for {layout_atom, layout_index} <- @layouts do
       test "layout #{layout_atom} (index #{layout_index}) references slideLayout#{layout_index}.xml" do
-        prs = Podium.new()
-        {prs, _slide} = Podium.add_slide(prs, layout: unquote(layout_atom))
+        prs =
+          Podium.new()
+          |> Podium.add_slide(Podium.Slide.new(unquote(layout_atom)))
+
         {:ok, binary} = Podium.save_to_memory(prs)
 
         parts = PptxHelpers.unzip_pptx_binary(binary)
@@ -158,8 +166,10 @@ defmodule Podium.PlaceholderTest do
 
     test "integer layout index also works for all 11" do
       for idx <- 1..11 do
-        prs = Podium.new()
-        {prs, _slide} = Podium.add_slide(prs, layout: idx)
+        prs =
+          Podium.new()
+          |> Podium.add_slide(Podium.Slide.new(idx))
+
         {:ok, binary} = Podium.save_to_memory(prs)
 
         parts = PptxHelpers.unzip_pptx_binary(binary)
@@ -172,16 +182,16 @@ defmodule Podium.PlaceholderTest do
 
   describe "two_content layout" do
     test "sets title, left_content, and right_content" do
-      prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs, layout: :two_content)
-
       slide =
-        slide
+        Podium.Slide.new(:two_content)
         |> Podium.set_placeholder(:title, "Two Column Title")
         |> Podium.set_placeholder(:left_content, "Left side")
         |> Podium.set_placeholder(:right_content, "Right side")
 
-      prs = Podium.put_slide(prs, slide)
+      prs =
+        Podium.new()
+        |> Podium.add_slide(slide)
+
       {:ok, binary} = Podium.save_to_memory(prs)
 
       parts = PptxHelpers.unzip_pptx_binary(binary)
@@ -198,11 +208,8 @@ defmodule Podium.PlaceholderTest do
 
   describe "comparison layout" do
     test "sets all 5 placeholders" do
-      prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs, layout: :comparison)
-
       slide =
-        slide
+        Podium.Slide.new(:comparison)
         |> Podium.set_placeholder(:title, "Comparison Title")
         |> Podium.set_placeholder(:left_heading, "Left Heading")
         |> Podium.set_placeholder(:left_content, "Left Body")
@@ -211,7 +218,10 @@ defmodule Podium.PlaceholderTest do
 
       assert length(slide.placeholders) == 5
 
-      prs = Podium.put_slide(prs, slide)
+      prs =
+        Podium.new()
+        |> Podium.add_slide(slide)
+
       {:ok, binary} = Podium.save_to_memory(prs)
 
       parts = PptxHelpers.unzip_pptx_binary(binary)
@@ -232,12 +242,14 @@ defmodule Podium.PlaceholderTest do
 
   describe "title_only layout" do
     test "sets just title" do
-      prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs, layout: :title_only)
+      slide =
+        Podium.Slide.new(:title_only)
+        |> Podium.set_placeholder(:title, "Only a Title")
 
-      slide = Podium.set_placeholder(slide, :title, "Only a Title")
+      prs =
+        Podium.new()
+        |> Podium.add_slide(slide)
 
-      prs = Podium.put_slide(prs, slide)
       {:ok, binary} = Podium.save_to_memory(prs)
 
       parts = PptxHelpers.unzip_pptx_binary(binary)
@@ -248,8 +260,7 @@ defmodule Podium.PlaceholderTest do
     end
 
     test "raises on unknown placeholder for title_only" do
-      prs = Podium.new()
-      {_prs, slide} = Podium.add_slide(prs, layout: :title_only)
+      slide = Podium.Slide.new(:title_only)
 
       assert_raise ArgumentError, ~r/unknown placeholder/, fn ->
         Podium.set_placeholder(slide, :body, "Should fail")
@@ -259,15 +270,15 @@ defmodule Podium.PlaceholderTest do
 
   describe "section_header layout" do
     test "sets title and body" do
-      prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs, layout: :section_header)
-
       slide =
-        slide
+        Podium.Slide.new(:section_header)
         |> Podium.set_placeholder(:title, "Section Title")
         |> Podium.set_placeholder(:body, "Section description")
 
-      prs = Podium.put_slide(prs, slide)
+      prs =
+        Podium.new()
+        |> Podium.add_slide(slide)
+
       {:ok, binary} = Podium.save_to_memory(prs)
 
       parts = PptxHelpers.unzip_pptx_binary(binary)
@@ -280,16 +291,16 @@ defmodule Podium.PlaceholderTest do
 
   describe "content_caption layout" do
     test "sets title, content, and caption" do
-      prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs, layout: :content_caption)
-
       slide =
-        slide
+        Podium.Slide.new(:content_caption)
         |> Podium.set_placeholder(:title, "Caption Title")
         |> Podium.set_placeholder(:content, "Main content")
         |> Podium.set_placeholder(:caption, "Caption text")
 
-      prs = Podium.put_slide(prs, slide)
+      prs =
+        Podium.new()
+        |> Podium.add_slide(slide)
+
       {:ok, binary} = Podium.save_to_memory(prs)
 
       parts = PptxHelpers.unzip_pptx_binary(binary)
@@ -303,15 +314,15 @@ defmodule Podium.PlaceholderTest do
 
   describe "title_vertical_text layout" do
     test "sets title and body" do
-      prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs, layout: :title_vertical_text)
-
       slide =
-        slide
+        Podium.Slide.new(:title_vertical_text)
         |> Podium.set_placeholder(:title, "Vertical Title")
         |> Podium.set_placeholder(:body, "Vertical body")
 
-      prs = Podium.put_slide(prs, slide)
+      prs =
+        Podium.new()
+        |> Podium.add_slide(slide)
+
       {:ok, binary} = Podium.save_to_memory(prs)
 
       parts = PptxHelpers.unzip_pptx_binary(binary)
@@ -323,15 +334,15 @@ defmodule Podium.PlaceholderTest do
 
   describe "vertical_title_text layout" do
     test "sets title and body" do
-      prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs, layout: :vertical_title_text)
-
       slide =
-        slide
+        Podium.Slide.new(:vertical_title_text)
         |> Podium.set_placeholder(:title, "Vert Title Text")
         |> Podium.set_placeholder(:body, "Vert body text")
 
-      prs = Podium.put_slide(prs, slide)
+      prs =
+        Podium.new()
+        |> Podium.add_slide(slide)
+
       {:ok, binary} = Podium.save_to_memory(prs)
 
       parts = PptxHelpers.unzip_pptx_binary(binary)
@@ -343,17 +354,16 @@ defmodule Podium.PlaceholderTest do
 
   describe "picture placeholder" do
     test "picture_caption layout with picture placeholder produces p:pic with r:embed" do
-      prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs, layout: :picture_caption)
-
       slide =
-        slide
+        Podium.Slide.new(:picture_caption)
         |> Podium.set_placeholder(:title, "Picture Slide")
         |> Podium.set_placeholder(:caption, "A caption")
+        |> Podium.set_picture_placeholder(:picture, @png_binary)
 
-      {prs, slide} = Podium.set_picture_placeholder(prs, slide, :picture, @png_binary)
+      prs =
+        Podium.new()
+        |> Podium.add_slide(slide)
 
-      prs = Podium.put_slide(prs, slide)
       {:ok, binary} = Podium.save_to_memory(prs)
 
       parts = PptxHelpers.unzip_pptx_binary(binary)
@@ -374,8 +384,7 @@ defmodule Podium.PlaceholderTest do
     end
 
     test "raises when using set_placeholder on picture placeholder" do
-      prs = Podium.new()
-      {_prs, slide} = Podium.add_slide(prs, layout: :picture_caption)
+      slide = Podium.Slide.new(:picture_caption)
 
       assert_raise ArgumentError, ~r/picture placeholder/, fn ->
         Podium.set_placeholder(slide, :picture, "Should fail")
@@ -383,29 +392,28 @@ defmodule Podium.PlaceholderTest do
     end
 
     test "raises when using set_picture_placeholder on text placeholder" do
-      prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs, layout: :picture_caption)
+      slide = Podium.Slide.new(:picture_caption)
 
       assert_raise ArgumentError, ~r/not a picture placeholder/, fn ->
-        Podium.set_picture_placeholder(prs, slide, :title, @png_binary)
+        Podium.set_picture_placeholder(slide, :title, @png_binary)
       end
     end
 
     test "raises on unknown placeholder name for picture" do
-      prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs, layout: :picture_caption)
+      slide = Podium.Slide.new(:picture_caption)
 
       assert_raise ArgumentError, ~r/unknown placeholder/, fn ->
-        Podium.set_picture_placeholder(prs, slide, :nonexistent, @png_binary)
+        Podium.set_picture_placeholder(slide, :nonexistent, @png_binary)
       end
     end
   end
 
   describe "footer/date/slide_number" do
     test "footer text appears in slide XML" do
-      prs = Podium.new()
-      prs = Podium.set_footer(prs, footer: "Acme Corp Confidential")
-      {prs, _slide} = Podium.add_slide(prs, layout: :title_slide)
+      prs =
+        Podium.new()
+        |> Podium.set_footer(footer: "Acme Corp Confidential")
+        |> Podium.add_slide(Podium.Slide.new(:title_slide))
 
       {:ok, binary} = Podium.save_to_memory(prs)
       parts = PptxHelpers.unzip_pptx_binary(binary)
@@ -417,9 +425,10 @@ defmodule Podium.PlaceholderTest do
     end
 
     test "date text appears in slide XML" do
-      prs = Podium.new()
-      prs = Podium.set_footer(prs, date: "February 2026")
-      {prs, _slide} = Podium.add_slide(prs, layout: :blank)
+      prs =
+        Podium.new()
+        |> Podium.set_footer(date: "February 2026")
+        |> Podium.add_slide(Podium.Slide.new(:blank))
 
       {:ok, binary} = Podium.save_to_memory(prs)
       parts = PptxHelpers.unzip_pptx_binary(binary)
@@ -431,9 +440,10 @@ defmodule Podium.PlaceholderTest do
     end
 
     test "slide number uses a:fld with id and type slidenum" do
-      prs = Podium.new()
-      prs = Podium.set_footer(prs, slide_number: true)
-      {prs, _slide} = Podium.add_slide(prs, layout: :blank)
+      prs =
+        Podium.new()
+        |> Podium.set_footer(slide_number: true)
+        |> Podium.add_slide(Podium.Slide.new(:blank))
 
       {:ok, binary} = Podium.save_to_memory(prs)
       parts = PptxHelpers.unzip_pptx_binary(binary)
@@ -446,17 +456,15 @@ defmodule Podium.PlaceholderTest do
     end
 
     test "all three footer fields on every slide" do
-      prs = Podium.new()
-
       prs =
-        Podium.set_footer(prs,
+        Podium.new()
+        |> Podium.set_footer(
           footer: "Footer Text",
           date: "Jan 2026",
           slide_number: true
         )
-
-      {prs, _s1} = Podium.add_slide(prs, layout: :title_slide)
-      {prs, _s2} = Podium.add_slide(prs, layout: :blank)
+        |> Podium.add_slide(Podium.Slide.new(:title_slide))
+        |> Podium.add_slide(Podium.Slide.new(:blank))
 
       {:ok, binary} = Podium.save_to_memory(prs)
       parts = PptxHelpers.unzip_pptx_binary(binary)
@@ -470,8 +478,9 @@ defmodule Podium.PlaceholderTest do
     end
 
     test "footer is not injected when not set" do
-      prs = Podium.new()
-      {prs, _slide} = Podium.add_slide(prs, layout: :blank)
+      prs =
+        Podium.new()
+        |> Podium.add_slide(Podium.Slide.new(:blank))
 
       {:ok, binary} = Podium.save_to_memory(prs)
       parts = PptxHelpers.unzip_pptx_binary(binary)
@@ -483,9 +492,10 @@ defmodule Podium.PlaceholderTest do
     end
 
     test "footer escapes special XML characters" do
-      prs = Podium.new()
-      prs = Podium.set_footer(prs, footer: "A & B <Corp>")
-      {prs, _slide} = Podium.add_slide(prs, layout: :blank)
+      prs =
+        Podium.new()
+        |> Podium.set_footer(footer: "A & B <Corp>")
+        |> Podium.add_slide(Podium.Slide.new(:blank))
 
       {:ok, binary} = Podium.save_to_memory(prs)
       parts = PptxHelpers.unzip_pptx_binary(binary)
@@ -498,15 +508,17 @@ defmodule Podium.PlaceholderTest do
   describe "chart placeholder" do
     test "chart in :content on :title_content has correct position" do
       prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs, layout: :title_content)
+      slide = Podium.Slide.new(:title_content)
 
       chart_data =
         Podium.Chart.ChartData.new()
         |> Podium.Chart.ChartData.add_categories(["A", "B", "C"])
         |> Podium.Chart.ChartData.add_series("S1", [1, 2, 3])
 
-      {prs, _slide} =
+      slide =
         Podium.set_chart_placeholder(prs, slide, :content, :column_clustered, chart_data)
+
+      prs = Podium.add_slide(prs, slide)
 
       {:ok, binary} = Podium.save_to_memory(prs)
       parts = PptxHelpers.unzip_pptx_binary(binary)
@@ -515,10 +527,6 @@ defmodule Podium.PlaceholderTest do
       # Chart should be present as graphicFrame
       assert slide_xml =~ "<p:graphicFrame"
       # Position comes from master body placeholder, scaled to 16:9
-      # Master body: x=457200 y=1600200 cx=8229600 cy=4525963
-      # Scale factor: 12_192_000 / 9_144_000 = 1.333...
-      # Scaled x: round(457200 * 1.333...) = 609600
-      # Scaled cx: round(8229600 * 1.333...) = 10972800
       assert slide_xml =~ ~s(x="609600")
       assert slide_xml =~ ~s(y="1600200")
       assert slide_xml =~ ~s(cx="10972800")
@@ -527,18 +535,20 @@ defmodule Podium.PlaceholderTest do
 
     test "chart in :left_content and :right_content on :two_content have different positions" do
       prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs, layout: :two_content)
+      slide = Podium.Slide.new(:two_content)
 
       chart_data =
         Podium.Chart.ChartData.new()
         |> Podium.Chart.ChartData.add_categories(["A", "B"])
         |> Podium.Chart.ChartData.add_series("S1", [1, 2])
 
-      {prs, slide} =
+      slide =
         Podium.set_chart_placeholder(prs, slide, :left_content, :column_clustered, chart_data)
 
-      {prs, _slide} =
+      slide =
         Podium.set_chart_placeholder(prs, slide, :right_content, :column_clustered, chart_data)
+
+      prs = Podium.add_slide(prs, slide)
 
       {:ok, binary} = Podium.save_to_memory(prs)
       parts = PptxHelpers.unzip_pptx_binary(binary)
@@ -555,18 +565,20 @@ defmodule Podium.PlaceholderTest do
 
     test "chart opts pass through to chart XML" do
       prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs, layout: :title_content)
+      slide = Podium.Slide.new(:title_content)
 
       chart_data =
         Podium.Chart.ChartData.new()
         |> Podium.Chart.ChartData.add_categories(["A", "B"])
         |> Podium.Chart.ChartData.add_series("S1", [1, 2])
 
-      {prs, _slide} =
+      slide =
         Podium.set_chart_placeholder(prs, slide, :content, :column_clustered, chart_data,
           title: "Revenue",
           legend: :bottom
         )
+
+      prs = Podium.add_slide(prs, slide)
 
       {:ok, binary} = Podium.save_to_memory(prs)
       parts = PptxHelpers.unzip_pptx_binary(binary)
@@ -578,7 +590,7 @@ defmodule Podium.PlaceholderTest do
 
     test "user-supplied x/y/width/height in opts are silently dropped" do
       prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs, layout: :title_content)
+      slide = Podium.Slide.new(:title_content)
 
       chart_data =
         Podium.Chart.ChartData.new()
@@ -586,13 +598,15 @@ defmodule Podium.PlaceholderTest do
         |> Podium.Chart.ChartData.add_series("S1", [1])
 
       # These explicit coordinates should be ignored
-      {prs, _slide} =
+      slide =
         Podium.set_chart_placeholder(prs, slide, :content, :column_clustered, chart_data,
           x: {1, :inches},
           y: {1, :inches},
           width: {2, :inches},
           height: {2, :inches}
         )
+
+      prs = Podium.add_slide(prs, slide)
 
       {:ok, binary} = Podium.save_to_memory(prs)
       parts = PptxHelpers.unzip_pptx_binary(binary)
@@ -607,11 +621,13 @@ defmodule Podium.PlaceholderTest do
   describe "table placeholder" do
     test "table in :content on :title_content has correct position" do
       prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs, layout: :title_content)
+      slide = Podium.Slide.new(:title_content)
 
       rows = [["Header A", "Header B"], ["Cell 1", "Cell 2"]]
 
-      {prs, _slide} = Podium.set_table_placeholder(prs, slide, :content, rows)
+      slide = Podium.set_table_placeholder(prs, slide, :content, rows)
+
+      prs = Podium.add_slide(prs, slide)
 
       {:ok, binary} = Podium.save_to_memory(prs)
       parts = PptxHelpers.unzip_pptx_binary(binary)
@@ -629,14 +645,16 @@ defmodule Podium.PlaceholderTest do
 
     test "table opts (table_style) pass through" do
       prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs, layout: :title_content)
+      slide = Podium.Slide.new(:title_content)
 
       rows = [["A", "B"]]
 
-      {prs, _slide} =
+      slide =
         Podium.set_table_placeholder(prs, slide, :content, rows,
           table_style: [first_row: true, band_row: true]
         )
+
+      prs = Podium.add_slide(prs, slide)
 
       {:ok, binary} = Podium.save_to_memory(prs)
       parts = PptxHelpers.unzip_pptx_binary(binary)
@@ -650,7 +668,7 @@ defmodule Podium.PlaceholderTest do
   describe "chart/table placeholder errors" do
     test "raises on non-content placeholder :title" do
       prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs, layout: :title_content)
+      slide = Podium.Slide.new(:title_content)
 
       chart_data =
         Podium.Chart.ChartData.new()
@@ -664,7 +682,7 @@ defmodule Podium.PlaceholderTest do
 
     test "raises on non-content placeholder :body" do
       prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs, layout: :section_header)
+      slide = Podium.Slide.new(:section_header)
 
       rows = [["A"]]
 
@@ -675,7 +693,7 @@ defmodule Podium.PlaceholderTest do
 
     test "raises on unknown placeholder name" do
       prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs, layout: :title_content)
+      slide = Podium.Slide.new(:title_content)
 
       chart_data =
         Podium.Chart.ChartData.new()
@@ -689,7 +707,7 @@ defmodule Podium.PlaceholderTest do
 
     test "raises on layout without content placeholders (:blank)" do
       prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs, layout: :blank)
+      slide = Podium.Slide.new(:blank)
 
       chart_data =
         Podium.Chart.ChartData.new()
@@ -705,21 +723,23 @@ defmodule Podium.PlaceholderTest do
   describe "chart/table placeholder with 4:3 aspect" do
     test "4:3 uses raw positions without scaling" do
       prs = Podium.new(slide_width: 9_144_000, slide_height: 6_858_000)
-      {prs, slide} = Podium.add_slide(prs, layout: :title_content)
+      slide = Podium.Slide.new(:title_content)
 
       chart_data =
         Podium.Chart.ChartData.new()
         |> Podium.Chart.ChartData.add_categories(["A"])
         |> Podium.Chart.ChartData.add_series("S1", [1])
 
-      {prs, _slide} =
+      slide =
         Podium.set_chart_placeholder(prs, slide, :content, :column_clustered, chart_data)
+
+      prs = Podium.add_slide(prs, slide)
 
       {:ok, binary} = Podium.save_to_memory(prs)
       parts = PptxHelpers.unzip_pptx_binary(binary)
       slide_xml = parts["ppt/slides/slide1.xml"]
 
-      # At 4:3 (same as template), no scaling — raw master body position
+      # At 4:3 (same as template), no scaling -- raw master body position
       assert slide_xml =~ ~s(x="457200")
       assert slide_xml =~ ~s(y="1600200")
       assert slide_xml =~ ~s(cx="8229600")
@@ -729,8 +749,7 @@ defmodule Podium.PlaceholderTest do
 
   describe "error cases" do
     test "raises on unknown layout index > 11" do
-      prs = Podium.new()
-      {_prs, slide} = Podium.add_slide(prs, layout: 99)
+      slide = Podium.Slide.new(99)
 
       assert_raise ArgumentError, ~r/unknown layout index/, fn ->
         Podium.set_placeholder(slide, :title, "Should fail")

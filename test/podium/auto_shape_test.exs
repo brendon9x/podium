@@ -5,7 +5,7 @@ defmodule Podium.AutoShapeTest do
 
   describe "auto shapes" do
     test "XML has no txBox attribute" do
-      {_prs, slide} = Podium.new() |> Podium.add_slide()
+      slide = Podium.Slide.new()
 
       slide =
         Podium.add_auto_shape(slide, :rounded_rectangle,
@@ -220,7 +220,7 @@ defmodule Podium.AutoShapeTest do
         )
 
       xml = Podium.Shape.to_xml(shape)
-      assert xml =~ ~s(<a:bodyPr wrap="square" rtlCol="0"/>)
+      assert xml =~ ~s(<a:bodyPr wrap="square" rtlCol="0" anchor="ctr"/>)
       refute xml =~ "<a:noAutofit/>"
       refute xml =~ "<a:normAutofit/>"
       refute xml =~ "<a:spAutoFit/>"
@@ -244,11 +244,8 @@ defmodule Podium.AutoShapeTest do
 
   describe "integration" do
     test "auto shapes produce valid pptx" do
-      prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
-
       slide =
-        slide
+        Podium.Slide.new()
         |> Podium.add_auto_shape(:rounded_rectangle,
           x: {1, :inches},
           y: {1, :inches},
@@ -264,7 +261,10 @@ defmodule Podium.AutoShapeTest do
           height: {2, :inches}
         )
 
-      prs = Podium.put_slide(prs, slide)
+      prs =
+        Podium.new()
+        |> Podium.add_slide(slide)
+
       {:ok, binary} = Podium.save_to_memory(prs)
 
       parts = PptxHelpers.unzip_pptx_binary(binary)

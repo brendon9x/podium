@@ -11,7 +11,7 @@ defmodule Podium.Integration.ImageIntegrationTest do
       image_binary = File.read!(Path.join(@fixtures_dir, "acme.jpg"))
 
       prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
+      slide = Podium.Slide.new()
 
       slide =
         Podium.add_text_box(slide, "Image Support Demo",
@@ -23,8 +23,8 @@ defmodule Podium.Integration.ImageIntegrationTest do
           alignment: :center
         )
 
-      {prs, slide} =
-        Podium.add_image(prs, slide, image_binary,
+      slide =
+        Podium.add_image(slide, image_binary,
           x: {3.67, :inches},
           y: {1.5, :inches},
           width: {6, :inches},
@@ -32,7 +32,7 @@ defmodule Podium.Integration.ImageIntegrationTest do
           crop: [top: 5000, bottom: 5000]
         )
 
-      prs = Podium.put_slide(prs, slide)
+      prs = Podium.add_slide(prs, slide)
 
       # Save to disk for manual inspection
       output_path = Path.join(@output_dir, "image_with_crop.pptx")
@@ -72,7 +72,7 @@ defmodule Podium.Integration.ImageIntegrationTest do
       image_binary = File.read!(Path.join(@fixtures_dir, "acme.jpg"))
 
       prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
+      slide = Podium.Slide.new()
 
       slide =
         Podium.add_text_box(slide, "Image Auto-Scale (native size from PNG header)",
@@ -84,14 +84,14 @@ defmodule Podium.Integration.ImageIntegrationTest do
           alignment: :center
         )
 
-      {prs, slide} =
-        Podium.add_image(prs, slide, image_binary,
+      slide =
+        Podium.add_image(slide, image_binary,
           x: {2.67, :inches},
           y: {1.5, :inches},
           width: {8, :inches}
         )
 
-      prs = Podium.put_slide(prs, slide)
+      prs = Podium.add_slide(prs, slide)
 
       # Save to disk for manual inspection
       output_path = Path.join(@output_dir, "image_auto_scale.pptx")
@@ -121,10 +121,10 @@ defmodule Podium.Integration.ImageIntegrationTest do
       image_binary = File.read!(Path.join(@fixtures_dir, "acme.jpg"))
 
       prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
+      slide = Podium.Slide.new()
 
       slide =
-        Podium.add_text_box(slide, "Tier 1 Feature Showcase",
+        Podium.add_text_box(slide, "Image Masking",
           x: {0.5, :inches},
           y: {0.2, :inches},
           width: {12.33, :inches},
@@ -134,8 +134,8 @@ defmodule Podium.Integration.ImageIntegrationTest do
         )
 
       # Image masking — ellipse shape
-      {prs, slide} =
-        Podium.add_image(prs, slide, image_binary,
+      slide =
+        Podium.add_image(slide, image_binary,
           x: {0.67, :inches},
           y: {1, :inches},
           width: {3, :inches},
@@ -144,8 +144,8 @@ defmodule Podium.Integration.ImageIntegrationTest do
         )
 
       # Image masking — diamond shape
-      {prs, slide} =
-        Podium.add_image(prs, slide, image_binary,
+      slide =
+        Podium.add_image(slide, image_binary,
           x: {5.17, :inches},
           y: {1, :inches},
           width: {3, :inches},
@@ -154,8 +154,8 @@ defmodule Podium.Integration.ImageIntegrationTest do
         )
 
       # Image masking — rounded rectangle
-      {prs, slide} =
-        Podium.add_image(prs, slide, image_binary,
+      slide =
+        Podium.add_image(slide, image_binary,
           x: {9.67, :inches},
           y: {1, :inches},
           width: {3, :inches},
@@ -163,7 +163,7 @@ defmodule Podium.Integration.ImageIntegrationTest do
           shape: :round_rect
         )
 
-      prs = Podium.put_slide(prs, slide)
+      prs = Podium.add_slide(prs, slide)
 
       # Save to disk for manual inspection
       output_path = Path.join(@output_dir, "image_masking.pptx")
@@ -200,7 +200,7 @@ defmodule Podium.Integration.ImageIntegrationTest do
       image_binary = File.read!(Path.join(@fixtures_dir, "acme.jpg"))
 
       prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
+      slide = Podium.Slide.new()
 
       slide =
         Podium.add_text_box(slide, "Picture Fill Demo",
@@ -212,9 +212,8 @@ defmodule Podium.Integration.ImageIntegrationTest do
           alignment: :center
         )
 
-      {prs, slide} =
+      slide =
         Podium.add_picture_fill_text_box(
-          prs,
           slide,
           [[{"Picture Fill!", bold: true, font_size: 24, color: "FFFFFF"}]],
           image_binary,
@@ -226,7 +225,7 @@ defmodule Podium.Integration.ImageIntegrationTest do
           fill_mode: :stretch
         )
 
-      prs = Podium.put_slide(prs, slide)
+      prs = Podium.add_slide(prs, slide)
 
       # Save to disk for manual inspection
       output_path = Path.join(@output_dir, "picture_fill_text_box.pptx")
@@ -260,43 +259,81 @@ defmodule Podium.Integration.ImageIntegrationTest do
       image_binary = File.read!(Path.join(@fixtures_dir, "acme.jpg"))
 
       prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
+      slide = Podium.Slide.new()
+
+      # Title
+      slide =
+        Podium.add_text_box(slide, "Image Features Combined",
+          x: {0.5, :inches},
+          y: {0.2, :inches},
+          width: {12.33, :inches},
+          height: {0.6, :inches},
+          font_size: 28,
+          alignment: :center
+        )
+
+      # Labels
+      slide =
+        slide
+        |> Podium.add_text_box("Regular",
+          x: {0.5, :inches},
+          y: {0.9, :inches},
+          width: {4, :inches},
+          height: {0.4, :inches},
+          font_size: 14,
+          alignment: :center
+        )
+        |> Podium.add_text_box("Masked (Ellipse)",
+          x: {5, :inches},
+          y: {0.9, :inches},
+          width: {3, :inches},
+          height: {0.4, :inches},
+          font_size: 14,
+          alignment: :center
+        )
+        |> Podium.add_text_box("Picture Fill",
+          x: {9, :inches},
+          y: {0.9, :inches},
+          width: {4, :inches},
+          height: {0.4, :inches},
+          font_size: 14,
+          alignment: :center
+        )
 
       # Regular image
-      {prs, slide} =
-        Podium.add_image(prs, slide, image_binary,
+      slide =
+        Podium.add_image(slide, image_binary,
           x: {0.5, :inches},
-          y: {0.5, :inches},
+          y: {1.5, :inches},
           width: {4, :inches},
           height: {3, :inches}
         )
 
       # Masked image
-      {prs, slide} =
-        Podium.add_image(prs, slide, image_binary,
+      slide =
+        Podium.add_image(slide, image_binary,
           x: {5, :inches},
-          y: {0.5, :inches},
+          y: {1.5, :inches},
           width: {3, :inches},
           height: {3, :inches},
           shape: :ellipse
         )
 
       # Picture fill text box
-      {prs, slide} =
+      slide =
         Podium.add_picture_fill_text_box(
-          prs,
           slide,
           [[{"Combined!", bold: true, font_size: 20, color: "FFFFFF"}]],
           image_binary,
           x: {9, :inches},
-          y: {0.5, :inches},
+          y: {1.5, :inches},
           width: {4, :inches},
           height: {3, :inches},
           alignment: :center,
           fill_mode: :stretch
         )
 
-      prs = Podium.put_slide(prs, slide)
+      prs = Podium.add_slide(prs, slide)
 
       # Save to disk for manual inspection
       output_path = Path.join(@output_dir, "image_combined.pptx")

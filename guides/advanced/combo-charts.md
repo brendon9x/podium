@@ -1,6 +1,6 @@
 # Combo Charts
 
-Combine multiple chart types in a single plot area with `Podium.add_combo_chart/5`.
+Combine multiple chart types in a single plot area with `Podium.add_combo_chart/4`.
 A combo chart can show revenue as columns and a trend line overlaid on the same axes,
 each using different series from the same data set.
 
@@ -19,13 +19,14 @@ data =
   |> ChartData.add_series("Revenue", [1500, 4600, 5200, 3200], color: "4472C4")
   |> ChartData.add_series("Trend", [2000, 3000, 4000, 5000], color: "ED7D31")
 
-{prs, slide} = Podium.add_combo_chart(prs, slide, data, [
-  {:column_clustered, series: [0]},
-  {:line_markers, series: [1]}
-], x: {0.5, :inches}, y: {1, :inches},
-   width: {12, :inches}, height: {5.5, :inches},
-   title: "Revenue with Trend Line",
-   legend: :bottom)
+slide =
+  Podium.add_combo_chart(slide, data, [
+    {:column_clustered, series: [0]},
+    {:line_markers, series: [1]}
+  ], x: {0.5, :inches}, y: {1, :inches},
+     width: {12, :inches}, height: {5.5, :inches},
+     title: "Revenue with Trend Line",
+     legend: :bottom)
 ```
 
 > #### Note {: .info}
@@ -37,14 +38,14 @@ data =
 ## The add_combo_chart API
 
 ```elixir
-Podium.add_combo_chart(prs, slide, chart_data, plots, opts)
+Podium.add_combo_chart(slide, chart_data, plots, opts)
 ```
 
 - `chart_data` -- a `%ChartData{}` struct with shared categories and all series
 - `plots` -- a list of plot spec tuples (at least 2)
-- `opts` -- position, size, and chart-level options (same as `add_chart/5`, plus `:secondary_value_axis`)
+- `opts` -- position, size, and chart-level options (same as `add_chart/4`, plus `:secondary_value_axis`)
 
-Returns `{presentation, slide}`.
+Returns `slide`.
 
 ## Plot Specifications
 
@@ -88,15 +89,16 @@ data =
   |> ChartData.add_series("Sales ($K)", [120, 150, 180, 200, 220, 250])
   |> ChartData.add_series("Units", [45, 52, 61, 68, 74, 82])
 
-{prs, slide} = Podium.add_combo_chart(prs, slide, data, [
-  {:column_clustered, series: [0]},
-  {:line_markers, series: [1], secondary_axis: true}
-], x: {0.5, :inches}, y: {1, :inches},
-   width: {12, :inches}, height: {5.5, :inches},
-   title: "Sales Revenue vs Units Sold",
-   legend: :bottom,
-   value_axis: [title: "Sales ($K)"],
-   secondary_value_axis: [title: "Units Sold"])
+slide =
+  Podium.add_combo_chart(slide, data, [
+    {:column_clustered, series: [0]},
+    {:line_markers, series: [1], secondary_axis: true}
+  ], x: {0.5, :inches}, y: {1, :inches},
+     width: {12, :inches}, height: {5.5, :inches},
+     title: "Sales Revenue vs Units Sold",
+     legend: :bottom,
+     value_axis: [title: "Sales ($K)"],
+     secondary_value_axis: [title: "Units Sold"])
 ```
 
 The `:secondary_value_axis` option accepts the same configuration as `:value_axis`
@@ -116,13 +118,14 @@ data =
   |> ChartData.add_series("Product B", [200, 300, 250, 320])
   |> ChartData.add_series("Target", [550, 600, 500, 500])
 
-{prs, slide} = Podium.add_combo_chart(prs, slide, data, [
-  {:column_stacked, series: [0, 1]},
-  {:line_markers, series: [2]}
-], x: {0.5, :inches}, y: {1, :inches},
-   width: {12, :inches}, height: {5.5, :inches},
-   title: "Regional Sales vs Target",
-   legend: :bottom)
+slide =
+  Podium.add_combo_chart(slide, data, [
+    {:column_stacked, series: [0, 1]},
+    {:line_markers, series: [2]}
+  ], x: {0.5, :inches}, y: {1, :inches},
+     width: {12, :inches}, height: {5.5, :inches},
+     title: "Regional Sales vs Target",
+     legend: :bottom)
 ```
 
 ### Area + Line with Secondary Axis
@@ -137,14 +140,15 @@ data =
   |> ChartData.add_series("Active Users", [80, 200, 400, 700, 1100])
   |> ChartData.add_series("Growth Rate %", [0, 150, 100, 60, 50])
 
-{prs, slide} = Podium.add_combo_chart(prs, slide, data, [
-  {:area, series: [0, 1]},
-  {:line_markers, series: [2], secondary_axis: true}
-], x: {0.5, :inches}, y: {1, :inches},
-   width: {12, :inches}, height: {5.5, :inches},
-   title: "User Growth Trajectory",
-   legend: :bottom,
-   secondary_value_axis: [title: "Growth Rate %"])
+slide =
+  Podium.add_combo_chart(slide, data, [
+    {:area, series: [0, 1]},
+    {:line_markers, series: [2], secondary_axis: true}
+  ], x: {0.5, :inches}, y: {1, :inches},
+     width: {12, :inches}, height: {5.5, :inches},
+     title: "User Growth Trajectory",
+     legend: :bottom,
+     secondary_value_axis: [title: "Growth Rate %"])
 ```
 
 ## Constraints
@@ -159,6 +163,6 @@ invalid setups:
 - **Series indices must be valid** -- indices must be within the range of series
   defined in the chart data.
 
-All chart-level options from `Podium.add_chart/5` work with combo charts: `:title`,
+All chart-level options from `Podium.add_chart/4` work with combo charts: `:title`,
 `:legend`, `:data_labels`, `:category_axis`, and `:value_axis`. See the
 [Charts](charts.md) guide for full details on those options.

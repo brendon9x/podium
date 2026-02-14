@@ -444,7 +444,7 @@ defmodule Podium.Chart.XmlWriterTest do
 
   describe "table cell anchor" do
     test "cell with vertical anchor" do
-      {_prs, slide} = Podium.new() |> Podium.add_slide()
+      slide = Podium.Slide.new()
 
       slide =
         Podium.add_table(
@@ -464,7 +464,7 @@ defmodule Podium.Chart.XmlWriterTest do
 
   describe "combined cell merge" do
     test "2x2 merge produces hMerge and vMerge" do
-      {_prs, slide} = Podium.new() |> Podium.add_slide()
+      slide = Podium.Slide.new()
 
       slide =
         Podium.add_table(

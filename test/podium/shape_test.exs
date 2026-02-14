@@ -5,11 +5,9 @@ defmodule Podium.ShapeTest do
 
   describe "add_text_box/3" do
     test "adds a text box to a slide" do
-      prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
-
       slide =
-        Podium.add_text_box(slide, "Hello World",
+        Podium.Slide.new()
+        |> Podium.add_text_box("Hello World",
           x: {2, :inches},
           y: {2, :inches},
           width: {6, :inches},
@@ -19,7 +17,10 @@ defmodule Podium.ShapeTest do
       assert length(slide.shapes) == 1
       assert slide.next_shape_id == 3
 
-      prs = Podium.put_slide(prs, slide)
+      prs =
+        Podium.new()
+        |> Podium.add_slide(slide)
+
       {:ok, binary} = Podium.save_to_memory(prs)
 
       parts = PptxHelpers.unzip_pptx_binary(binary)
@@ -34,7 +35,7 @@ defmodule Podium.ShapeTest do
     end
 
     test "supports font_size option" do
-      {_prs, slide} = Podium.new() |> Podium.add_slide()
+      slide = Podium.Slide.new()
 
       slide =
         Podium.add_text_box(slide, "Big Text",
@@ -53,7 +54,7 @@ defmodule Podium.ShapeTest do
     end
 
     test "escapes special characters in text" do
-      {_prs, slide} = Podium.new() |> Podium.add_slide()
+      slide = Podium.Slide.new()
 
       slide =
         Podium.add_text_box(slide, "A < B & C > D",
@@ -70,7 +71,7 @@ defmodule Podium.ShapeTest do
     end
 
     test "multiple text boxes get incrementing IDs" do
-      {_prs, slide} = Podium.new() |> Podium.add_slide()
+      slide = Podium.Slide.new()
 
       slide =
         slide
@@ -94,7 +95,7 @@ defmodule Podium.ShapeTest do
     end
 
     test "rich text with multiple paragraphs and runs" do
-      {_prs, slide} = Podium.new() |> Podium.add_slide()
+      slide = Podium.Slide.new()
 
       slide =
         Podium.add_text_box(
@@ -126,7 +127,7 @@ defmodule Podium.ShapeTest do
     end
 
     test "per-paragraph alignment" do
-      {_prs, slide} = Podium.new() |> Podium.add_slide()
+      slide = Podium.Slide.new()
 
       slide =
         Podium.add_text_box(
@@ -149,7 +150,7 @@ defmodule Podium.ShapeTest do
     end
 
     test "top-level alignment applied to all paragraphs" do
-      {_prs, slide} = Podium.new() |> Podium.add_slide()
+      slide = Podium.Slide.new()
 
       slide =
         Podium.add_text_box(slide, "Centered text",
@@ -166,7 +167,7 @@ defmodule Podium.ShapeTest do
     end
 
     test "solid fill" do
-      {_prs, slide} = Podium.new() |> Podium.add_slide()
+      slide = Podium.Slide.new()
 
       slide =
         Podium.add_text_box(slide, "Filled",
@@ -185,7 +186,7 @@ defmodule Podium.ShapeTest do
     end
 
     test "line with default width" do
-      {_prs, slide} = Podium.new() |> Podium.add_slide()
+      slide = Podium.Slide.new()
 
       slide =
         Podium.add_text_box(slide, "Bordered",
@@ -203,7 +204,7 @@ defmodule Podium.ShapeTest do
     end
 
     test "line with custom width" do
-      {_prs, slide} = Podium.new() |> Podium.add_slide()
+      slide = Podium.Slide.new()
 
       slide =
         Podium.add_text_box(slide, "Thick border",
@@ -221,7 +222,7 @@ defmodule Podium.ShapeTest do
     end
 
     test "rich text with bullets, spacing, strikethrough, and superscript" do
-      {_prs, slide} = Podium.new() |> Podium.add_slide()
+      slide = Podium.Slide.new()
 
       slide =
         Podium.add_text_box(
@@ -253,7 +254,7 @@ defmodule Podium.ShapeTest do
     end
 
     test "gradient fill" do
-      {_prs, slide} = Podium.new() |> Podium.add_slide()
+      slide = Podium.Slide.new()
 
       slide =
         Podium.add_text_box(slide, "Gradient",
@@ -274,7 +275,7 @@ defmodule Podium.ShapeTest do
     end
 
     test "pattern fill" do
-      {_prs, slide} = Podium.new() |> Podium.add_slide()
+      slide = Podium.Slide.new()
 
       slide =
         Podium.add_text_box(slide, "Pattern",
@@ -294,7 +295,7 @@ defmodule Podium.ShapeTest do
     end
 
     test "line with dash style" do
-      {_prs, slide} = Podium.new() |> Podium.add_slide()
+      slide = Podium.Slide.new()
 
       slide =
         Podium.add_text_box(slide, "Dashed",
@@ -313,7 +314,7 @@ defmodule Podium.ShapeTest do
     end
 
     test "line with gradient fill" do
-      {_prs, slide} = Podium.new() |> Podium.add_slide()
+      slide = Podium.Slide.new()
 
       slide =
         Podium.add_text_box(slide, "Gradient line",
@@ -333,7 +334,7 @@ defmodule Podium.ShapeTest do
     end
 
     test "line with pattern fill" do
-      {_prs, slide} = Podium.new() |> Podium.add_slide()
+      slide = Podium.Slide.new()
 
       slide =
         Podium.add_text_box(slide, "Pattern line",
@@ -355,7 +356,7 @@ defmodule Podium.ShapeTest do
     end
 
     test "underline and font options" do
-      {_prs, slide} = Podium.new() |> Podium.add_slide()
+      slide = Podium.Slide.new()
 
       slide =
         Podium.add_text_box(
@@ -375,7 +376,7 @@ defmodule Podium.ShapeTest do
     end
 
     test "text frame margins" do
-      {_prs, slide} = Podium.new() |> Podium.add_slide()
+      slide = Podium.Slide.new()
 
       slide =
         Podium.add_text_box(slide, "Margins",
@@ -399,7 +400,7 @@ defmodule Podium.ShapeTest do
     end
 
     test "omitted margins use no attrs" do
-      {_prs, slide} = Podium.new() |> Podium.add_slide()
+      slide = Podium.Slide.new()
 
       slide =
         Podium.add_text_box(slide, "No margins",
@@ -420,7 +421,7 @@ defmodule Podium.ShapeTest do
     end
 
     test "45 degree rotation" do
-      {_prs, slide} = Podium.new() |> Podium.add_slide()
+      slide = Podium.Slide.new()
 
       slide =
         Podium.add_text_box(slide, "Rotated",
@@ -486,7 +487,7 @@ defmodule Podium.ShapeTest do
       shape = %{shape | fill_opts: [mode: :stretch]}
       xml = Podium.Shape.to_xml(shape)
 
-      # Without a fill_rid, should not generate blipFill — falls through to Drawing.fill_xml
+      # Without a fill_rid, should not generate blipFill -- falls through to Drawing.fill_xml
       refute xml =~ "a:blipFill"
     end
 
@@ -499,11 +500,10 @@ defmodule Podium.ShapeTest do
           0x9C, 0x62, 0x00, 0x00, 0x00, 0x02, 0x00, 0x01, 0xE5, 0x27, 0xDE, 0xFC, 0x00, 0x00,
           0x00, 0x00, 0x49, 0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82>>
 
-      prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
+      slide = Podium.Slide.new()
 
-      {prs, slide} =
-        Podium.add_picture_fill_text_box(prs, slide, "Over Image", png_binary,
+      slide =
+        Podium.add_picture_fill_text_box(slide, "Over Image", png_binary,
           x: {1, :inches},
           y: {1, :inches},
           width: {4, :inches},
@@ -511,7 +511,10 @@ defmodule Podium.ShapeTest do
           fill_mode: :stretch
         )
 
-      prs = Podium.put_slide(prs, slide)
+      prs =
+        Podium.new()
+        |> Podium.add_slide(slide)
+
       {:ok, binary} = Podium.save_to_memory(prs)
       parts = PptxHelpers.unzip_pptx_binary(binary)
 
@@ -533,7 +536,7 @@ defmodule Podium.ShapeTest do
     end
 
     test "word_wrap: false produces wrap=none" do
-      {_prs, slide} = Podium.new() |> Podium.add_slide()
+      slide = Podium.Slide.new()
 
       slide =
         Podium.add_text_box(slide, "No wrap",
@@ -552,7 +555,7 @@ defmodule Podium.ShapeTest do
     end
 
     test "word_wrap: true produces wrap=square" do
-      {_prs, slide} = Podium.new() |> Podium.add_slide()
+      slide = Podium.Slide.new()
 
       slide =
         Podium.add_text_box(slide, "Wrap",
@@ -570,7 +573,7 @@ defmodule Podium.ShapeTest do
     end
 
     test "default word wrap is square (backwards compat)" do
-      {_prs, slide} = Podium.new() |> Podium.add_slide()
+      slide = Podium.Slide.new()
 
       slide =
         Podium.add_text_box(slide, "Default",
@@ -587,7 +590,7 @@ defmodule Podium.ShapeTest do
     end
 
     test "word_wrap works on auto shapes" do
-      {_prs, slide} = Podium.new() |> Podium.add_slide()
+      slide = Podium.Slide.new()
 
       slide =
         Podium.add_auto_shape(slide, :rounded_rectangle,
@@ -606,11 +609,9 @@ defmodule Podium.ShapeTest do
     end
 
     test "word_wrap: false end-to-end" do
-      prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
-
       slide =
-        Podium.add_text_box(slide, "No wrap label",
+        Podium.Slide.new()
+        |> Podium.add_text_box("No wrap label",
           x: {1, :inches},
           y: {1, :inches},
           width: {4, :inches},
@@ -618,7 +619,10 @@ defmodule Podium.ShapeTest do
           word_wrap: false
         )
 
-      prs = Podium.put_slide(prs, slide)
+      prs =
+        Podium.new()
+        |> Podium.add_slide(slide)
+
       {:ok, binary} = Podium.save_to_memory(prs)
 
       parts = PptxHelpers.unzip_pptx_binary(binary)
@@ -628,7 +632,7 @@ defmodule Podium.ShapeTest do
     end
 
     test "no rotation when not specified" do
-      {_prs, slide} = Podium.new() |> Podium.add_slide()
+      slide = Podium.Slide.new()
 
       slide =
         Podium.add_text_box(slide, "No rotation",

@@ -26,7 +26,8 @@ Create a file called `verify.exs` and run it to confirm everything is set up:
 
 ```elixir
 prs = Podium.new()
-{prs, _slide} = Podium.add_slide(prs)
+slide = Podium.Slide.new()
+prs = Podium.add_slide(prs, slide)
 Podium.save(prs, "verify.pptx")
 IO.puts("Podium is working! Created verify.pptx")
 ```

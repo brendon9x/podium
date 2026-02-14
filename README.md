@@ -20,30 +20,27 @@ Podium creates well-formed OOXML presentations from scratch. Charts embed real E
 ```elixir
 alias Podium.Chart.ChartData
 
-prs = Podium.new()
-{prs, slide} = Podium.add_slide(prs)
-
-# Add a styled text box
-slide = Podium.add_text_box(slide, [
-  {[{"Quarterly Report", bold: true, font_size: 36, color: "003366"}], alignment: :center}
-], x: {1, :inches}, y: {0.5, :inches}, width: {10, :inches}, height: {1, :inches})
-
-# Add an editable chart
 chart_data =
   ChartData.new()
   |> ChartData.add_categories(["Q1", "Q2", "Q3", "Q4"])
   |> ChartData.add_series("Revenue", [1500, 4600, 5156, 3167], color: "4472C4")
   |> ChartData.add_series("Expenses", [1000, 2300, 2500, 3000], color: "ED7D31")
 
-{prs, slide} = Podium.add_chart(prs, slide, :column_clustered, chart_data,
-  x: {1, :inches}, y: {2, :inches}, width: {10, :inches}, height: {4.5, :inches},
-  title: "Revenue vs Expenses",
-  legend: :bottom,
-  data_labels: [:value]
-)
+slide =
+  Podium.Slide.new()
+  |> Podium.add_text_box([
+    {[{"Quarterly Report", bold: true, font_size: 36, color: "003366"}], alignment: :center}
+  ], x: {1, :inches}, y: {0.5, :inches}, width: {10, :inches}, height: {1, :inches})
+  |> Podium.add_chart(:column_clustered, chart_data,
+    x: {1, :inches}, y: {2, :inches}, width: {10, :inches}, height: {4.5, :inches},
+    title: "Revenue vs Expenses",
+    legend: :bottom,
+    data_labels: [:value]
+  )
 
-prs = Podium.put_slide(prs, slide)
-Podium.save(prs, "report.pptx")
+Podium.new()
+|> Podium.add_slide(slide)
+|> Podium.save("report.pptx")
 ```
 
 ## Installation
@@ -69,10 +66,16 @@ prs = Podium.new()
 # Custom dimensions
 prs = Podium.new(slide_width: {10, :inches}, slide_height: {7.5, :inches})
 
-# Add slides with different layouts
-{prs, slide} = Podium.add_slide(prs)                          # blank
-{prs, slide} = Podium.add_slide(prs, layout: :title_slide)    # title + subtitle
-{prs, slide} = Podium.add_slide(prs, layout: :title_content)  # title + body
+# Create slides with different layouts
+blank = Podium.Slide.new()                    # blank
+title = Podium.Slide.new(:title_slide)        # title + subtitle
+content = Podium.Slide.new(:title_content)    # title + body
+
+# Add slides to a presentation
+prs
+|> Podium.add_slide(blank)
+|> Podium.add_slide(title)
+|> Podium.add_slide(content)
 ```
 
 ### Rich text
@@ -137,25 +140,27 @@ chart_data =
   |> ChartData.add_series("2024", [42, 28, 18], color: "4472C4")
   |> ChartData.add_series("2025", [48, 32, 25], color: "ED7D31")
 
-{prs, slide} = Podium.add_chart(prs, slide, :pie, chart_data,
-  x: {1, :inches}, y: {1, :inches}, width: {8, :inches}, height: {5, :inches},
-  title: "Market Share",
-  legend: :right,                              # :left | :right | :top | :bottom | false
-  data_labels: [:category, :percent],          # :value | :category | :series | :percent
-  category_axis: [title: "Region"],
-  value_axis: [
-    title: "Share (%)",
-    number_format: "0%",
-    min: 0, max: 100, major_unit: 25,
-    major_gridlines: true                      # default true, set false to hide
-  ]
-)
+slide =
+  Podium.Slide.new()
+  |> Podium.add_chart(:pie, chart_data,
+    x: {1, :inches}, y: {1, :inches}, width: {8, :inches}, height: {5, :inches},
+    title: "Market Share",
+    legend: :right,                              # :left | :right | :top | :bottom | false
+    data_labels: [:category, :percent],          # :value | :category | :series | :percent
+    category_axis: [title: "Region"],
+    value_axis: [
+      title: "Share (%)",
+      number_format: "0%",
+      min: 0, max: 100, major_unit: 25,
+      major_gridlines: true                      # default true, set false to hide
+    ]
+  )
 ```
 
 ### Images
 
 ```elixir
-{prs, slide} = Podium.add_image(prs, slide, File.read!("logo.png"),
+slide = Podium.add_image(slide, File.read!("logo.png"),
   x: {1, :inches}, y: {1, :inches}, width: {3, :inches}, height: {2, :inches})
 ```
 
@@ -176,10 +181,8 @@ Cells accept the same text formats as `add_text_box` — plain strings or rich t
 ### Placeholders
 
 ```elixir
-{prs, slide} = Podium.add_slide(prs, layout: :title_slide)
-
 slide =
-  slide
+  Podium.Slide.new(:title_slide)
   |> Podium.set_placeholder(:title, "Annual Report 2025")
   |> Podium.set_placeholder(:subtitle, "Engineering Division")
 ```

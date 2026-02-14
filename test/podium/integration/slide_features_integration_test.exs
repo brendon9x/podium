@@ -14,7 +14,7 @@ defmodule Podium.Integration.SlideFeaturesIntegrationTest do
   describe "speaker notes" do
     test "creates slide with speaker notes" do
       prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
+      slide = Podium.Slide.new()
 
       slide =
         slide
@@ -34,7 +34,7 @@ defmodule Podium.Integration.SlideFeaturesIntegrationTest do
           "These are speaker notes. They are visible in Presenter View but not on the slide itself. Use them for talking points, reminders, or supplementary data."
         )
 
-      prs = Podium.put_slide(prs, slide)
+      prs = Podium.add_slide(prs, slide)
 
       # Save to disk
       output_path = Path.join(@output_dir, "speaker_notes.pptx")
@@ -68,7 +68,7 @@ defmodule Podium.Integration.SlideFeaturesIntegrationTest do
   describe "slide backgrounds" do
     test "creates slide with solid color background" do
       prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs, background: "E8EDF2")
+      slide = Podium.Slide.new(:blank, background: "E8EDF2")
 
       slide =
         Podium.add_text_box(
@@ -83,7 +83,7 @@ defmodule Podium.Integration.SlideFeaturesIntegrationTest do
           height: {0.6, :inches}
         )
 
-      prs = Podium.put_slide(prs, slide)
+      prs = Podium.add_slide(prs, slide)
 
       # Save to disk
       output_path = Path.join(@output_dir, "solid_background.pptx")
@@ -107,7 +107,7 @@ defmodule Podium.Integration.SlideFeaturesIntegrationTest do
       image_binary = File.read!(image_path)
 
       prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs, background: {:picture, image_binary})
+      slide = Podium.Slide.new(:blank, background: {:picture, image_binary})
 
       slide =
         Podium.add_text_box(
@@ -121,7 +121,7 @@ defmodule Podium.Integration.SlideFeaturesIntegrationTest do
           fill: "333333"
         )
 
-      prs = Podium.put_slide(prs, slide)
+      prs = Podium.add_slide(prs, slide)
 
       # Save to disk
       output_path = Path.join(@output_dir, "picture_background.pptx")
@@ -157,7 +157,7 @@ defmodule Podium.Integration.SlideFeaturesIntegrationTest do
   describe "footer, date, and slide number" do
     test "creates presentation with footer, date, and slide number" do
       prs = Podium.new()
-      {prs, slide1} = Podium.add_slide(prs)
+      slide1 = Podium.Slide.new()
 
       slide1 =
         Podium.add_text_box(
@@ -171,10 +171,10 @@ defmodule Podium.Integration.SlideFeaturesIntegrationTest do
           alignment: :center
         )
 
-      prs = Podium.put_slide(prs, slide1)
+      prs = Podium.add_slide(prs, slide1)
 
       # Add second slide to verify footer appears on multiple slides
-      {prs, slide2} = Podium.add_slide(prs)
+      slide2 = Podium.Slide.new()
 
       slide2 =
         Podium.add_text_box(
@@ -188,7 +188,7 @@ defmodule Podium.Integration.SlideFeaturesIntegrationTest do
           alignment: :center
         )
 
-      prs = Podium.put_slide(prs, slide2)
+      prs = Podium.add_slide(prs, slide2)
 
       # Set footer on the presentation
       prs =
@@ -226,7 +226,7 @@ defmodule Podium.Integration.SlideFeaturesIntegrationTest do
 
     test "footer with only footer text (no date, no slide number)" do
       prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
+      slide = Podium.Slide.new()
 
       slide =
         Podium.add_text_box(
@@ -240,7 +240,7 @@ defmodule Podium.Integration.SlideFeaturesIntegrationTest do
           alignment: :center
         )
 
-      prs = Podium.put_slide(prs, slide)
+      prs = Podium.add_slide(prs, slide)
       prs = Podium.set_footer(prs, footer: "Custom Footer Text")
 
       # Save to disk
@@ -263,7 +263,7 @@ defmodule Podium.Integration.SlideFeaturesIntegrationTest do
 
     test "footer with date only" do
       prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
+      slide = Podium.Slide.new()
 
       slide =
         Podium.add_text_box(
@@ -277,7 +277,7 @@ defmodule Podium.Integration.SlideFeaturesIntegrationTest do
           alignment: :center
         )
 
-      prs = Podium.put_slide(prs, slide)
+      prs = Podium.add_slide(prs, slide)
       prs = Podium.set_footer(prs, date: "January 1, 2026")
 
       # Save to disk
@@ -297,7 +297,7 @@ defmodule Podium.Integration.SlideFeaturesIntegrationTest do
 
     test "footer with slide number only" do
       prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
+      slide = Podium.Slide.new()
 
       slide =
         Podium.add_text_box(
@@ -311,7 +311,7 @@ defmodule Podium.Integration.SlideFeaturesIntegrationTest do
           alignment: :center
         )
 
-      prs = Podium.put_slide(prs, slide)
+      prs = Podium.add_slide(prs, slide)
       prs = Podium.set_footer(prs, slide_number: true)
 
       # Save to disk

@@ -1,7 +1,7 @@
 # Presentations and Slides
 
-Create and configure presentations with `Podium.new/1`, add slides with
-`Podium.add_slide/2`, and save the result to a file or an in-memory binary.
+Create and configure presentations with `Podium.new/1`, create slides with
+`Podium.Slide.new/1`, and add them to the presentation with `Podium.add_slide/2`.
 
 > #### Try it yourself {: .tip}
 >
@@ -9,11 +9,11 @@ Create and configure presentations with `Podium.new/1`, add slides with
 
 ```elixir
 prs = Podium.new()
-{prs, slide} = Podium.add_slide(prs)
+slide = Podium.Slide.new()
 slide = Podium.add_text_box(slide, "Hello, World!",
   x: {1, :inches}, y: {1, :inches},
   width: {8, :inches}, height: {1, :inches})
-prs = Podium.put_slide(prs, slide)
+prs = Podium.add_slide(prs, slide)
 Podium.save(prs, "hello.pptx")
 ```
 
@@ -56,19 +56,17 @@ All position and size options throughout Podium accept these unit formats --
 | 4:3 | `{10, :inches}` | `{7.5, :inches}` |
 | 16:10 | `{13.333, :inches}` | `{8.333, :inches}` |
 
-## Adding Slides
+## Creating Slides
 
-`Podium.add_slide/2` adds a slide and returns `{presentation, slide}`. By default
-it uses the `:blank` layout.
+Create slides with `Podium.Slide.new/1`. By default it uses the `:blank` layout.
 
 ```elixir
-{prs, slide} = Podium.add_slide(prs)
+slide = Podium.Slide.new()
 ```
 
 ### Slide Layouts
 
-Specify a layout with the `:layout` option. Podium includes 11 built-in layouts
-from the default PowerPoint template.
+Specify a layout by passing a layout atom or index:
 
 | Layout | Atom | Placeholders |
 |--------|------|-------------|
@@ -85,28 +83,28 @@ from the default PowerPoint template.
 | Vertical Title + Text | `:vertical_title_text` | `:title`, `:body` |
 
 ```elixir
-{prs, slide} = Podium.add_slide(prs, layout: :title_slide)
+slide = Podium.Slide.new(:title_slide)
 slide = Podium.set_placeholder(slide, :title, "Annual Report 2025")
 slide = Podium.set_placeholder(slide, :subtitle, "Finance & Operations Dashboard")
-prs = Podium.put_slide(prs, slide)
+prs = Podium.add_slide(prs, slide)
 ```
 
 ### Slide Backgrounds
 
-Set a background color, gradient, pattern, or picture when adding a slide.
+Set a background color, gradient, pattern, or picture when creating a slide.
 
 ![Solid dark background with light text](assets/core/presentations-and-slides/solid-background.png)
 
 ```elixir
 # Solid color
-{prs, slide} = Podium.add_slide(prs, background: "E8EDF2")
+slide = Podium.Slide.new(:blank, background: "E8EDF2")
 ```
 
 ![Gradient background with centered title](assets/core/presentations-and-slides/gradient-background.png)
 
 ```elixir
 # Gradient
-{prs, slide} = Podium.add_slide(prs,
+slide = Podium.Slide.new(:blank,
   background: {:gradient, [{0, "001133"}, {100_000, "004488"}], angle: 5_400_000})
 ```
 
@@ -114,39 +112,36 @@ Set a background color, gradient, pattern, or picture when adding a slide.
 
 ```elixir
 # Pattern
-{prs, slide} = Podium.add_slide(prs,
+slide = Podium.Slide.new(:blank,
   background: {:pattern, :lt_horz, foreground: "003366", background: "E8EDF2"})
 
 # Picture
 image_binary = File.read!("background.jpg")
-{prs, slide} = Podium.add_slide(prs, background: {:picture, image_binary})
+slide = Podium.Slide.new(:blank, background: {:picture, image_binary})
 ```
 
 When no background is set, the slide inherits the background from the slide master.
 
-## The {prs, slide} Pattern
+## The Slide Builder Pattern
 
-Functions that allocate resources (charts, images, videos) return
-`{presentation, slide}`. Functions that only modify slide content (text boxes,
-tables, shapes) return the updated slide.
+All content functions take a slide as first argument and return the updated slide.
+This makes it natural to build slides with the pipe operator.
 
-After modifying a slide, call `Podium.put_slide/2` to replace it in the
-presentation before saving.
+After building a slide, call `Podium.add_slide/2` to add it to the presentation.
 
 ```elixir
 prs = Podium.new()
-{prs, slide} = Podium.add_slide(prs)
 
-# add_text_box returns just the slide
-slide = Podium.add_text_box(slide, "Hello",
-  x: {1, :inches}, y: {1, :inches}, width: {4, :inches}, height: {1, :inches})
+# Build a slide with pipes
+slide =
+  Podium.Slide.new()
+  |> Podium.add_text_box("Hello",
+    x: {1, :inches}, y: {1, :inches}, width: {4, :inches}, height: {1, :inches})
+  |> Podium.add_chart(:pie, chart_data,
+    x: {1, :inches}, y: {2, :inches}, width: {6, :inches}, height: {4, :inches})
 
-# add_chart returns {prs, slide}
-{prs, slide} = Podium.add_chart(prs, slide, :pie, chart_data,
-  x: {1, :inches}, y: {2, :inches}, width: {6, :inches}, height: {4, :inches})
-
-# Replace the slide in the presentation
-prs = Podium.put_slide(prs, slide)
+# Add the slide to the presentation
+prs = Podium.add_slide(prs, slide)
 ```
 
 ## Saving

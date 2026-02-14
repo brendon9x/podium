@@ -23,7 +23,7 @@ defmodule Podium.Video do
   ]
 
   @type t :: %__MODULE__{
-          media_index: pos_integer(),
+          media_index: pos_integer() | nil,
           binary: binary(),
           extension: String.t(),
           sha1: String.t(),
@@ -53,8 +53,8 @@ defmodule Podium.Video do
     * `:mime_type` - MIME type string (default `"video/unknown"`)
     * `:poster_frame` - poster frame image binary (default: 1x1 transparent PNG)
   """
-  @spec new(binary(), pos_integer(), pos_integer(), keyword()) :: t()
-  def new(binary, media_index, poster_image_index, opts) when is_binary(binary) do
+  @spec new(binary(), keyword()) :: t()
+  def new(binary, opts) when is_binary(binary) do
     mime_type = Keyword.get(opts, :mime_type, "video/unknown")
     extension = detect_extension(mime_type)
     sha1 = :crypto.hash(:sha, binary) |> Base.encode16(case: :lower)
@@ -63,7 +63,7 @@ defmodule Podium.Video do
     poster_ext = detect_poster_extension(poster_binary)
 
     %__MODULE__{
-      media_index: media_index,
+      media_index: nil,
       binary: binary,
       extension: extension,
       sha1: sha1,
@@ -75,7 +75,7 @@ defmodule Podium.Video do
       poster_frame: %{
         binary: poster_binary,
         extension: poster_ext,
-        image_index: poster_image_index
+        image_index: nil
       }
     }
   end

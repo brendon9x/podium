@@ -4,15 +4,17 @@ Podium is an Elixir library for generating PowerPoint (.pptx) files from code, w
 
 ```elixir
 prs = Podium.new()
-{prs, slide} = Podium.add_slide(prs)
 
-slide = Podium.add_text_box(slide, "Hello from Podium!",
-  x: {1, :inches}, y: {1, :inches},
-  width: {8, :inches}, height: {1, :inches},
-  font_size: 24)
+slide =
+  Podium.Slide.new()
+  |> Podium.add_text_box("Hello from Podium!",
+    x: {1, :inches}, y: {1, :inches},
+    width: {8, :inches}, height: {1, :inches},
+    font_size: 24)
 
-prs = Podium.put_slide(prs, slide)
-Podium.save(prs, "hello.pptx")
+prs
+|> Podium.add_slide(slide)
+|> Podium.save("hello.pptx")
 ```
 
 ## What Podium Does
@@ -44,12 +46,13 @@ Podium is built for backend teams generating reports, dashboards, and slide deck
 alias Podium.Chart.ChartData
 
 prs = Podium.new()
-{prs, slide} = Podium.add_slide(prs)
 
 # Add a styled text box
-slide = Podium.add_text_box(slide, [
-  {[{"Quarterly Report", bold: true, font_size: 36, color: "003366"}], alignment: :center}
-], x: {1, :inches}, y: {0.5, :inches}, width: {10, :inches}, height: {1, :inches})
+slide =
+  Podium.Slide.new()
+  |> Podium.add_text_box([
+    {[{"Quarterly Report", bold: true, font_size: 36, color: "003366"}], alignment: :center}
+  ], x: {1, :inches}, y: {0.5, :inches}, width: {10, :inches}, height: {1, :inches})
 
 # Add an editable chart
 chart_data =
@@ -58,14 +61,15 @@ chart_data =
   |> ChartData.add_series("Revenue", [1500, 4600, 5156, 3167], color: "4472C4")
   |> ChartData.add_series("Expenses", [1000, 2300, 2500, 3000], color: "ED7D31")
 
-{prs, slide} = Podium.add_chart(prs, slide, :column_clustered, chart_data,
+slide = Podium.add_chart(slide, :column_clustered, chart_data,
   x: {1, :inches}, y: {2, :inches}, width: {10, :inches}, height: {4.5, :inches},
   title: "Revenue vs Expenses",
   legend: :bottom,
   data_labels: [:value])
 
-prs = Podium.put_slide(prs, slide)
-Podium.save(prs, "report.pptx")
+prs
+|> Podium.add_slide(slide)
+|> Podium.save("report.pptx")
 ```
 
 ## Where to Go from Here

@@ -20,13 +20,15 @@ prs = Podium.new(
 ### Add a slide
 
 ```elixir
-{prs, slide} = Podium.add_slide(prs)
+slide = Podium.Slide.new()
+prs = Podium.add_slide(prs, slide)
 ```
 
 ### Add a slide with layout
 
 ```elixir
-{prs, slide} = Podium.add_slide(prs, layout: :title_slide)
+slide = Podium.Slide.new(:title_slide)
+prs = Podium.add_slide(prs, slide)
 ```
 
 ### Save to file
@@ -163,21 +165,21 @@ data =
 ### Add chart to slide
 
 ```elixir
-{prs, slide} = Podium.add_chart(prs, slide,
-  :column_clustered, data,
-  x: {0.5, :inches}, y: {1, :inches},
-  width: {9, :inches}, height: {5, :inches})
+slide =
+  Podium.add_chart(slide, :column_clustered, data,
+    x: {0.5, :inches}, y: {1, :inches},
+    width: {9, :inches}, height: {5, :inches})
 ```
 
 ### Chart with title and legend
 
 ```elixir
-{prs, slide} = Podium.add_chart(prs, slide,
-  :pie, data,
-  x: {2, :inches}, y: {1, :inches},
-  width: {9, :inches}, height: {5, :inches},
-  title: "Sales", legend: :bottom,
-  data_labels: [:category, :percent])
+slide =
+  Podium.add_chart(slide, :pie, data,
+    x: {2, :inches}, y: {1, :inches},
+    width: {9, :inches}, height: {5, :inches},
+    title: "Sales", legend: :bottom,
+    data_labels: [:category, :percent])
 ```
 
 ### Scatter chart
@@ -205,8 +207,8 @@ data = BubbleChartData.new()
 ### Combo chart
 
 ```elixir
-{prs, slide} = Podium.add_combo_chart(prs, slide,
-  data, [
+slide =
+  Podium.add_combo_chart(slide, data, [
     {:column_clustered, series: [0]},
     {:line_markers, series: [1], secondary_axis: true}
   ], x: {0.5, :inches}, y: {1, :inches},
@@ -255,35 +257,39 @@ slide = Podium.add_table(slide, rows,
 
 ```elixir
 binary = File.read!("photo.png")
-{prs, slide} = Podium.add_image(prs, slide, binary,
-  x: {2, :inches}, y: {1, :inches},
-  width: {6, :inches}, height: {4, :inches})
+slide =
+  Podium.add_image(slide, binary,
+    x: {2, :inches}, y: {1, :inches},
+    width: {6, :inches}, height: {4, :inches})
 ```
 
 ### Image with width only (auto height)
 
 ```elixir
-{prs, slide} = Podium.add_image(prs, slide, binary,
-  x: {2, :inches}, y: {1, :inches},
-  width: {8, :inches})
+slide =
+  Podium.add_image(slide, binary,
+    x: {2, :inches}, y: {1, :inches},
+    width: {8, :inches})
 ```
 
 ### Image with shape mask
 
 ```elixir
-{prs, slide} = Podium.add_image(prs, slide, binary,
-  x: {1, :inches}, y: {1, :inches},
-  width: {3, :inches}, height: {3, :inches},
-  shape: :ellipse)
+slide =
+  Podium.add_image(slide, binary,
+    x: {1, :inches}, y: {1, :inches},
+    width: {3, :inches}, height: {3, :inches},
+    shape: :ellipse)
 ```
 
 ### Cropped image
 
 ```elixir
-{prs, slide} = Podium.add_image(prs, slide, binary,
-  x: {1, :inches}, y: {1, :inches},
-  width: {6, :inches}, height: {4, :inches},
-  crop: [top: 5000, bottom: 5000])
+slide =
+  Podium.add_image(slide, binary,
+    x: {1, :inches}, y: {1, :inches},
+    width: {6, :inches}, height: {4, :inches},
+    crop: [top: 5000, bottom: 5000])
 ```
 
 ## Placeholders {: .col-2}
@@ -298,24 +304,24 @@ slide = Podium.set_placeholder(slide, :title,
 ### Picture placeholder
 
 ```elixir
-{prs, slide} = Podium.set_picture_placeholder(
-  prs, slide, :picture, image_binary)
+slide =
+  Podium.set_picture_placeholder(slide, :picture, image_binary)
 ```
 
 ### Chart in content placeholder
 
 ```elixir
-{prs, slide} = Podium.set_chart_placeholder(
-  prs, slide, :content, :pie, chart_data,
-  title: "Revenue", legend: :bottom)
+slide =
+  Podium.set_chart_placeholder(prs, slide, :content, :pie, chart_data,
+    title: "Revenue", legend: :bottom)
 ```
 
 ### Table in content placeholder
 
 ```elixir
-{prs, slide} = Podium.set_table_placeholder(
-  prs, slide, :left_content, rows,
-  table_style: [first_row: true])
+slide =
+  Podium.set_table_placeholder(prs, slide, :left_content, rows,
+    table_style: [first_row: true])
 ```
 
 ### Footer, date, slide numbers

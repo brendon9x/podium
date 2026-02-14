@@ -4,7 +4,7 @@
 
 ### Functional vs. OOP
 
-python-pptx mutates objects in place. Podium returns new structs -- slide-only functions return the slide, presentation-level functions return `{prs, slide}`.
+python-pptx mutates objects in place. Podium returns new structs -- content functions take and return the slide, so you can pipe them. Presentation-level functions like `add_slide` return the presentation.
 
 ### Units
 
@@ -26,10 +26,11 @@ prs.save("output.pptx")
 ### Elixir -- Create, add slide, save
 
 ```elixir
-prs = Podium.new()
-{prs, slide} = Podium.add_slide(prs)
-prs = Podium.put_slide(prs, slide)
-Podium.save(prs, "output.pptx")
+slide = Podium.Slide.new()
+
+Podium.new()
+|> Podium.add_slide(slide)
+|> Podium.save("output.pptx")
 ```
 
 ### Python -- Layouts and placeholders
@@ -43,10 +44,12 @@ slide.placeholders[1].text = "Subtitle"
 ### Elixir -- Layouts and placeholders
 
 ```elixir
-{prs, slide} = Podium.add_slide(prs, layout: :title_slide)
-slide = slide
+slide =
+  Podium.Slide.new(:title_slide)
   |> Podium.set_placeholder(:title, "My Title")
   |> Podium.set_placeholder(:subtitle, "Subtitle")
+
+prs = Podium.add_slide(prs, slide)
 ```
 
 ## Text {: .col-2}
@@ -99,14 +102,17 @@ chart.has_legend = True
 
 ```elixir
 alias Podium.Chart.ChartData
-data = ChartData.new()
+
+data =
+  ChartData.new()
   |> ChartData.add_categories(["Q1", "Q2", "Q3"])
   |> ChartData.add_series("Revenue", [100, 200, 300])
-{prs, slide} = Podium.add_chart(prs, slide,
-  :column_clustered, data,
-  x: {1, :inches}, y: {1, :inches},
-  width: {8, :inches}, height: {5, :inches},
-  legend: :bottom)
+
+slide =
+  Podium.add_chart(slide, :column_clustered, data,
+    x: {1, :inches}, y: {1, :inches},
+    width: {8, :inches}, height: {5, :inches},
+    legend: :bottom)
 ```
 
 ## Shapes {: .col-2}
@@ -172,9 +178,10 @@ pic = slide.shapes.add_picture(
 
 ```elixir
 image = File.read!("logo.png")
-{prs, slide} = Podium.add_image(prs, slide, image,
-  x: {1, :inches}, y: {1, :inches},
-  width: {3, :inches})
+slide =
+  Podium.add_image(slide, image,
+    x: {1, :inches}, y: {1, :inches},
+    width: {3, :inches})
 ```
 
 ## Podium Extras {: .col-2}
@@ -184,12 +191,12 @@ image = File.read!("logo.png")
 python-pptx can read combo charts but cannot create them.
 
 ```elixir
-{prs, slide} = Podium.add_combo_chart(prs, slide,
-  chart_data,
-  [{:column_clustered, series: [0]},
-   {:line_markers, series: [1], secondary_axis: true}],
-  x: {1, :inches}, y: {1, :inches},
-  width: {10, :inches}, height: {5, :inches})
+slide =
+  Podium.add_combo_chart(slide, chart_data, [
+    {:column_clustered, series: [0]},
+    {:line_markers, series: [1], secondary_axis: true}
+  ], x: {1, :inches}, y: {1, :inches},
+     width: {10, :inches}, height: {5, :inches})
 ```
 
 ### Table cell borders (Podium-only)

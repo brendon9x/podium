@@ -12,18 +12,19 @@ defmodule Podium.Chart.IntegrationTest do
         |> ChartData.add_series("Revenue", [1500, 4600, 5156, 3167])
         |> ChartData.add_series("Expenses", [1000, 2300, 2500, 3000])
 
-      prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
-
-      {prs, slide} =
-        Podium.add_chart(prs, slide, :column_clustered, chart_data,
+      slide =
+        Podium.Slide.new()
+        |> Podium.add_chart(:column_clustered, chart_data,
           x: {1, :inches},
           y: {2, :inches},
           width: {8, :inches},
           height: {4.5, :inches}
         )
 
-      prs = Podium.put_slide(prs, slide)
+      prs =
+        Podium.new()
+        |> Podium.add_slide(slide)
+
       {:ok, binary} = Podium.save_to_memory(prs)
 
       parts = PptxHelpers.unzip_pptx_binary(binary)
@@ -69,27 +70,26 @@ defmodule Podium.Chart.IntegrationTest do
         |> ChartData.add_categories(["A", "B"])
         |> ChartData.add_series("Values", [10, 20])
 
-      prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
-
       slide =
-        Podium.add_text_box(slide, "Chart Title",
+        Podium.Slide.new()
+        |> Podium.add_text_box("Chart Title",
           x: {1, :inches},
           y: {0.5, :inches},
           width: {8, :inches},
           height: {1, :inches},
           font_size: 28
         )
-
-      {prs, slide} =
-        Podium.add_chart(prs, slide, :pie, chart_data,
+        |> Podium.add_chart(:pie, chart_data,
           x: {2, :inches},
           y: {2, :inches},
           width: {6, :inches},
           height: {4, :inches}
         )
 
-      prs = Podium.put_slide(prs, slide)
+      prs =
+        Podium.new()
+        |> Podium.add_slide(slide)
+
       {:ok, binary} = Podium.save_to_memory(prs)
 
       parts = PptxHelpers.unzip_pptx_binary(binary)
@@ -112,20 +112,18 @@ defmodule Podium.Chart.IntegrationTest do
         |> ChartData.add_categories(["X", "Y"])
         |> ChartData.add_series("S2", [30, 40])
 
-      prs = Podium.new()
-      {prs, slide1} = Podium.add_slide(prs)
-      {prs, slide2} = Podium.add_slide(prs)
-
-      {prs, slide1} =
-        Podium.add_chart(prs, slide1, :column_clustered, chart_data1,
+      slide1 =
+        Podium.Slide.new()
+        |> Podium.add_chart(:column_clustered, chart_data1,
           x: {1, :inches},
           y: {1, :inches},
           width: {8, :inches},
           height: {5, :inches}
         )
 
-      {prs, slide2} =
-        Podium.add_chart(prs, slide2, :line, chart_data2,
+      slide2 =
+        Podium.Slide.new()
+        |> Podium.add_chart(:line, chart_data2,
           x: {1, :inches},
           y: {1, :inches},
           width: {8, :inches},
@@ -133,9 +131,9 @@ defmodule Podium.Chart.IntegrationTest do
         )
 
       prs =
-        prs
-        |> Podium.put_slide(slide1)
-        |> Podium.put_slide(slide2)
+        Podium.new()
+        |> Podium.add_slide(slide1)
+        |> Podium.add_slide(slide2)
 
       {:ok, binary} = Podium.save_to_memory(prs)
 
@@ -163,26 +161,25 @@ defmodule Podium.Chart.IntegrationTest do
         |> ChartData.add_categories(["X", "Y"])
         |> ChartData.add_series("S2", [30, 40])
 
-      prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
-
-      {prs, slide} =
-        Podium.add_chart(prs, slide, :column_clustered, chart_data1,
+      slide =
+        Podium.Slide.new()
+        |> Podium.add_chart(:column_clustered, chart_data1,
           x: {0.5, :inches},
           y: {1, :inches},
           width: {4, :inches},
           height: {4, :inches}
         )
-
-      {prs, slide} =
-        Podium.add_chart(prs, slide, :pie, chart_data2,
+        |> Podium.add_chart(:pie, chart_data2,
           x: {5, :inches},
           y: {1, :inches},
           width: {4, :inches},
           height: {4, :inches}
         )
 
-      prs = Podium.put_slide(prs, slide)
+      prs =
+        Podium.new()
+        |> Podium.add_slide(slide)
+
       {:ok, binary} = Podium.save_to_memory(prs)
 
       parts = PptxHelpers.unzip_pptx_binary(binary)
@@ -209,16 +206,18 @@ defmodule Podium.Chart.IntegrationTest do
         |> ChartData.add_series("S1", [10, 20])
         |> ChartData.add_series("S2", [30, 40])
 
-      prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
-
-      {prs, _slide} =
-        Podium.add_chart(prs, slide, :column_stacked, chart_data,
+      slide =
+        Podium.Slide.new()
+        |> Podium.add_chart(:column_stacked, chart_data,
           x: {1, :inches},
           y: {1, :inches},
           width: {8, :inches},
           height: {5, :inches}
         )
+
+      prs =
+        Podium.new()
+        |> Podium.add_slide(slide)
 
       {:ok, binary} = Podium.save_to_memory(prs)
       parts = PptxHelpers.unzip_pptx_binary(binary)
@@ -234,19 +233,19 @@ defmodule Podium.Chart.IntegrationTest do
         |> ChartData.add_categories(["A"])
         |> ChartData.add_series("S1", [10])
 
-      prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
-
-      # add_chart should auto-update the slide inside prs
-      {prs, _slide} =
-        Podium.add_chart(prs, slide, :pie, chart_data,
+      slide =
+        Podium.Slide.new()
+        |> Podium.add_chart(:pie, chart_data,
           x: {1, :inches},
           y: {1, :inches},
           width: {6, :inches},
           height: {4, :inches}
         )
 
-      # Save WITHOUT calling put_slide — should still work
+      prs =
+        Podium.new()
+        |> Podium.add_slide(slide)
+
       {:ok, binary} = Podium.save_to_memory(prs)
       parts = PptxHelpers.unzip_pptx_binary(binary)
 
@@ -261,27 +260,25 @@ defmodule Podium.Chart.IntegrationTest do
         |> ChartData.add_series("Revenue", [1500, 4600, 5156, 3167])
         |> ChartData.add_series("Expenses", [1000, 2300, 2500, 3000])
 
-      prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
-
       slide =
-        Podium.add_text_box(slide, "Hello World",
+        Podium.Slide.new()
+        |> Podium.add_text_box("Hello World",
           x: {2, :inches},
           y: {2, :inches},
           width: {6, :inches},
           height: {1, :inches},
           font_size: 24
         )
-
-      {prs, slide} =
-        Podium.add_chart(prs, slide, :column_clustered, chart_data,
+        |> Podium.add_chart(:column_clustered, chart_data,
           x: {1, :inches},
           y: {2, :inches},
           width: {8, :inches},
           height: {4.5, :inches}
         )
 
-      prs = Podium.put_slide(prs, slide)
+      prs =
+        Podium.new()
+        |> Podium.add_slide(slide)
 
       tmp_path = Path.join(System.tmp_dir!(), "podium_api_test.pptx")
       on_exit(fn -> File.rm(tmp_path) end)

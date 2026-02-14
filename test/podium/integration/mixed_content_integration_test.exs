@@ -15,7 +15,7 @@ defmodule Podium.Integration.MixedContentIntegrationTest do
         |> ChartData.add_series("Expenses", [10_000, 11_300, 12_500, 13_000], color: "ED7D31")
 
       prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
+      slide = Podium.Slide.new()
 
       slide =
         Podium.add_text_box(slide, "Quarterly Revenue Overview",
@@ -27,8 +27,8 @@ defmodule Podium.Integration.MixedContentIntegrationTest do
           alignment: :center
         )
 
-      {prs, slide} =
-        Podium.add_chart(prs, slide, :column_clustered, chart_data,
+      slide =
+        Podium.add_chart(slide, :column_clustered, chart_data,
           x: {0.5, :inches},
           y: {1.2, :inches},
           width: {12.33, :inches},
@@ -37,9 +37,9 @@ defmodule Podium.Integration.MixedContentIntegrationTest do
           legend: :bottom
         )
 
-      prs = Podium.put_slide(prs, slide)
+      prs = Podium.add_slide(prs, slide)
 
-      output_path = Path.join(@output_dir, "mixed_content_integration.pptx")
+      output_path = Path.join(@output_dir, "chart_text_combo.pptx")
       File.mkdir_p!(@output_dir)
       assert :ok = Podium.save(prs, output_path)
 
@@ -56,7 +56,7 @@ defmodule Podium.Integration.MixedContentIntegrationTest do
   describe "hyperlinks" do
     test "creates valid pptx with URL and mailto hyperlinks" do
       prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
+      slide = Podium.Slide.new()
 
       slide =
         Podium.add_text_box(
@@ -85,9 +85,9 @@ defmodule Podium.Integration.MixedContentIntegrationTest do
           height: {2, :inches}
         )
 
-      prs = Podium.put_slide(prs, slide)
+      prs = Podium.add_slide(prs, slide)
 
-      output_path = Path.join(@output_dir, "mixed_content_integration.pptx")
+      output_path = Path.join(@output_dir, "hyperlinks.pptx")
       File.mkdir_p!(@output_dir)
       assert :ok = Podium.save(prs, output_path)
 
@@ -113,10 +113,10 @@ defmodule Podium.Integration.MixedContentIntegrationTest do
         |> ChartData.add_series("Mobile", [30, 35, 38, 42, 50, 55], color: "ED7D31")
 
       prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
+      slide = Podium.Slide.new()
 
-      {prs, slide} =
-        Podium.add_chart(prs, slide, :line_markers, chart_data,
+      slide =
+        Podium.add_chart(slide, :line_markers, chart_data,
           x: {0.5, :inches},
           y: {0.5, :inches},
           width: {12.33, :inches},
@@ -126,9 +126,9 @@ defmodule Podium.Integration.MixedContentIntegrationTest do
           value_axis: [title: "Users (thousands)", major_gridlines: true]
         )
 
-      prs = Podium.put_slide(prs, slide)
+      prs = Podium.add_slide(prs, slide)
 
-      output_path = Path.join(@output_dir, "mixed_content_integration.pptx")
+      output_path = Path.join(@output_dir, "chart_axis_gridlines.pptx")
       File.mkdir_p!(@output_dir)
       assert :ok = Podium.save(prs, output_path)
 
@@ -150,10 +150,10 @@ defmodule Podium.Integration.MixedContentIntegrationTest do
         )
 
       prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
+      slide = Podium.Slide.new()
 
-      {prs, slide} =
-        Podium.add_chart(prs, slide, :line_markers, marker_data,
+      slide =
+        Podium.add_chart(slide, :line_markers, marker_data,
           x: {0.5, :inches},
           y: {0.5, :inches},
           width: {12.33, :inches},
@@ -163,9 +163,9 @@ defmodule Podium.Integration.MixedContentIntegrationTest do
           value_axis: [major_gridlines: true, minor_gridlines: true]
         )
 
-      prs = Podium.put_slide(prs, slide)
+      prs = Podium.add_slide(prs, slide)
 
-      output_path = Path.join(@output_dir, "mixed_content_integration.pptx")
+      output_path = Path.join(@output_dir, "chart_markers_ticks.pptx")
       File.mkdir_p!(@output_dir)
       assert :ok = Podium.save(prs, output_path)
 
@@ -193,10 +193,10 @@ defmodule Podium.Integration.MixedContentIntegrationTest do
         )
 
       prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
+      slide = Podium.Slide.new()
 
-      {prs, slide} =
-        Podium.add_chart(prs, slide, :column_clustered, highlight_data,
+      slide =
+        Podium.add_chart(slide, :column_clustered, highlight_data,
           x: {0.5, :inches},
           y: {0.5, :inches},
           width: {12.33, :inches},
@@ -204,9 +204,9 @@ defmodule Podium.Integration.MixedContentIntegrationTest do
           title: "Per-Point Highlighting"
         )
 
-      prs = Podium.put_slide(prs, slide)
+      prs = Podium.add_slide(prs, slide)
 
-      output_path = Path.join(@output_dir, "mixed_content_integration.pptx")
+      output_path = Path.join(@output_dir, "chart_per_point_colors.pptx")
       File.mkdir_p!(@output_dir)
       assert :ok = Podium.save(prs, output_path)
 
@@ -221,7 +221,7 @@ defmodule Podium.Integration.MixedContentIntegrationTest do
   describe "line fills" do
     test "creates valid pptx with gradient line fill" do
       prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
+      slide = Podium.Slide.new()
 
       slide =
         Podium.add_text_box(slide, "Gradient Line",
@@ -237,9 +237,9 @@ defmodule Podium.Integration.MixedContentIntegrationTest do
           ]
         )
 
-      prs = Podium.put_slide(prs, slide)
+      prs = Podium.add_slide(prs, slide)
 
-      output_path = Path.join(@output_dir, "mixed_content_integration.pptx")
+      output_path = Path.join(@output_dir, "line_gradient_fill.pptx")
       File.mkdir_p!(@output_dir)
       assert :ok = Podium.save(prs, output_path)
 
@@ -252,7 +252,7 @@ defmodule Podium.Integration.MixedContentIntegrationTest do
 
     test "creates valid pptx with pattern line fill" do
       prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
+      slide = Podium.Slide.new()
 
       slide =
         Podium.add_text_box(slide, "Pattern Line",
@@ -268,9 +268,9 @@ defmodule Podium.Integration.MixedContentIntegrationTest do
           ]
         )
 
-      prs = Podium.put_slide(prs, slide)
+      prs = Podium.add_slide(prs, slide)
 
-      output_path = Path.join(@output_dir, "mixed_content_integration.pptx")
+      output_path = Path.join(@output_dir, "line_pattern_fill.pptx")
       File.mkdir_p!(@output_dir)
       assert :ok = Podium.save(prs, output_path)
 
@@ -290,10 +290,10 @@ defmodule Podium.Integration.MixedContentIntegrationTest do
         |> ChartData.add_series("Sales", [120, 145, 190, 210, 250], color: "4472C4")
 
       prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
+      slide = Podium.Slide.new()
 
-      {prs, slide} =
-        Podium.add_chart(prs, slide, :line_markers, date_data,
+      slide =
+        Podium.add_chart(slide, :line_markers, date_data,
           x: {0.5, :inches},
           y: {0.5, :inches},
           width: {12.33, :inches},
@@ -309,9 +309,9 @@ defmodule Podium.Integration.MixedContentIntegrationTest do
           value_axis: [title: "Sales ($K)", major_gridlines: true]
         )
 
-      prs = Podium.put_slide(prs, slide)
+      prs = Podium.add_slide(prs, slide)
 
-      output_path = Path.join(@output_dir, "mixed_content_integration.pptx")
+      output_path = Path.join(@output_dir, "chart_date_axis.pptx")
       File.mkdir_p!(@output_dir)
       assert :ok = Podium.save(prs, output_path)
 

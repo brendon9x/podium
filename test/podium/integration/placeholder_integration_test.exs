@@ -10,7 +10,7 @@ defmodule Podium.Integration.PlaceholderIntegrationTest do
   describe "title slide layout" do
     test "creates presentation with title and subtitle placeholders" do
       prs = Podium.new(title: "Acme Corp Annual Review", author: "Podium Demo")
-      {prs, slide} = Podium.add_slide(prs, layout: :title_slide)
+      slide = Podium.Slide.new(:title_slide)
 
       slide =
         slide
@@ -22,7 +22,7 @@ defmodule Podium.Integration.PlaceholderIntegrationTest do
           "2025 Annual Review — Finance & Operations Dashboard"
         )
 
-      prs = Podium.put_slide(prs, slide)
+      prs = Podium.add_slide(prs, slide)
 
       # Save to disk for manual inspection
       output_path = Path.join(@output_dir, "placeholder_title_slide.pptx")
@@ -48,7 +48,7 @@ defmodule Podium.Integration.PlaceholderIntegrationTest do
   describe "title + content layout" do
     test "creates presentation with title and content placeholders" do
       prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs, layout: :title_content)
+      slide = Podium.Slide.new(:title_content)
 
       slide =
         slide
@@ -59,7 +59,7 @@ defmodule Podium.Integration.PlaceholderIntegrationTest do
           [{"Target 95% customer satisfaction by Q4 2026"}]
         ])
 
-      prs = Podium.put_slide(prs, slide)
+      prs = Podium.add_slide(prs, slide)
 
       # Save to disk for manual inspection
       output_path = Path.join(@output_dir, "placeholder_title_content.pptx")
@@ -87,7 +87,7 @@ defmodule Podium.Integration.PlaceholderIntegrationTest do
   describe "two content layout" do
     test "creates presentation with left and right content placeholders" do
       prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs, layout: :two_content)
+      slide = Podium.Slide.new(:two_content)
 
       slide =
         slide
@@ -103,7 +103,7 @@ defmodule Podium.Integration.PlaceholderIntegrationTest do
           [{"NPS score improved by 15 points"}]
         ])
 
-      prs = Podium.put_slide(prs, slide)
+      prs = Podium.add_slide(prs, slide)
 
       # Save to disk for manual inspection
       output_path = Path.join(@output_dir, "placeholder_two_content.pptx")
@@ -133,7 +133,7 @@ defmodule Podium.Integration.PlaceholderIntegrationTest do
   describe "comparison layout" do
     test "creates presentation with comparison layout placeholders" do
       prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs, layout: :comparison)
+      slide = Podium.Slide.new(:comparison)
 
       slide =
         slide
@@ -151,7 +151,7 @@ defmodule Podium.Integration.PlaceholderIntegrationTest do
           [{"99.9% accuracy"}]
         ])
 
-      prs = Podium.put_slide(prs, slide)
+      prs = Podium.add_slide(prs, slide)
 
       # Save to disk for manual inspection
       output_path = Path.join(@output_dir, "placeholder_comparison.pptx")
@@ -187,14 +187,15 @@ defmodule Podium.Integration.PlaceholderIntegrationTest do
         image_binary = File.read!(image_path)
 
         prs = Podium.new()
-        {prs, slide} = Podium.add_slide(prs, layout: :picture_caption)
+        slide = Podium.Slide.new(:picture_caption)
 
         slide =
           slide
           |> Podium.set_placeholder(:title, "Product Showcase")
           |> Podium.set_placeholder(:caption, "Our flagship product — the Acme Widget 3000")
 
-        {prs, _slide} = Podium.set_picture_placeholder(prs, slide, :picture, image_binary)
+        slide = Podium.set_picture_placeholder(slide, :picture, image_binary)
+        prs = Podium.add_slide(prs, slide)
 
         # Save to disk for manual inspection
         output_path = Path.join(@output_dir, "placeholder_picture_caption.pptx")
@@ -226,7 +227,7 @@ defmodule Podium.Integration.PlaceholderIntegrationTest do
   describe "chart placeholders" do
     test "creates chart in content placeholder on title_content layout" do
       prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs, layout: :title_content)
+      slide = Podium.Slide.new(:title_content)
 
       slide = Podium.set_placeholder(slide, :title, "Chart Placeholder Demo")
 
@@ -236,11 +237,13 @@ defmodule Podium.Integration.PlaceholderIntegrationTest do
         |> ChartData.add_series("Revenue", [12_500, 14_600, 15_156, 18_167], color: "4472C4")
         |> ChartData.add_series("Expenses", [10_000, 11_300, 12_500, 13_000], color: "ED7D31")
 
-      {prs, _slide} =
+      slide =
         Podium.set_chart_placeholder(prs, slide, :content, :column_clustered, chart_data,
           title: "Revenue vs Expenses",
           legend: :bottom
         )
+
+      prs = Podium.add_slide(prs, slide)
 
       # Save to disk for manual inspection
       output_path = Path.join(@output_dir, "placeholder_chart.pptx")
@@ -269,11 +272,11 @@ defmodule Podium.Integration.PlaceholderIntegrationTest do
   describe "table placeholders" do
     test "creates table and chart in two_content layout placeholders" do
       prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs, layout: :two_content)
+      slide = Podium.Slide.new(:two_content)
 
       slide = Podium.set_placeholder(slide, :title, "Table & Chart Placeholders")
 
-      {prs, slide} =
+      slide =
         Podium.set_table_placeholder(
           prs,
           slide,
@@ -294,12 +297,14 @@ defmodule Podium.Integration.PlaceholderIntegrationTest do
           point_colors: %{0 => "2E75B6", 1 => "BDD7EE", 2 => "ED7D31"}
         )
 
-      {prs, _slide} =
+      slide =
         Podium.set_chart_placeholder(prs, slide, :right_content, :pie, chart_data,
           title: "Revenue Split",
           legend: :bottom,
           data_labels: [:category, :percent]
         )
+
+      prs = Podium.add_slide(prs, slide)
 
       # Save to disk for manual inspection
       output_path = Path.join(@output_dir, "placeholder_table_chart.pptx")

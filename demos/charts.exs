@@ -7,16 +7,15 @@ alias Podium.Chart.BubbleChartData
 prs = Podium.new()
 
 # Slide 1: Column clustered with axis config, data labels, titles
-{prs, s1} = Podium.add_slide(prs)
-
 col_data =
   ChartData.new()
   |> ChartData.add_categories(["Engineering", "Marketing", "Sales", "Support"])
   |> ChartData.add_series("Headcount", [230, 85, 120, 65], color: "4472C4")
   |> ChartData.add_series("Budget ($K)", [4200, 2100, 3500, 1800], color: "ED7D31")
 
-{prs, s1} =
-  Podium.add_chart(prs, s1, :column_clustered, col_data,
+s1 =
+  Podium.Slide.new()
+  |> Podium.add_chart(:column_clustered, col_data,
     x: {0.5, :inches},
     y: {0.5, :inches},
     width: {12, :inches},
@@ -28,11 +27,7 @@ col_data =
     value_axis: [title: "Count / Amount", major_gridlines: true]
   )
 
-prs = Podium.put_slide(prs, s1)
-
 # Slide 2: Stacked bar chart
-{prs, s2} = Podium.add_slide(prs)
-
 channel_data =
   ChartData.new()
   |> ChartData.add_categories(["Jan", "Feb", "Mar", "Apr", "May", "Jun"])
@@ -40,8 +35,9 @@ channel_data =
   |> ChartData.add_series("Chat", [180, 200, 220, 250, 280, 310], color: "ED7D31")
   |> ChartData.add_series("Phone", [100, 95, 90, 85, 80, 75], color: "A5A5A5")
 
-{prs, s2} =
-  Podium.add_chart(prs, s2, :bar_stacked, channel_data,
+s2 =
+  Podium.Slide.new()
+  |> Podium.add_chart(:bar_stacked, channel_data,
     x: {0.5, :inches},
     y: {0.5, :inches},
     width: {12, :inches},
@@ -50,19 +46,16 @@ channel_data =
     legend: :right
   )
 
-prs = Podium.put_slide(prs, s2)
-
 # Slide 3: Line chart with markers
-{prs, s3} = Podium.add_slide(prs)
-
 trend_data =
   ChartData.new()
   |> ChartData.add_categories(["Jan", "Feb", "Mar", "Apr", "May", "Jun"])
   |> ChartData.add_series("Web", [45, 48, 52, 55, 60, 63], color: "4472C4")
   |> ChartData.add_series("Mobile", [30, 35, 38, 42, 50, 55], color: "ED7D31")
 
-{prs, s3} =
-  Podium.add_chart(prs, s3, :line_markers, trend_data,
+s3 =
+  Podium.Slide.new()
+  |> Podium.add_chart(:line_markers, trend_data,
     x: {0.5, :inches},
     y: {0.5, :inches},
     width: {12, :inches},
@@ -72,11 +65,7 @@ trend_data =
     value_axis: [title: "Users (thousands)", major_gridlines: true]
   )
 
-prs = Podium.put_slide(prs, s3)
-
 # Slide 4: Pie chart with per-point colors and category+percent labels
-{prs, s4} = Podium.add_slide(prs)
-
 market_data =
   ChartData.new()
   |> ChartData.add_categories(["North America", "Europe", "Asia Pacific", "Latin America"])
@@ -84,8 +73,9 @@ market_data =
     point_colors: %{0 => "2E75B6", 1 => "BDD7EE", 2 => "ED7D31", 3 => "FBE5D6"}
   )
 
-{prs, s4} =
-  Podium.add_chart(prs, s4, :pie, market_data,
+s4 =
+  Podium.Slide.new()
+  |> Podium.add_chart(:pie, market_data,
     x: {2, :inches},
     y: {0.5, :inches},
     width: {9, :inches},
@@ -95,19 +85,16 @@ market_data =
     data_labels: [:category, :percent]
   )
 
-prs = Podium.put_slide(prs, s4)
-
 # Slide 5: Radar filled chart
-{prs, s5} = Podium.add_slide(prs)
-
 skill_data =
   ChartData.new()
   |> ChartData.add_categories(["Speed", "Power", "Range", "Durability", "Precision"])
   |> ChartData.add_series("Model A", [80, 90, 70, 85, 75], color: "4472C4")
   |> ChartData.add_series("Model B", [70, 65, 95, 70, 90], color: "ED7D31")
 
-{prs, s5} =
-  Podium.add_chart(prs, s5, :radar_filled, skill_data,
+s5 =
+  Podium.Slide.new()
+  |> Podium.add_chart(:radar_filled, skill_data,
     x: {2, :inches},
     y: {0.5, :inches},
     width: {9, :inches},
@@ -116,11 +103,7 @@ skill_data =
     legend: :bottom
   )
 
-prs = Podium.put_slide(prs, s5)
-
 # Slide 6: Scatter chart (XyChartData, non-monotonic X values)
-{prs, s6} = Podium.add_slide(prs)
-
 xy_data =
   XyChartData.new()
   |> XyChartData.add_series("Series A", [1, 2, 3, 4, 5], [2.3, 4.1, 3.7, 5.2, 4.8],
@@ -130,8 +113,9 @@ xy_data =
     color: "ED7D31"
   )
 
-{prs, s6} =
-  Podium.add_chart(prs, s6, :scatter, xy_data,
+s6 =
+  Podium.Slide.new()
+  |> Podium.add_chart(:scatter, xy_data,
     x: {0.5, :inches},
     y: {0.5, :inches},
     width: {12, :inches},
@@ -140,11 +124,7 @@ xy_data =
     legend: :bottom
   )
 
-prs = Podium.put_slide(prs, s6)
-
 # Slide 7: Bubble chart (BubbleChartData)
-{prs, s7} = Podium.add_slide(prs)
-
 bubble_data =
   BubbleChartData.new()
   |> BubbleChartData.add_series("Region A", [1, 3, 5, 7], [10, 25, 15, 30], [5, 12, 8, 15],
@@ -154,8 +134,9 @@ bubble_data =
     color: "ED7D31"
   )
 
-{prs, s7} =
-  Podium.add_chart(prs, s7, :bubble, bubble_data,
+s7 =
+  Podium.Slide.new()
+  |> Podium.add_chart(:bubble, bubble_data,
     x: {0.5, :inches},
     y: {0.5, :inches},
     width: {12, :inches},
@@ -164,11 +145,7 @@ bubble_data =
     legend: :bottom
   )
 
-prs = Podium.put_slide(prs, s7)
-
 # Slide 8: Chart with pattern fills + per-point formatting
-{prs, s8} = Podium.add_slide(prs)
-
 pattern_data =
   ChartData.new()
   |> ChartData.add_categories(["Q1", "Q2", "Q3", "Q4"])
@@ -183,8 +160,9 @@ pattern_data =
     }
   )
 
-{prs, s8} =
-  Podium.add_chart(prs, s8, :column_clustered, pattern_data,
+s8 =
+  Podium.Slide.new()
+  |> Podium.add_chart(:column_clustered, pattern_data,
     x: {0.5, :inches},
     y: {0.5, :inches},
     width: {12, :inches},
@@ -193,7 +171,16 @@ pattern_data =
     legend: :bottom
   )
 
-prs = Podium.put_slide(prs, s8)
+prs =
+  prs
+  |> Podium.add_slide(s1)
+  |> Podium.add_slide(s2)
+  |> Podium.add_slide(s3)
+  |> Podium.add_slide(s4)
+  |> Podium.add_slide(s5)
+  |> Podium.add_slide(s6)
+  |> Podium.add_slide(s7)
+  |> Podium.add_slide(s8)
+  |> Podium.save("demos/output/charts.pptx")
 
-:ok = Podium.save(prs, "demos/output/charts.pptx")
 IO.puts("Generated demos/output/charts.pptx")
