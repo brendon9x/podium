@@ -1,19 +1,18 @@
 # Podium
 
-Generate PowerPoint (`.pptx`) files from Elixir — with editable charts.
+Podium is a comprehensive Powerpoint Generation Library for Elixir, ported from Python's python-pptx (with huge thanks).
 
-Podium creates well-formed OOXML presentations from scratch. Charts embed real Excel workbooks so recipients can double-click to edit the data directly in PowerPoint. No templates to manage, no COM interop, no external services.
-
-## Features
+Podium's Powerpoint support is feature complete beyond most common use-cases, including:
 
 - **Rich text** — bold, italic, underline, strikethrough, superscript, subscript, color, font, alignment, bullets, paragraph spacing
-- **Charts** — column (clustered/stacked), bar (clustered/stacked), line, line with markers, pie — all fully editable
+- **Charts** — column (clustered/stacked), bar (clustered/stacked), line, line with markers, pie, XY, Radar — all fully editable
 - **Chart formatting** — titles, legends, data labels, axis customization (min/max, gridlines, number format), per-series colors
-- **Images** — PNG and JPEG with automatic format detection
-- **Tables** — rows and columns with rich text cells
+- **Images** — PNG and JPEG with automatic format detection, masking, rotations
+- **Tables** — rows and columns with rich text cells, cell merging, styling, full border control, etc
 - **Placeholders** — title, subtitle, and body on standard slide layouts
-- **Shape styling** — solid fills and lines with configurable width
+- **Shape styling** — solid, gradient, pattern fills and lines with configurable width
 - **Slide dimensions** — 16:9 default, fully configurable
+- **Extras** – Speaker's notes, footers, document metadata
 
 ## Quick start
 
