@@ -19,8 +19,6 @@ slide = Podium.add_auto_shape(slide, :rounded_rectangle,
 
 Use `Podium.add_auto_shape/3` with a preset atom, position, and size:
 
-![Shape gallery with rectangles, ovals, arrows, stars, and more](assets/core/shapes-and-styling/shape-gallery.png)
-
 ```elixir
 prs = Podium.new()
 slide = Podium.Slide.new()
@@ -35,6 +33,8 @@ slide =
     width: {2, :inches}, height: {2, :inches}, fill: "ED7D31")
 ```
 
+![Shape gallery with rectangles, ovals, arrows, stars, and more](assets/core/shapes-and-styling/shape-gallery.png)
+
 ### Common Presets
 
 | Category | Presets |
@@ -47,6 +47,17 @@ slide =
 | Math | `:math_plus`, `:math_minus`, `:math_multiply`, `:math_divide`, `:math_equal` |
 
 Call `Podium.AutoShapeType.all_types/0` for the full sorted list of all 187 presets.
+
+```elixir
+slide = Podium.add_auto_shape(slide, :rounded_rectangle,
+  x: {2, :inches}, y: {2, :inches},
+  width: {4, :inches}, height: {1.5, :inches},
+  fill: "003366",
+  text: [{[
+    {"Revenue: ", color: "FFFFFF"},
+    {"$4.2M", bold: true, color: "00FF00"}
+  ], alignment: :center}])
+```
 
 ![Solid, gradient, and pattern fills on shapes](assets/core/shapes-and-styling/fill-types.png)
 
@@ -153,17 +164,6 @@ Add text with the `:text` option. It supports the same plain string and rich tex
 formats as `Podium.add_text_box/3`:
 
 ![Rich text inside shapes with rotation](assets/core/shapes-and-styling/text-in-shapes-rotation.png)
-
-```elixir
-slide = Podium.add_auto_shape(slide, :rounded_rectangle,
-  x: {2, :inches}, y: {2, :inches},
-  width: {4, :inches}, height: {1.5, :inches},
-  fill: "003366",
-  text: [{[
-    {"Revenue: ", color: "FFFFFF"},
-    {"$4.2M", bold: true, color: "00FF00"}
-  ], alignment: :center}])
-```
 
 Shapes also support `:font_size`, `:alignment`, `:auto_size`, and `:word_wrap`.
 

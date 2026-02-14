@@ -66,8 +66,6 @@ Use `Podium.add_chart/4` to place a chart on a slide. The function takes the
 slide, chart type atom, chart data, and a keyword list of options.
 It returns the updated slide.
 
-![Column clustered chart with axis config and data labels](assets/core/charts/column-clustered.png)
-
 ```elixir
 slide = Podium.add_chart(slide, :bar_clustered, data,
   x: {0.5, :inches}, y: {1, :inches},
@@ -75,6 +73,8 @@ slide = Podium.add_chart(slide, :bar_clustered, data,
   title: "Department Overview",
   legend: :bottom)
 ```
+
+![Column clustered chart with axis config and data labels](assets/core/charts/column-clustered.png)
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
@@ -106,8 +106,6 @@ Column charts display vertical bars; bar charts display horizontal bars.
 | `:bar_stacked` | Stacked horizontal bars |
 | `:bar_stacked_100` | Stacked horizontal bars normalized to 100% |
 
-![Stacked bar chart showing channel breakdown](assets/core/charts/bar-stacked.png)
-
 ```elixir
 # Stacked bar chart showing channel breakdown
 channel_data =
@@ -124,6 +122,8 @@ slide = Podium.add_chart(slide, :bar_stacked, channel_data,
   legend: :right)
 ```
 
+![Stacked bar chart showing channel breakdown](assets/core/charts/bar-stacked.png)
+
 ### Line Charts
 
 | Type | Description |
@@ -134,8 +134,6 @@ slide = Podium.add_chart(slide, :bar_stacked, channel_data,
 | `:line_markers_stacked` | Stacked lines with markers |
 | `:line_stacked_100` | Stacked lines normalized to 100% |
 | `:line_markers_stacked_100` | Stacked lines with markers, normalized to 100% |
-
-![Line chart with markers showing monthly active users](assets/core/charts/line-markers.png)
 
 ```elixir
 trend_data =
@@ -152,6 +150,8 @@ slide = Podium.add_chart(slide, :line_markers, trend_data,
   value_axis: [title: "Users (thousands)", major_gridlines: true])
 ```
 
+![Line chart with markers showing monthly active users](assets/core/charts/line-markers.png)
+
 ### Pie and Doughnut Charts
 
 Pie and doughnut charts show proportions. They do not have axes.
@@ -162,8 +162,6 @@ Pie and doughnut charts show proportions. They do not have axes.
 | `:pie_exploded` | Pie with slices pulled out (25% explosion) |
 | `:doughnut` | Ring chart with 50% hole |
 | `:doughnut_exploded` | Ring chart with slices pulled out |
-
-![Pie chart with per-point colors and category labels](assets/core/charts/pie-chart.png)
 
 ```elixir
 market_data =
@@ -179,6 +177,8 @@ slide = Podium.add_chart(slide, :pie, market_data,
   legend: :right,
   data_labels: [:category, :percent])
 ```
+
+![Pie chart with per-point colors and category labels](assets/core/charts/pie-chart.png)
 
 ### Area Charts
 
@@ -196,8 +196,6 @@ slide = Podium.add_chart(slide, :pie, market_data,
 | `:radar_markers` | Radar with data point markers |
 | `:radar_filled` | Filled radar (spider chart) |
 
-![Filled radar chart comparing two models](assets/core/charts/radar-filled.png)
-
 ```elixir
 skill_data =
   ChartData.new()
@@ -211,6 +209,8 @@ slide = Podium.add_chart(slide, :radar_filled, skill_data,
   title: "Product Comparison",
   legend: :bottom)
 ```
+
+![Filled radar chart comparing two models](assets/core/charts/radar-filled.png)
 
 ## Chart Titles
 
@@ -354,12 +354,12 @@ ChartData.add_series(data, "Revenue", [100, 200, 300], color: "4472C4")
 
 Use pattern fills instead of solid colors:
 
-![Pattern fills and per-point formatting on columns](assets/core/charts/pattern-fills-per-point.png)
-
 ```elixir
 ChartData.add_series(data, "Email", [250, 230, 210],
   pattern: [type: :dn_diag, foreground: "4472C4", background: "FFFFFF"])
 ```
+
+![Pattern fills and per-point formatting on columns](assets/core/charts/pattern-fills-per-point.png)
 
 The `:type` must be one of the 54 pattern presets from `Podium.Pattern` (e.g.
 `:dn_diag`, `:lt_horz`, `:dk_vert`, `:sm_grid`, `:cross`).
@@ -420,8 +420,6 @@ Scatter charts plot data as X/Y coordinate pairs. Use `Podium.Chart.XyChartData`
 instead of `ChartData` -- there are no shared categories, each series provides its
 own X and Y value lists.
 
-![Scatter chart with two series](assets/core/charts/scatter-chart.png)
-
 ```elixir
 alias Podium.Chart.XyChartData
 
@@ -437,6 +435,8 @@ slide = Podium.add_chart(slide, :scatter, xy_data,
   width: {12, :inches}, height: {5.5, :inches},
   title: "Scatter Analysis")
 ```
+
+![Scatter chart with two series](assets/core/charts/scatter-chart.png)
 
 | Type | Description |
 |------|-------------|
@@ -455,8 +455,6 @@ must be numbers.
 Bubble charts extend scatter charts with a third dimension: bubble size. Use
 `Podium.Chart.BubbleChartData`.
 
-![Bubble chart with sized data points](assets/core/charts/bubble-chart.png)
-
 ```elixir
 alias Podium.Chart.BubbleChartData
 
@@ -474,6 +472,8 @@ slide = Podium.add_chart(slide, :bubble, bubble_data,
   width: {12, :inches}, height: {5.5, :inches},
   title: "Market Opportunity Analysis")
 ```
+
+![Bubble chart with sized data points](assets/core/charts/bubble-chart.png)
 
 | Type | Description |
 |------|-------------|

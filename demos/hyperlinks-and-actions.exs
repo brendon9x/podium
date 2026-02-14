@@ -139,11 +139,10 @@ s3 =
     height: {3, :inches}
   )
 
-prs =
-  prs
-  |> Podium.add_slide(s1)
-  |> Podium.add_slide(s2)
-  |> Podium.add_slide(s3)
-  |> Podium.save("demos/output/hyperlinks-and-actions.pptx")
+prs
+|> Podium.add_slide(s1)
+|> Podium.add_slide(s2)
+|> Podium.add_slide(s3)
+|> Podium.save("demos/output/hyperlinks-and-actions.pptx")
 
 IO.puts("Generated demos/output/hyperlinks-and-actions.pptx")

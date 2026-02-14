@@ -8,8 +8,6 @@ each using different series from the same data set.
 >
 > Run `mix run demos/combo-charts.exs` to generate a presentation with all the examples from this guide.
 
-![Column and line overlay combo chart](assets/advanced/combo-charts/column-line-overlay.png)
-
 ```elixir
 alias Podium.Chart.ChartData
 
@@ -28,6 +26,8 @@ slide =
      title: "Revenue with Trend Line",
      legend: :bottom)
 ```
+
+![Column and line overlay combo chart](assets/advanced/combo-charts/column-line-overlay.png)
 
 > #### Note {: .info}
 >
@@ -108,8 +108,6 @@ The `:secondary_value_axis` option accepts the same configuration as `:value_axi
 
 ### Stacked Column + Line
 
-![Stacked column with line overlay](assets/advanced/combo-charts/stacked-column-line.png)
-
 ```elixir
 data =
   ChartData.new()
@@ -128,9 +126,9 @@ slide =
      legend: :bottom)
 ```
 
-### Area + Line with Secondary Axis
+![Stacked column with line overlay](assets/advanced/combo-charts/stacked-column-line.png)
 
-![Area chart with line on secondary axis](assets/advanced/combo-charts/area-line-secondary-axis.png)
+### Area + Line with Secondary Axis
 
 ```elixir
 data =
@@ -150,6 +148,8 @@ slide =
      legend: :bottom,
      secondary_value_axis: [title: "Growth Rate %"])
 ```
+
+![Area chart with line on secondary axis](assets/advanced/combo-charts/area-line-secondary-axis.png)
 
 ## Constraints
 

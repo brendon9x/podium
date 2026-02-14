@@ -113,12 +113,11 @@ s4 =
     height: {5, :inches}
   )
 
-prs =
-  prs
-  |> Podium.add_slide(s1)
-  |> Podium.add_slide(s2)
-  |> Podium.add_slide(s3)
-  |> Podium.add_slide(s4)
-  |> Podium.save("demos/output/text-and-formatting.pptx")
+prs
+|> Podium.add_slide(s1)
+|> Podium.add_slide(s2)
+|> Podium.add_slide(s3)
+|> Podium.add_slide(s4)
+|> Podium.save("demos/output/text-and-formatting.pptx")
 
 IO.puts("Generated demos/output/text-and-formatting.pptx")

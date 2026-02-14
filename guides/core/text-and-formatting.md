@@ -54,8 +54,6 @@ containing a list of runs.
 Rich text is a list of paragraphs. Each paragraph is a list of runs. Each run is
 either a plain string or a `{text, options}` tuple.
 
-![Mixed formatting with bold, italic, colors, and sizes](assets/core/text-and-formatting/mixed-formatting.png)
-
 ```elixir
 slide = Podium.add_text_box(slide, [
   [{"Q1 Revenue Report", bold: true, font_size: 32, color: "003366"}],
@@ -63,6 +61,8 @@ slide = Podium.add_text_box(slide, [
 ], x: {1, :inches}, y: {1, :inches},
    width: {8, :inches}, height: {2, :inches})
 ```
+
+![Mixed formatting with bold, italic, colors, and sizes](assets/core/text-and-formatting/mixed-formatting.png)
 
 The first paragraph has one bold, blue, 32pt run. The second paragraph has two
 runs: a plain 14pt run and a bold italic run. Each paragraph renders on its own
@@ -125,8 +125,6 @@ slide = Podium.add_text_box(slide, [
 Use `:superscript` and `:subscript` for mathematical notation, chemical formulas,
 and footnote references:
 
-![Superscript, subscript, and underline styles](assets/core/text-and-formatting/superscript-underlines.png)
-
 ```elixir
 slide = Podium.add_text_box(slide, [
   [{"E = mc", font_size: 18}, {"2", font_size: 12, superscript: true}],
@@ -134,6 +132,8 @@ slide = Podium.add_text_box(slide, [
 ], x: {1, :inches}, y: {1, :inches},
    width: {6, :inches}, height: {1.5, :inches})
 ```
+
+![Superscript, subscript, and underline styles](assets/core/text-and-formatting/superscript-underlines.png)
 
 ### Underline Styles
 
@@ -176,8 +176,6 @@ slide = Podium.add_text_box(slide, [
 Add bullet points by setting `:bullet` on a paragraph. Use `:level` to create
 nested items.
 
-![Bullet points with nested levels and numbered list](assets/core/text-and-formatting/bullets-and-numbered.png)
-
 ```elixir
 slide = Podium.add_text_box(slide, [
   {["Revenue up 35% year-over-year"], bullet: true},
@@ -187,6 +185,8 @@ slide = Podium.add_text_box(slide, [
 ], x: {1, :inches}, y: {1, :inches},
    width: {10, :inches}, height: {3, :inches})
 ```
+
+![Bullet points with nested levels and numbered list](assets/core/text-and-formatting/bullets-and-numbered.png)
 
 ### Numbered Lists
 
@@ -299,8 +299,6 @@ slide = Podium.add_text_box(slide, "This text shrinks to fit",
 Here is a complete example combining plain text, rich paragraphs, bullets, spacing,
 and formatting:
 
-![Complete text example with gradient header bar and bulleted content](assets/core/text-and-formatting/putting-it-together.png)
-
 ```elixir
 prs = Podium.new()
 slide = Podium.Slide.new()
@@ -333,6 +331,8 @@ slide =
 prs = Podium.add_slide(prs, slide)
 Podium.save(prs, "text_demo.pptx")
 ```
+
+![Complete text example with gradient header bar and bulleted content](assets/core/text-and-formatting/putting-it-together.png)
 
 ---
 

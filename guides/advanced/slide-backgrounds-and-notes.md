@@ -22,8 +22,6 @@ Override this per-slide by passing the `:background` option to `Podium.Slide.new
 
 Pass an RGB hex string:
 
-![Dark solid color background with white text](assets/advanced/slide-backgrounds-and-notes/solid-dark-background.png)
-
 ```elixir
 slide =
   Podium.Slide.new(background: "1A1A2E")
@@ -33,16 +31,18 @@ slide =
     font_size: 36, alignment: :center)
 ```
 
+![Dark solid color background with white text](assets/advanced/slide-backgrounds-and-notes/solid-dark-background.png)
+
 ### Gradient Background
 
 Pass a `{:gradient, stops, opts}` tuple:
-
-![Deep blue gradient background](assets/advanced/slide-backgrounds-and-notes/gradient-background.png)
 
 ```elixir
 slide = Podium.Slide.new(
   background: {:gradient, [{0, "000428"}, {100_000, "004E92"}], angle: 5_400_000})
 ```
+
+![Deep blue gradient background](assets/advanced/slide-backgrounds-and-notes/gradient-background.png)
 
 The `:angle` option is in 60,000ths of a degree. `5_400_000` produces a top-to-bottom
 gradient.
@@ -51,12 +51,12 @@ gradient.
 
 Pass a `{:pattern, preset, opts}` tuple:
 
-![Diagonal pattern background](assets/advanced/slide-backgrounds-and-notes/pattern-background.png)
-
 ```elixir
 slide = Podium.Slide.new(
   background: {:pattern, :lt_dn_diag, foreground: "CCCCCC", background: "FFFFFF"})
 ```
+
+![Diagonal pattern background](assets/advanced/slide-backgrounds-and-notes/pattern-background.png)
 
 All 54 pattern presets from `Podium.Pattern` are available. See the
 [Shapes and Styling](shapes-and-styling.md) guide for common presets.
@@ -64,8 +64,6 @@ All 54 pattern presets from `Podium.Pattern` are available. See the
 ### Picture Background
 
 Pass a `{:picture, binary}` tuple with the image data:
-
-![Picture background with text overlay](assets/advanced/slide-backgrounds-and-notes/picture-background.png)
 
 ```elixir
 bg_image = File.read!("conference_hall.jpg")
@@ -78,6 +76,8 @@ slide =
     x: {1, :inches}, y: {2.5, :inches},
     width: {11, :inches}, height: {2, :inches})
 ```
+
+![Picture background with text overlay](assets/advanced/slide-backgrounds-and-notes/picture-background.png)
 
 ### Default Behavior
 

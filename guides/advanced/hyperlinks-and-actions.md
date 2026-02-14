@@ -21,8 +21,6 @@ slide = Podium.add_text_box(slide, [
 Add a hyperlink to any text run with the `:hyperlink` option. Pass a URL string
 to create a standard web link:
 
-![URL and email hyperlinks with tooltips](assets/advanced/hyperlinks-and-actions/url-email-links.png)
-
 ```elixir
 slide = Podium.add_text_box(slide, [
   [
@@ -33,6 +31,8 @@ slide = Podium.add_text_box(slide, [
 ], x: {1, :inches}, y: {1, :inches},
    width: {10, :inches}, height: {0.6, :inches})
 ```
+
+![URL and email hyperlinks with tooltips](assets/advanced/hyperlinks-and-actions/url-email-links.png)
 
 The hyperlink activates when the viewer clicks the text during a slideshow.
 PowerPoint does not auto-style hyperlinks -- you control the color and underline
@@ -91,8 +91,6 @@ internal PowerPoint actions that don't require external relationships.
 
 ### Navigation Example
 
-![Navigation buttons with previous, next, and end show actions](assets/advanced/hyperlinks-and-actions/navigation-buttons.png)
-
 ```elixir
 prs = Podium.new()
 
@@ -119,6 +117,8 @@ prs =
   |> Podium.add_slide(slide1)
   |> Podium.add_slide(slide2)
 ```
+
+![Navigation buttons with previous, next, and end show actions](assets/advanced/hyperlinks-and-actions/navigation-buttons.png)
 
 ## Jumping to a Specific Slide
 
@@ -197,8 +197,6 @@ with formatting options.
 
 Combine slide jumps to build a clickable table of contents:
 
-![Clickable table of contents with slide jump links](assets/advanced/hyperlinks-and-actions/table-of-contents.png)
-
 ```elixir
 prs = Podium.new()
 finance_slide = Podium.Slide.new()
@@ -228,6 +226,8 @@ prs =
   |> Podium.add_slide(ops_slide)
   |> Podium.add_slide(summary_slide)
 ```
+
+![Clickable table of contents with slide jump links](assets/advanced/hyperlinks-and-actions/table-of-contents.png)
 
 Each line jumps directly to the corresponding slide during the slideshow.
 

@@ -76,11 +76,10 @@ s3 =
     secondary_value_axis: [title: "Growth Rate %"]
   )
 
-prs =
-  prs
-  |> Podium.add_slide(s1)
-  |> Podium.add_slide(s2)
-  |> Podium.add_slide(s3)
-  |> Podium.save("demos/output/combo-charts.pptx")
+prs
+|> Podium.add_slide(s1)
+|> Podium.add_slide(s2)
+|> Podium.add_slide(s3)
+|> Podium.save("demos/output/combo-charts.pptx")
 
 IO.puts("Generated demos/output/combo-charts.pptx")
