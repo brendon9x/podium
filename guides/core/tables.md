@@ -21,8 +21,6 @@ slide = Podium.add_table(slide, [
 Pass a list of rows to `Podium.add_table/3`. Each row is a list of cell values.
 In the simplest case, every cell is a plain string.
 
-![Basic table with header fills and borders](assets/core/tables/basic-table.png)
-
 ```elixir
 prs = Podium.new()
 slide = Podium.Slide.new()
@@ -38,6 +36,8 @@ slide = Podium.add_table(slide, [
 prs = Podium.add_slide(prs, slide)
 Podium.save(prs, "table_demo.pptx")
 ```
+
+![Basic table with header fills and borders](assets/core/tables/basic-table.png)
 
 Column widths are distributed evenly across the total width by default. Row heights
 are distributed evenly across the total height.
@@ -72,8 +72,6 @@ plain string or a rich text list.
 
 Set a background color on individual cells with the `:fill` option:
 
-![Cell formatting with gradient, pattern fills, and vertical alignment](assets/core/tables/cell-formatting.png)
-
 ```elixir
 slide = Podium.add_table(slide, [
   [{"Department", fill: "4472C4"}, {"Budget", fill: "4472C4"}],
@@ -82,6 +80,8 @@ slide = Podium.add_table(slide, [
 ], x: {1, :inches}, y: {1, :inches},
    width: {8, :inches}, height: {2, :inches})
 ```
+
+![Cell formatting with gradient, pattern fills, and vertical alignment](assets/core/tables/cell-formatting.png)
 
 Cell fills support the same formats as shape fills -- solid colors, gradients,
 and patterns:
@@ -156,8 +156,6 @@ Fill the spanned positions with the `:merge` placeholder atom.
 
 ### Horizontal Merge
 
-![Cell merging with horizontal span and vertical span](assets/core/tables/cell-merging.png)
-
 ```elixir
 slide = Podium.add_table(slide, [
   [{"Q4 2025 Results", col_span: 3, fill: "003366"}, :merge, :merge],
@@ -167,6 +165,8 @@ slide = Podium.add_table(slide, [
 ], x: {1, :inches}, y: {1, :inches},
    width: {10, :inches}, height: {3, :inches})
 ```
+
+![Cell merging with horizontal span and vertical span](assets/core/tables/cell-merging.png)
 
 The first row spans all three columns. The two `:merge` atoms mark the cells
 consumed by the span.
@@ -258,26 +258,24 @@ Column widths and row heights accept the same unit formats as position values:
 Here is a professional report table that combines header merging, cell fills,
 borders, rich text, vertical merging, and padding:
 
-![Professional report table with merging, fills, borders, and rich text](assets/core/tables/complete-example.png)
-
 ```elixir
 prs = Podium.new()
 slide = Podium.Slide.new()
 
 slide = Podium.add_table(slide, [
   # Merged title row
-  [{"Department Summary -- 2025", col_span: 4, fill: "003366",
+  [{[[{"Department Summary -- 2025", color: "FFFFFF"}]], col_span: 4, fill: "003366",
     anchor: :middle, padding: [left: {0.1, :inches}]},
    :merge, :merge, :merge],
 
   # Column headers with fill and bottom border
-  [{"Department", fill: "4472C4",
+  [{[[{"Department", color: "FFFFFF"}]], fill: "4472C4",
     borders: [bottom: [color: "003366", width: {2, :pt}]]},
-   {"Headcount", fill: "4472C4",
+   {[[{"Headcount", color: "FFFFFF"}]], fill: "4472C4",
     borders: [bottom: [color: "003366", width: {2, :pt}]]},
-   {"Budget ($K)", fill: "4472C4",
+   {[[{"Budget ($K)", color: "FFFFFF"}]], fill: "4472C4",
     borders: [bottom: [color: "003366", width: {2, :pt}]]},
-   {"Satisfaction", fill: "4472C4",
+   {[[{"Satisfaction", color: "FFFFFF"}]], fill: "4472C4",
     borders: [bottom: [color: "003366", width: {2, :pt}]]}],
 
   # Engineering spans 2 rows with rich text
@@ -301,6 +299,8 @@ slide = Podium.add_table(slide, [
 prs = Podium.add_slide(prs, slide)
 Podium.save(prs, "report_table.pptx")
 ```
+
+![Professional report table with merging, fills, borders, and rich text](assets/core/tables/complete-example.png)
 
 ---
 

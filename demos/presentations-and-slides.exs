@@ -11,13 +11,12 @@ s1 =
 # Slide 2: Solid dark background with light text
 s2 =
   Podium.Slide.new(:blank, background: "1A1A2E")
-  |> Podium.add_text_box("Dark Theme Slide",
+  |> Podium.add_text_box(
+    [{[{"Dark Theme Slide", font_size: 36, color: "FFFFFF"}], alignment: :center}],
     x: {3, :inches},
     y: {3, :inches},
     width: {7, :inches},
-    height: {1.5, :inches},
-    font_size: 36,
-    alignment: :center
+    height: {1.5, :inches}
   )
 
 # Slide 3: Gradient background with title
@@ -51,17 +50,16 @@ s4 =
   )
 
 # Add footer, date, slide numbers
-prs =
-  prs
-  |> Podium.add_slide(s1)
-  |> Podium.add_slide(s2)
-  |> Podium.add_slide(s3)
-  |> Podium.add_slide(s4)
-  |> Podium.set_footer(
-    footer: "Acme Corp Confidential",
-    date: "February 2026",
-    slide_number: true
-  )
-  |> Podium.save("demos/output/presentations-and-slides.pptx")
+prs
+|> Podium.add_slide(s1)
+|> Podium.add_slide(s2)
+|> Podium.add_slide(s3)
+|> Podium.add_slide(s4)
+|> Podium.set_footer(
+  footer: "Acme Corp Confidential",
+  date: "February 2026",
+  slide_number: true
+)
+|> Podium.save("demos/output/presentations-and-slides.pptx")
 
 IO.puts("Generated demos/output/presentations-and-slides.pptx")

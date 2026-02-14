@@ -38,6 +38,14 @@ s1 =
     text: "Review",
     fill: "ED7D31"
   )
+  |> Podium.add_auto_shape(:rounded_rectangle,
+    x: {5.5, :inches},
+    y: {4.5, :inches},
+    width: {2, :inches},
+    height: {1, :inches},
+    text: "Test",
+    fill: "5B9BD5"
+  )
   # Straight connector: Planning -> Execution
   |> Podium.add_connector(:straight, {3, :inches}, {2.5, :inches}, {5.5, :inches}, {2.5, :inches},
     line: [color: "000000", width: {1.5, :pt}]
@@ -46,8 +54,8 @@ s1 =
   |> Podium.add_connector(:elbow, {7.5, :inches}, {2.5, :inches}, {10, :inches}, {2.5, :inches},
     line: [color: "FF0000", width: {2, :pt}, dash_style: :dash]
   )
-  # Curved connector: Review back to Planning (feedback loop below)
-  |> Podium.add_connector(:curved, {11, :inches}, {3, :inches}, {2, :inches}, {5, :inches},
+  # Curved connector: Test -> Review (right side of Test to left side of Review)
+  |> Podium.add_connector(:curved, {7.5, :inches}, {5, :inches}, {10, :inches}, {2.5, :inches},
     line: [color: "5B9BD5", width: {2, :pt}]
   )
 
@@ -118,11 +126,10 @@ s3 =
   )
   |> Podium.add_freeform(cutout, fill: "70AD47")
 
-prs =
-  prs
-  |> Podium.add_slide(s1)
-  |> Podium.add_slide(s2)
-  |> Podium.add_slide(s3)
-  |> Podium.save("demos/output/connectors-and-freeforms.pptx")
+prs
+|> Podium.add_slide(s1)
+|> Podium.add_slide(s2)
+|> Podium.add_slide(s3)
+|> Podium.save("demos/output/connectors-and-freeforms.pptx")
 
 IO.puts("Generated demos/output/connectors-and-freeforms.pptx")

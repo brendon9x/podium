@@ -34,8 +34,6 @@ prs = Podium.new(title: "Q4 2025 Business Review", author: "Analytics Team")
 
 Use the `:title_slide` layout for a clean opening with the report name and subtitle.
 
-![Title slide with brand colors](assets/recipes/building-a-report/title-slide.png)
-
 ```elixir
 slide =
   Podium.Slide.new(:title_slide)
@@ -47,11 +45,11 @@ slide =
 prs = Podium.add_slide(prs, slide)
 ```
 
+![Title slide with brand colors](assets/recipes/building-a-report/title-slide.png)
+
 ## Slide 2: Executive Summary
 
 A text slide with bullet points summarizing the key findings. The gradient header bar and bulleted list create a clear visual hierarchy.
-
-![Executive summary with gradient header and bullet points](assets/recipes/building-a-report/executive-summary.png)
 
 ```elixir
 slide =
@@ -80,11 +78,11 @@ slide =
 prs = Podium.add_slide(prs, slide)
 ```
 
+![Executive summary with gradient header and bullet points](assets/recipes/building-a-report/executive-summary.png)
+
 ## Slide 3: Revenue Chart
 
 A clustered column chart comparing revenue and expenses across quarters. Data labels and axis formatting make the numbers easy to read.
-
-![Quarterly revenue vs expenses column chart](assets/recipes/building-a-report/revenue-chart.png)
 
 ```elixir
 revenue_data =
@@ -101,7 +99,7 @@ slide =
     width: {11, :inches}, height: {6, :inches},
     title: [text: "Quarterly Revenue vs Expenses", font_size: 18, bold: true, color: primary],
     legend: [position: :bottom, font_size: 10],
-    data_labels: [show: [:value], position: :outside_end, number_format: "$#,##0"],
+    data_labels: [show: [:value], position: :outside_end, number_format: "$#,##0", font_size: 9],
     category_axis: [title: "Quarter"],
     value_axis: [
       title: "Amount ($)",
@@ -115,11 +113,11 @@ slide =
 prs = Podium.add_slide(prs, slide)
 ```
 
+![Quarterly revenue vs expenses column chart](assets/recipes/building-a-report/revenue-chart.png)
+
 ## Slide 4: Market Share Pie Chart
 
 A pie chart with per-point colors and category+percent labels breaks down revenue by region.
-
-![Revenue by region pie chart](assets/recipes/building-a-report/market-share-pie.png)
 
 ```elixir
 market_data =
@@ -140,11 +138,11 @@ slide =
 prs = Podium.add_slide(prs, slide)
 ```
 
+![Revenue by region pie chart](assets/recipes/building-a-report/market-share-pie.png)
+
 ## Slide 5: Department Table
 
 A formatted table with header styling, borders, and a merged title row for a professional look.
-
-![Department performance table with merged title row](assets/recipes/building-a-report/department-table.png)
 
 ```elixir
 slide =
@@ -154,13 +152,18 @@ slide =
     x: {0.5, :inches}, y: {0.3, :inches},
     width: {11, :inches}, height: {0.7, :inches})
   |> Podium.add_table([
-    [{"Department Performance -- Q4 2025", col_span: 5, fill: primary},
+    [{[[{"Department Performance -- Q4 2025", color: white}]], col_span: 5, fill: primary},
      :merge, :merge, :merge, :merge],
-    [{"Department", fill: accent1, borders: [bottom: [color: primary, width: {2, :pt}]]},
-     {"Headcount", fill: accent1, borders: [bottom: [color: primary, width: {2, :pt}]]},
-     {"Budget", fill: accent1, borders: [bottom: [color: primary, width: {2, :pt}]]},
-     {"Revenue", fill: accent1, borders: [bottom: [color: primary, width: {2, :pt}]]},
-     {"Satisfaction", fill: accent1, borders: [bottom: [color: primary, width: {2, :pt}]]}],
+    [{[[{"Department", color: white}]],
+      fill: accent1, borders: [bottom: [color: primary, width: {2, :pt}]]},
+     {[[{"Headcount", color: white}]],
+      fill: accent1, borders: [bottom: [color: primary, width: {2, :pt}]]},
+     {[[{"Budget", color: white}]],
+      fill: accent1, borders: [bottom: [color: primary, width: {2, :pt}]]},
+     {[[{"Revenue", color: white}]],
+      fill: accent1, borders: [bottom: [color: primary, width: {2, :pt}]]},
+     {[[{"Satisfaction", color: white}]],
+      fill: accent1, borders: [bottom: [color: primary, width: {2, :pt}]]}],
     ["Engineering", "230", "$4,200K", "$18,100K",
      {[[{"92%", bold: true, color: accent3}]], anchor: :middle}],
     ["Marketing", "85", "$2,100K", "$15,200K", "87%"],
@@ -172,11 +175,11 @@ slide =
 prs = Podium.add_slide(prs, slide)
 ```
 
+![Department performance table with merged title row](assets/recipes/building-a-report/department-table.png)
+
 ## Slide 6: Trend Chart
 
 A line chart with markers showing monthly user growth across channels.
-
-![Monthly active users trend line chart](assets/recipes/building-a-report/trend-line-chart.png)
 
 ```elixir
 trend_data =
@@ -200,6 +203,8 @@ slide =
 
 prs = Podium.add_slide(prs, slide)
 ```
+
+![Monthly active users trend line chart](assets/recipes/building-a-report/trend-line-chart.png)
 
 ## Slide 7: Image Slide
 
@@ -226,8 +231,6 @@ prs = Podium.add_slide(prs, slide)
 
 Close with key takeaways using the `:title_content` layout and speaker notes for the presenter.
 
-![Key takeaways and next steps conclusion slide](assets/recipes/building-a-report/conclusion.png)
-
 ```elixir
 slide =
   Podium.Slide.new(:title_content)
@@ -248,6 +251,8 @@ slide =
 
 prs = Podium.add_slide(prs, slide)
 ```
+
+![Key takeaways and next steps conclusion slide](assets/recipes/building-a-report/conclusion.png)
 
 ## Add Footer and Save
 

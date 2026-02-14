@@ -18,7 +18,7 @@ s1 =
     width: {2, :inches},
     height: {1.5, :inches},
     fill: "4472C4",
-    text: "Rectangle"
+    text: [{[{"Rectangle", font_size: 14, color: "FFFFFF"}], alignment: :center}]
   )
   |> Podium.add_auto_shape(:oval,
     x: {3, :inches},
@@ -26,7 +26,7 @@ s1 =
     width: {2, :inches},
     height: {1.5, :inches},
     fill: "ED7D31",
-    text: "Oval"
+    text: [{[{"Oval", font_size: 14, color: "FFFFFF"}], alignment: :center}]
   )
   |> Podium.add_auto_shape(:diamond,
     x: {5.5, :inches},
@@ -34,7 +34,7 @@ s1 =
     width: {2, :inches},
     height: {1.5, :inches},
     fill: "70AD47",
-    text: "Diamond"
+    text: [{[{"Diamond", font_size: 14, color: "FFFFFF"}], alignment: :center}]
   )
   |> Podium.add_auto_shape(:right_arrow,
     x: {8, :inches},
@@ -42,14 +42,15 @@ s1 =
     width: {2.5, :inches},
     height: {1.5, :inches},
     fill: "FFC000",
-    text: "Arrow"
+    text: [{[{"Arrow", font_size: 14, color: "FFFFFF"}], alignment: :center}]
   )
   |> Podium.add_auto_shape(:star_5_point,
     x: {11, :inches},
     y: {1.5, :inches},
     width: {1.8, :inches},
     height: {1.8, :inches},
-    fill: "FF6347"
+    fill: "FF6347",
+    text: [{[{"Star", font_size: 14, color: "FFFFFF"}], alignment: :center}]
   )
   |> Podium.add_auto_shape(:hexagon,
     x: {0.5, :inches},
@@ -271,12 +272,11 @@ s4 =
     line: [color: "CC9900", width: {2, :pt}]
   )
 
-prs =
-  prs
-  |> Podium.add_slide(s1)
-  |> Podium.add_slide(s2)
-  |> Podium.add_slide(s3)
-  |> Podium.add_slide(s4)
-  |> Podium.save("demos/output/shapes-and-styling.pptx")
+prs
+|> Podium.add_slide(s1)
+|> Podium.add_slide(s2)
+|> Podium.add_slide(s3)
+|> Podium.add_slide(s4)
+|> Podium.save("demos/output/shapes-and-styling.pptx")
 
 IO.puts("Generated demos/output/shapes-and-styling.pptx")

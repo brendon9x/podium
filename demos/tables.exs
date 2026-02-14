@@ -15,9 +15,12 @@ s1 =
   |> Podium.add_table(
     [
       [
-        {"Department", fill: "4472C4", borders: [bottom: [color: "003366", width: {2, :pt}]]},
-        {"Headcount", fill: "4472C4", borders: [bottom: [color: "003366", width: {2, :pt}]]},
-        {"Budget", fill: "4472C4", borders: [bottom: [color: "003366", width: {2, :pt}]]}
+        {[[{"Department", color: "FFFFFF"}]],
+         fill: "4472C4", borders: [bottom: [color: "003366", width: {2, :pt}]]},
+        {[[{"Headcount", color: "FFFFFF"}]],
+         fill: "4472C4", borders: [bottom: [color: "003366", width: {2, :pt}]]},
+        {[[{"Budget", color: "FFFFFF"}]],
+         fill: "4472C4", borders: [bottom: [color: "003366", width: {2, :pt}]]}
       ],
       ["Engineering", "230", "$4,200K"],
       ["Marketing", "85", "$2,100K"],
@@ -41,7 +44,7 @@ s2 =
   )
   |> Podium.add_table(
     [
-      [{"Q4 2025 Results", col_span: 3, fill: "003366"}, :merge, :merge],
+      [{[[{"Q4 2025 Results", color: "FFFFFF"}]], col_span: 3, fill: "003366"}, :merge, :merge],
       ["Region", "Revenue", "Growth"],
       ["North America", "$12.5M", "+18%"],
       ["Europe", "$8.2M", "+12%"]
@@ -80,8 +83,8 @@ s3 =
   |> Podium.add_table(
     [
       [
-        {"Solid Fill", fill: "4472C4"},
-        {"Gradient Fill",
+        {[[{"Solid Fill", color: "FFFFFF"}]], fill: "4472C4"},
+        {[[{"Gradient Fill", color: "FFFFFF"}]],
          fill: {:gradient, [{0, "4472C4"}, {100_000, "002060"}], angle: 5_400_000}},
         {"Pattern Fill", fill: {:pattern, :lt_horz, foreground: "ED7D31", background: "FFFFFF"}}
       ],
@@ -110,7 +113,7 @@ s4 =
     [
       # Merged title row
       [
-        {"Department Summary -- 2025",
+        {[[{"Department Summary -- 2025", color: "FFFFFF"}]],
          col_span: 4, fill: "003366", anchor: :middle, padding: [left: {0.1, :inches}]},
         :merge,
         :merge,
@@ -118,10 +121,14 @@ s4 =
       ],
       # Column headers with fill and bottom border
       [
-        {"Department", fill: "4472C4", borders: [bottom: [color: "003366", width: {2, :pt}]]},
-        {"Headcount", fill: "4472C4", borders: [bottom: [color: "003366", width: {2, :pt}]]},
-        {"Budget ($K)", fill: "4472C4", borders: [bottom: [color: "003366", width: {2, :pt}]]},
-        {"Satisfaction", fill: "4472C4", borders: [bottom: [color: "003366", width: {2, :pt}]]}
+        {[[{"Department", color: "FFFFFF"}]],
+         fill: "4472C4", borders: [bottom: [color: "003366", width: {2, :pt}]]},
+        {[[{"Headcount", color: "FFFFFF"}]],
+         fill: "4472C4", borders: [bottom: [color: "003366", width: {2, :pt}]]},
+        {[[{"Budget ($K)", color: "FFFFFF"}]],
+         fill: "4472C4", borders: [bottom: [color: "003366", width: {2, :pt}]]},
+        {[[{"Satisfaction", color: "FFFFFF"}]],
+         fill: "4472C4", borders: [bottom: [color: "003366", width: {2, :pt}]]}
       ],
       # Engineering spans 2 rows with rich text
       [
@@ -156,12 +163,11 @@ s4 =
     height: {4.5, :inches}
   )
 
-prs =
-  prs
-  |> Podium.add_slide(s1)
-  |> Podium.add_slide(s2)
-  |> Podium.add_slide(s3)
-  |> Podium.add_slide(s4)
-  |> Podium.save("demos/output/tables.pptx")
+prs
+|> Podium.add_slide(s1)
+|> Podium.add_slide(s2)
+|> Podium.add_slide(s3)
+|> Podium.add_slide(s4)
+|> Podium.save("demos/output/tables.pptx")
 
 IO.puts("Generated demos/output/tables.pptx")
