@@ -130,7 +130,7 @@ slide = Podium.add_text_box(slide, "Alert!", x: {1, :inches}, y: {1, :inches},
 
 ### Charts
 
-Seven chart types: `:column_clustered`, `:column_stacked`, `:bar_clustered`, `:bar_stacked`, `:line`, `:line_markers`, `:pie`.
+29 chart types across 10 families: column, bar, line, pie, area, doughnut, radar, scatter, bubble, and combo.
 
 ```elixir
 chart_data =
@@ -191,8 +191,16 @@ Available layouts and their placeholders:
 | Layout | Placeholders |
 |--------|-------------|
 | `:title_slide` | `:title`, `:subtitle` |
-| `:title_content` | `:title`, `:body` |
+| `:title_content` | `:title`, `:content` |
+| `:section_header` | `:title`, `:body` |
+| `:two_content` | `:title`, `:left_content`, `:right_content` |
+| `:comparison` | `:title`, `:left_heading`, `:left_content`, `:right_heading`, `:right_content` |
+| `:title_only` | `:title` |
 | `:blank` | (none) |
+| `:content_caption` | `:title`, `:content`, `:caption` |
+| `:picture_caption` | `:title`, `:picture`, `:caption` |
+| `:title_vertical_text` | `:title`, `:body` |
+| `:vertical_title_text` | `:title`, `:body` |
 
 ### Saving
 
@@ -215,14 +223,17 @@ All position and size values accept `{number, unit}` tuples or raw EMU integers:
 914_400         # raw EMU
 ```
 
-## Demo
+## Demos
 
-See [`demos/basics.exs`](demos/basics.exs) for a complete 11-slide presentation exercising every feature.
+The `demos/` directory has scripts covering every feature. Run any of them to generate a `.pptx` file in `demos/output/`:
 
-```bash
-mix run demos/basics.exs
-open demos/basics.pptx
-```
+    mix run demos/getting-started.exs
+
+Integration tests also produce viewable `.pptx` files in `test/podium/integration/output/` when you run `mix test`.
+
+## Acknowledgments
+
+Podium's design and feature set are ported from [python-pptx](https://github.com/scanny/python-pptx) by Steve Canny. Without python-pptx as a reference, this library would not exist.
 
 ## License
 

@@ -28,7 +28,7 @@ Charts embed real Excel workbooks, so recipients can double-click any chart in P
 - **Editable charts** -- 29 chart types with embedded Excel data that recipients can modify directly in PowerPoint
 - **Functional API with pipes** -- chain operations naturally with Elixir's pipe operator
 - **Create-only design** -- focused on generating presentations, not reading or modifying existing files
-- **Combo chart creation** -- build multi-plot charts programmatically, something even python-pptx cannot do
+- **Combo chart creation** -- build multi-plot charts programmatically, including multi-plot combo charts with secondary axes
 - **Rich table formatting** -- per-cell borders, padding, merging, and gradient/pattern fills
 
 ## Who It's For
@@ -76,6 +76,5 @@ prs
 
 - **[Getting Started](getting-started.md)** -- hands-on tutorial building a complete presentation step by step
 - **API Reference** -- `Podium` module documentation with all public functions
-- **[python-pptx Migration](python-pptx-migration.cheatmd)** -- side-by-side cheatsheet for users coming from Python
 
 Ready to get started? Head to [Installation](installation.md).

@@ -29,12 +29,6 @@ slide =
 
 ![Column and line overlay combo chart](assets/advanced/combo-charts/column-line-overlay.png)
 
-> #### Note {: .info}
->
-> Podium can create combo charts programmatically. python-pptx can only
-> read existing combo charts, not create them. This is one area where
-> Podium exceeds its reference implementation.
-
 ## The add_combo_chart API
 
 ```elixir

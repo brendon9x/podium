@@ -4,9 +4,9 @@ Elixir library aiming to be the definitive PowerPoint (.pptx) generation library
 
 ## Project Goals
 
-- Port python-pptx's feature set to idiomatic Elixir, working through Tier 1 → Tier 2 → Tier 3 as tracked in `PYTHON_PARITY.md`
+- Port python-pptx's feature set to idiomatic Elixir as tracked in `reference/FEATURES.md`
 - Match python-pptx's test coverage — aim to cover the same scenarios they test
-- Keep `PYTHON_PARITY.md` up to date as features are implemented
+- Keep `reference/FEATURES.md` up to date as features are implemented
 - Exercise all features in demo files under `demos/` — number of demo files is at discretion, but every feature should be demonstrated
 
 ## Reference: python-pptx
