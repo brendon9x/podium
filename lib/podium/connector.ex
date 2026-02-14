@@ -1,5 +1,10 @@
 defmodule Podium.Connector do
-  @moduledoc false
+  @moduledoc """
+  Connector shapes between two points.
+
+  Supports straight, elbow (bent), and curved connector types. Flip attributes
+  are calculated automatically from start/end coordinates.
+  """
 
   alias Podium.OPC.Constants
   alias Podium.{Drawing, Units}
@@ -17,12 +22,46 @@ defmodule Podium.Connector do
     :line
   ]
 
+  @type t :: %__MODULE__{
+          id: pos_integer(),
+          name: String.t(),
+          connector_type: String.t(),
+          x: non_neg_integer(),
+          y: non_neg_integer(),
+          width: non_neg_integer(),
+          height: non_neg_integer(),
+          flip_h: boolean(),
+          flip_v: boolean(),
+          line: Podium.line() | nil
+        }
+
   @type_map %{
     straight: "line",
     elbow: "bentConnector3",
     curved: "curvedConnector3"
   }
 
+  @doc """
+  Creates a new connector shape between two points.
+
+  ## Parameters
+    * `id` - shape ID within the slide
+    * `connector_type` - `:straight`, `:elbow`, or `:curved`
+    * `begin_x`, `begin_y` - start point coordinates
+    * `end_x`, `end_y` - end point coordinates
+
+  ## Options
+    * `:line` - line color string or keyword list with `:color`, `:width`, `:dash_style`
+  """
+  @spec new(
+          pos_integer(),
+          Podium.connector_type(),
+          Podium.dimension(),
+          Podium.dimension(),
+          Podium.dimension(),
+          Podium.dimension(),
+          keyword()
+        ) :: t()
   def new(id, connector_type, begin_x, begin_y, end_x, end_y, opts \\ [])
       when connector_type in [:straight, :elbow, :curved] do
     bx = Units.to_emu(begin_x)
@@ -55,6 +94,8 @@ defmodule Podium.Connector do
     }
   end
 
+  @doc "Generates the `<p:cxnSp>` XML for the connector shape."
+  @spec to_xml(t()) :: String.t()
   def to_xml(%__MODULE__{} = conn) do
     ns_a = Constants.ns(:a)
     ns_p = Constants.ns(:p)

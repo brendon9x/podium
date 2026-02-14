@@ -1,5 +1,10 @@
 defmodule Podium.Video do
-  @moduledoc false
+  @moduledoc """
+  Embedded video with MIME-based extension detection.
+
+  Videos are embedded with a poster frame image and timing XML for playback
+  control within the slide.
+  """
 
   alias Podium.OPC.Constants
   alias Podium.Units
@@ -17,6 +22,19 @@ defmodule Podium.Video do
     :poster_frame
   ]
 
+  @type t :: %__MODULE__{
+          media_index: pos_integer(),
+          binary: binary(),
+          extension: String.t(),
+          sha1: String.t(),
+          mime_type: String.t(),
+          x: non_neg_integer(),
+          y: non_neg_integer(),
+          width: non_neg_integer(),
+          height: non_neg_integer(),
+          poster_frame: map()
+        }
+
   # Minimal 1x1 PNG used as default poster frame (speaker icon placeholder)
   @default_poster_png <<0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D,
                         0x49, 0x48, 0x44, 0x52, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
@@ -25,6 +43,17 @@ defmodule Podium.Video do
                         0x00, 0x00, 0x02, 0x00, 0x01, 0xE2, 0x21, 0xBC, 0x33, 0x00, 0x00, 0x00,
                         0x00, 0x49, 0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82>>
 
+  @doc """
+  Creates a new video from binary data with position and size.
+
+  ## Options (required)
+    * `:x`, `:y`, `:width`, `:height` - position and size
+
+  ## Options (optional)
+    * `:mime_type` - MIME type string (default `"video/unknown"`)
+    * `:poster_frame` - poster frame image binary (default: 1x1 transparent PNG)
+  """
+  @spec new(binary(), pos_integer(), pos_integer(), keyword()) :: t()
   def new(binary, media_index, poster_image_index, opts) when is_binary(binary) do
     mime_type = Keyword.get(opts, :mime_type, "video/unknown")
     extension = detect_extension(mime_type)
@@ -51,12 +80,18 @@ defmodule Podium.Video do
     }
   end
 
+  @doc "Returns the OPC partname for the video media file."
+  @spec media_partname(t()) :: String.t()
   def media_partname(%__MODULE__{media_index: idx, extension: ext}),
     do: "ppt/media/media#{idx}.#{ext}"
 
+  @doc "Returns the OPC partname for the poster frame image."
+  @spec poster_partname(t()) :: String.t()
   def poster_partname(%__MODULE__{poster_frame: %{image_index: idx, extension: ext}}),
     do: "ppt/media/image#{idx}.#{ext}"
 
+  @doc "Generates the `<p:pic>` XML for the video shape on a slide."
+  @spec pic_xml(t(), pos_integer(), String.t(), String.t(), String.t()) :: String.t()
   def pic_xml(%__MODULE__{} = video, shape_id, video_rid, media_rid, poster_rid) do
     ns_a = Constants.ns(:a)
     ns_p = Constants.ns(:p)
@@ -92,6 +127,8 @@ defmodule Podium.Video do
       ~s(</p:pic>)
   end
 
+  @doc "Generates the timing XML for video playback in the slide's `<p:timing>` element."
+  @spec video_timing_xml(pos_integer(), pos_integer()) :: String.t()
   def video_timing_xml(shape_id, ctn_id) do
     ~s(<p:video>) <>
       ~s(<p:cMediaNode vol="80000">) <>
@@ -103,6 +140,8 @@ defmodule Podium.Video do
       ~s(</p:video>)
   end
 
+  @doc "Maps a MIME type string to a file extension."
+  @spec detect_extension(String.t()) :: String.t()
   def detect_extension("video/mp4"), do: "mp4"
   def detect_extension("video/mpeg"), do: "mpg"
   def detect_extension("video/x-msvideo"), do: "avi"

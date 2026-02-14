@@ -1,5 +1,10 @@
 defmodule Podium.Text do
-  @moduledoc false
+  @moduledoc """
+  Text normalization and paragraph XML generation.
+
+  Converts various text input formats (plain strings, rich text lists) into
+  a canonical paragraph structure, then renders as DrawingML `<a:p>` elements.
+  """
 
   alias Podium.XML.Builder
 
@@ -12,6 +17,7 @@ defmodule Podium.Text do
       - A list of runs: `[{"bold text", bold: true}, "plain"]`
       - A `{runs, para_opts}` tuple: `{[{"Title", bold: true}], alignment: :center}`
   """
+  @spec normalize(Podium.rich_text(), keyword()) :: [map()]
   def normalize(text, opts \\ []) when is_binary(text) or is_list(text) do
     default_alignment = Keyword.get(opts, :alignment)
     default_font_size = Keyword.get(opts, :font_size)
@@ -73,6 +79,7 @@ defmodule Podium.Text do
   Generates the XML for a list of normalized paragraphs (the <a:p> elements).
   Optionally accepts a `hyperlink_rids` map of `%{url => rId}` for resolving hyperlinks.
   """
+  @spec paragraphs_xml([map()], map()) :: String.t()
   def paragraphs_xml(paragraphs, hyperlink_rids \\ %{}) do
     paragraphs
     |> Enum.map(&paragraph_xml(&1, hyperlink_rids))
@@ -299,6 +306,7 @@ defmodule Podium.Text do
   @doc """
   Collects all unique hyperlink URLs from normalized paragraphs.
   """
+  @spec collect_hyperlink_urls([map()]) :: [String.t()]
   def collect_hyperlink_urls(paragraphs) do
     paragraphs
     |> Enum.flat_map(fn para ->
@@ -318,6 +326,7 @@ defmodule Podium.Text do
   Collects all slide jump targets from normalized paragraphs.
   Returns a list of target slide indices.
   """
+  @spec collect_slide_jumps([map()]) :: [pos_integer()]
   def collect_slide_jumps(paragraphs) do
     paragraphs
     |> Enum.flat_map(fn para ->

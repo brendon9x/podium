@@ -1,9 +1,29 @@
 defmodule Podium.Chart.ChartType do
-  @moduledoc false
+  @moduledoc """
+  Chart type to OOXML configuration mapping.
+
+  Maps chart type atoms to their XML element names, grouping modes, axis
+  configuration, and other type-specific settings.
+
+  ## Supported chart types
+
+    * Column: `:column_clustered`, `:column_stacked`, `:column_stacked_100`
+    * Bar: `:bar_clustered`, `:bar_stacked`, `:bar_stacked_100`
+    * Line: `:line`, `:line_markers`, `:line_stacked`, `:line_markers_stacked`,
+      `:line_stacked_100`, `:line_markers_stacked_100`
+    * Pie: `:pie`, `:pie_exploded`
+    * Area: `:area`, `:area_stacked`, `:area_stacked_100`
+    * Doughnut: `:doughnut`, `:doughnut_exploded`
+    * Radar: `:radar`, `:radar_filled`, `:radar_markers`
+    * Scatter: `:scatter`, `:scatter_lines`, `:scatter_lines_no_markers`,
+      `:scatter_smooth`, `:scatter_smooth_no_markers`
+    * Bubble: `:bubble`, `:bubble_3d`
+  """
 
   @doc """
   Returns the XML configuration for a chart type.
   """
+  @spec config(Podium.chart_type()) :: map()
   def config(:column_clustered) do
     %{
       element: "c:barChart",
@@ -270,11 +290,13 @@ defmodule Podium.Chart.ChartType do
   @doc """
   Returns axis positions based on chart type.
   """
+  @spec cat_ax_pos(atom()) :: String.t()
   def cat_ax_pos(:bar_clustered), do: "l"
   def cat_ax_pos(:bar_stacked), do: "l"
   def cat_ax_pos(:bar_stacked_100), do: "l"
   def cat_ax_pos(_), do: "b"
 
+  @spec val_ax_pos(atom()) :: String.t()
   def val_ax_pos(:bar_clustered), do: "b"
   def val_ax_pos(:bar_stacked), do: "b"
   def val_ax_pos(:bar_stacked_100), do: "b"

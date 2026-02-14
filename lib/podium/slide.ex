@@ -1,5 +1,11 @@
 defmodule Podium.Slide do
-  @moduledoc false
+  @moduledoc """
+  Represents a single slide in a presentation.
+
+  A slide contains shapes, charts, images, tables, connectors, videos, and
+  placeholders. Shapes and content are added through the functions in this
+  module (or via the `Podium` facade).
+  """
 
   alias Podium.OPC.Constants
   alias Podium.{Connector, Drawing, Image, Shape, Table, Video}
@@ -25,9 +31,29 @@ defmodule Podium.Slide do
     next_shape_id: 2
   ]
 
+  @type t :: %__MODULE__{
+          index: pos_integer() | nil,
+          layout_index: pos_integer() | nil,
+          pres_rid: String.t() | nil,
+          background: term(),
+          background_image: {binary(), String.t()} | nil,
+          notes_text: String.t() | nil,
+          shapes: [Podium.Shape.t()],
+          charts: [Podium.Chart.t()],
+          images: [Podium.Image.t()],
+          tables: [Podium.Table.t()],
+          connectors: [Podium.Connector.t()],
+          videos: [Podium.Video.t()],
+          placeholders: [Podium.Placeholder.t()],
+          picture_placeholders: [tuple()],
+          fill_images: [{pos_integer(), binary(), String.t()}],
+          next_shape_id: pos_integer()
+        }
+
   @doc """
   Creates a new blank slide.
   """
+  @spec new(keyword()) :: t()
   def new(opts \\ []) do
     %__MODULE__{
       index: Keyword.get(opts, :index, 1),
@@ -38,17 +64,20 @@ defmodule Podium.Slide do
   @doc """
   Returns the partname for this slide within the package.
   """
+  @spec partname(t()) :: String.t()
   def partname(%__MODULE__{index: index}), do: "ppt/slides/slide#{index}.xml"
 
   @doc """
   Returns the rels partname for this slide.
   """
+  @spec rels_partname(t()) :: String.t()
   def rels_partname(%__MODULE__{index: index}),
     do: "ppt/slides/_rels/slide#{index}.xml.rels"
 
   @doc """
   Adds a text box shape to the slide.
   """
+  @spec add_text_box(t(), Podium.rich_text(), keyword()) :: t()
   def add_text_box(%__MODULE__{} = slide, text, opts) do
     shape = Shape.text_box(slide.next_shape_id, text, opts)
 
@@ -58,6 +87,7 @@ defmodule Podium.Slide do
   @doc """
   Adds an auto shape to the slide.
   """
+  @spec add_auto_shape(t(), atom(), keyword()) :: t()
   def add_auto_shape(%__MODULE__{} = slide, preset, opts) do
     shape = Shape.auto_shape(slide.next_shape_id, preset, opts)
 
@@ -67,6 +97,16 @@ defmodule Podium.Slide do
   @doc """
   Adds a connector to the slide.
   """
+  @spec add_connector(
+          t(),
+          Podium.connector_type(),
+          Podium.dimension(),
+          Podium.dimension(),
+          Podium.dimension(),
+          Podium.dimension(),
+          keyword()
+        ) ::
+          t()
   def add_connector(%__MODULE__{} = slide, connector_type, begin_x, begin_y, end_x, end_y, opts) do
     conn =
       Connector.new(slide.next_shape_id, connector_type, begin_x, begin_y, end_x, end_y, opts)
@@ -81,6 +121,7 @@ defmodule Podium.Slide do
   @doc """
   Adds a text box with a picture fill. The image binary is stored for packaging.
   """
+  @spec add_picture_fill_text_box(t(), Podium.rich_text(), binary(), keyword()) :: t()
   def add_picture_fill_text_box(%__MODULE__{} = slide, text, image_binary, opts) do
     extension = detect_fill_extension(image_binary)
     fill_mode = Keyword.get(opts, :fill_mode, :stretch)
@@ -112,6 +153,7 @@ defmodule Podium.Slide do
   @doc """
   Adds a chart to the slide. Returns the updated slide.
   """
+  @spec add_chart(t(), atom(), struct(), pos_integer(), keyword()) :: t()
   def add_chart(%__MODULE__{} = slide, chart_type, chart_data, chart_index, opts) do
     chart = Podium.Chart.new(chart_type, chart_data, chart_index, opts)
 
@@ -125,6 +167,7 @@ defmodule Podium.Slide do
   @doc """
   Adds an image to the slide. Returns the updated slide.
   """
+  @spec add_image(t(), Podium.Image.t()) :: t()
   def add_image(%__MODULE__{} = slide, image) do
     %{
       slide
@@ -136,6 +179,7 @@ defmodule Podium.Slide do
   @doc """
   Adds a freeform shape to the slide.
   """
+  @spec add_freeform(t(), Podium.Freeform.t(), keyword()) :: t()
   def add_freeform(%__MODULE__{} = slide, %Podium.Freeform{} = fb, opts \\ []) do
     shape = Shape.freeform(slide.next_shape_id, fb, opts)
     %{slide | shapes: slide.shapes ++ [shape], next_shape_id: slide.next_shape_id + 1}
@@ -144,6 +188,7 @@ defmodule Podium.Slide do
   @doc """
   Adds a video to the slide.
   """
+  @spec add_video(t(), Podium.Video.t()) :: t()
   def add_video(%__MODULE__{} = slide, video) do
     %{
       slide
@@ -155,6 +200,7 @@ defmodule Podium.Slide do
   @doc """
   Adds a table to the slide.
   """
+  @spec add_table(t(), [[term()]], keyword()) :: t()
   def add_table(%__MODULE__{} = slide, rows, opts) do
     table = Table.new(slide.next_shape_id, rows, opts)
     %{slide | tables: slide.tables ++ [table], next_shape_id: slide.next_shape_id + 1}
@@ -165,6 +211,15 @@ defmodule Podium.Slide do
   `chart_rids` is a list of {chart, rId} tuples.
   `image_rids` is a list of {image, rId} tuples.
   """
+  @spec to_xml(
+          t(),
+          [{Podium.Chart.t(), String.t()}],
+          [{Podium.Image.t(), String.t()}],
+          %{pos_integer() => String.t()},
+          %{String.t() => String.t()},
+          String.t() | nil,
+          [{Podium.Video.t(), String.t(), String.t(), String.t()}]
+        ) :: String.t()
   def to_xml(
         %__MODULE__{} = slide,
         chart_rids \\ [],

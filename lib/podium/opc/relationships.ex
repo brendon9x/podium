@@ -1,18 +1,30 @@
 defmodule Podium.OPC.Relationships do
-  @moduledoc false
+  @moduledoc """
+  `.rels` file management for OPC relationship parts.
+
+  Manages a collection of relationships (each with an ID, type URI, and target
+  path) and renders them to the XML used in `.rels` files throughout the package.
+  """
 
   alias Podium.OPC.Constants
 
   defstruct rels: [], next_id: 1
 
+  @type t :: %__MODULE__{
+          rels: [tuple()],
+          next_id: pos_integer()
+        }
+
   @doc """
   Creates a new empty relationships collection.
   """
+  @spec new() :: t()
   def new, do: %__MODULE__{}
 
   @doc """
   Creates relationships from an existing list, setting next_id appropriately.
   """
+  @spec from_list([tuple()]) :: t()
   def from_list(rels) when is_list(rels) do
     max_id =
       rels
@@ -31,6 +43,7 @@ defmodule Podium.OPC.Relationships do
   @doc """
   Adds a relationship and returns {updated_rels, rId}.
   """
+  @spec add(t(), String.t(), String.t(), boolean()) :: {t(), String.t()}
   def add(%__MODULE__{} = rels, type, target, external \\ false) do
     rid = "rId#{rels.next_id}"
     new_rel = if external, do: {rid, type, target, true}, else: {rid, type, target}
@@ -41,6 +54,7 @@ defmodule Podium.OPC.Relationships do
   @doc """
   Generates the .rels XML string.
   """
+  @spec to_xml(t()) :: String.t()
   def to_xml(%__MODULE__{} = rels) do
     rels_xml =
       rels.rels

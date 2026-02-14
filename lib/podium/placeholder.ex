@@ -1,5 +1,11 @@
 defmodule Podium.Placeholder do
-  @moduledoc false
+  @moduledoc """
+  Layout placeholder management for slide content.
+
+  Each slide layout defines named placeholder positions (title, subtitle, content,
+  etc.) that can be filled with text or pictures. This module handles creating
+  placeholder structs and rendering their XML.
+  """
 
   alias Podium.OPC.Constants
   alias Podium.Text
@@ -12,6 +18,15 @@ defmodule Podium.Placeholder do
     :image_rid,
     :field_text
   ]
+
+  @type t :: %__MODULE__{
+          type: String.t() | nil,
+          idx: non_neg_integer() | nil,
+          kind: :text | :picture | :footer | :date | :slide_number | nil,
+          paragraphs: [map()] | nil,
+          image_rid: String.t() | nil,
+          field_text: String.t() | nil
+        }
 
   @layout_placeholders %{
     title_slide: %{
@@ -65,6 +80,7 @@ defmodule Podium.Placeholder do
   @doc """
   Returns the known placeholder definitions for a layout.
   """
+  @spec placeholders_for(atom()) :: %{atom() => map()}
   def placeholders_for(layout) when is_atom(layout) do
     Map.get(@layout_placeholders, layout, %{})
   end
@@ -72,6 +88,7 @@ defmodule Podium.Placeholder do
   @doc """
   Creates a text placeholder shape for the given placeholder name and text.
   """
+  @spec new(atom(), atom(), Podium.rich_text()) :: t()
   def new(layout, name, text) when is_atom(layout) and is_atom(name) do
     defs = placeholders_for(layout)
 
@@ -94,6 +111,7 @@ defmodule Podium.Placeholder do
   @doc """
   Creates a picture placeholder struct (kind: :picture).
   """
+  @spec new_picture(atom(), atom()) :: t()
   def new_picture(layout, name) when is_atom(layout) and is_atom(name) do
     defs = placeholders_for(layout)
 
@@ -115,6 +133,7 @@ defmodule Podium.Placeholder do
   @doc """
   Creates a footer placeholder.
   """
+  @spec new_footer(String.t()) :: t()
   def new_footer(text) do
     %__MODULE__{type: "ftr", idx: 11, kind: :footer, field_text: text}
   end
@@ -122,6 +141,7 @@ defmodule Podium.Placeholder do
   @doc """
   Creates a date placeholder.
   """
+  @spec new_date(String.t()) :: t()
   def new_date(text) do
     %__MODULE__{type: "dt", idx: 10, kind: :date, field_text: text}
   end
@@ -129,6 +149,7 @@ defmodule Podium.Placeholder do
   @doc """
   Creates a slide number placeholder.
   """
+  @spec new_slide_number() :: t()
   def new_slide_number do
     %__MODULE__{type: "sldNum", idx: 12, kind: :slide_number}
   end
@@ -137,6 +158,7 @@ defmodule Podium.Placeholder do
   Generates the XML for a placeholder shape.
   Dispatches based on the `:kind` field.
   """
+  @spec to_xml(t(), map()) :: String.t()
   def to_xml(ph, hyperlink_rids \\ %{})
 
   def to_xml(%__MODULE__{kind: :text} = ph, hyperlink_rids) do

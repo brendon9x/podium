@@ -21,6 +21,7 @@ defmodule Podium.Pattern do
   @doc """
   Maps pattern fill atoms to OOXML preset strings for `<a:pattFill prst="...">`.
   """
+  @spec preset(atom()) :: String.t()
   def preset(:dn_diag), do: "dnDiag"
   def preset(:up_diag), do: "upDiag"
   def preset(:lt_horz), do: "ltHorz"

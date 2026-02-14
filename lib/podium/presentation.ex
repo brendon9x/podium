@@ -1,5 +1,11 @@
 defmodule Podium.Presentation do
-  @moduledoc false
+  @moduledoc """
+  Internal module managing presentation state, slide collection, and serialization.
+
+  This module handles the lifecycle of a presentation: creating from a template,
+  adding slides, registering charts/images/videos, and building the final OPC
+  package. Most users interact through the `Podium` facade module.
+  """
 
   alias Podium.Chart
   alias Podium.Chart.{ComboChart, XlsxWriter, XmlWriter}
@@ -43,9 +49,30 @@ defmodule Podium.Presentation do
     notes_master_rid: nil
   ]
 
+  @type t :: %__MODULE__{
+          template_parts: map() | nil,
+          content_types: Podium.OPC.ContentTypes.t() | nil,
+          slides: [Podium.Slide.t()],
+          next_slide_index: pos_integer(),
+          next_chart_index: pos_integer(),
+          next_image_index: pos_integer(),
+          next_media_index: pos_integer(),
+          image_hashes: %{String.t() => pos_integer()},
+          media_hashes: %{String.t() => pos_integer()},
+          pres_rels: Podium.OPC.Relationships.t() | nil,
+          slide_width: non_neg_integer(),
+          slide_height: non_neg_integer(),
+          core_properties: Podium.CoreProperties.t() | nil,
+          footer: keyword() | nil,
+          placeholder_positions: map(),
+          notes_master_created: boolean(),
+          notes_master_rid: String.t() | nil
+        }
+
   @doc """
   Creates a new presentation from the default template.
   """
+  @spec new(keyword()) :: t()
   def new(opts \\ []) do
     {:ok, parts} = Package.read_template()
 
@@ -98,6 +125,7 @@ defmodule Podium.Presentation do
   @doc """
   Adds a new blank slide and returns the updated presentation with the slide.
   """
+  @spec add_slide(t(), keyword()) :: {t(), Podium.Slide.t()}
   def add_slide(%__MODULE__{} = prs, opts \\ []) do
     layout =
       cond do
@@ -158,6 +186,7 @@ defmodule Podium.Presentation do
   Adds a chart to a slide and returns the updated {presentation, slide}.
   The slide is automatically updated within the presentation.
   """
+  @spec add_chart(t(), Podium.Slide.t(), atom(), struct(), keyword()) :: {t(), Podium.Slide.t()}
   def add_chart(%__MODULE__{} = prs, %Slide{} = slide, chart_type, chart_data, opts) do
     chart_index = prs.next_chart_index
 
@@ -184,6 +213,14 @@ defmodule Podium.Presentation do
   @doc """
   Adds a combo chart to a slide. Returns `{presentation, slide}`.
   """
+  @spec add_combo_chart(
+          t(),
+          Podium.Slide.t(),
+          Podium.Chart.ChartData.t(),
+          [{atom(), keyword()}],
+          keyword()
+        ) ::
+          {t(), Podium.Slide.t()}
   def add_combo_chart(%__MODULE__{} = prs, %Slide{} = slide, chart_data, plot_specs, opts) do
     chart_index = prs.next_chart_index
     combo = ComboChart.new(chart_data, plot_specs)
@@ -215,6 +252,7 @@ defmodule Podium.Presentation do
   @doc """
   Adds an image to a slide. Returns `{presentation, slide}`.
   """
+  @spec add_image(t(), Podium.Slide.t(), binary(), keyword()) :: {t(), Podium.Slide.t()}
   def add_image(%__MODULE__{} = prs, %Slide{} = slide, binary, opts) do
     image_index = prs.next_image_index
     image = Image.new(binary, image_index, opts)
@@ -252,6 +290,7 @@ defmodule Podium.Presentation do
   @doc """
   Adds a video to a slide. Returns `{presentation, slide}`.
   """
+  @spec add_movie(t(), Podium.Slide.t(), binary(), keyword()) :: {t(), Podium.Slide.t()}
   def add_movie(%__MODULE__{} = prs, %Slide{} = slide, binary, opts) when is_binary(binary) do
     sha1 = :crypto.hash(:sha, binary) |> Base.encode16(case: :lower)
     mime_type = Keyword.get(opts, :mime_type, "video/unknown")
@@ -318,6 +357,8 @@ defmodule Podium.Presentation do
   @doc """
   Adds a text box with a picture fill to a slide. Returns `{presentation, slide}`.
   """
+  @spec add_picture_fill_text_box(t(), Podium.Slide.t(), Podium.rich_text(), binary(), keyword()) ::
+          {t(), Podium.Slide.t()}
   def add_picture_fill_text_box(%__MODULE__{} = prs, %Slide{} = slide, text, image_binary, opts) do
     extension = detect_fill_extension(image_binary)
 
@@ -340,6 +381,7 @@ defmodule Podium.Presentation do
   @doc """
   Sets presentation-level footer, date, and slide number options.
   """
+  @spec set_footer(t(), keyword()) :: t()
   def set_footer(%__MODULE__{} = prs, opts) when is_list(opts) do
     %{prs | footer: opts}
   end
@@ -347,6 +389,7 @@ defmodule Podium.Presentation do
   @doc """
   Sets notes text on a slide. Returns the updated slide.
   """
+  @spec set_notes(Podium.Slide.t(), String.t()) :: Podium.Slide.t()
   def set_notes(%Slide{} = slide, text) when is_binary(text) do
     %{slide | notes_text: text}
   end
@@ -355,6 +398,8 @@ defmodule Podium.Presentation do
   Sets a picture placeholder on a slide. Returns `{presentation, slide}`.
   Registers the image binary and stores the picture placeholder entry.
   """
+  @spec set_picture_placeholder(t(), Podium.Slide.t(), atom(), binary()) ::
+          {t(), Podium.Slide.t()}
   def set_picture_placeholder(%__MODULE__{} = prs, %Slide{} = slide, name, binary)
       when is_atom(name) and is_binary(binary) do
     layout_atom = layout_atom(slide.layout_index)
@@ -400,6 +445,8 @@ defmodule Podium.Presentation do
   Position is inherited from the template layout. Any user-supplied x/y/width/height in opts
   are silently dropped.
   """
+  @spec set_chart_placeholder(t(), Podium.Slide.t(), atom(), atom(), struct(), keyword()) ::
+          {t(), Podium.Slide.t()}
   def set_chart_placeholder(
         %__MODULE__{} = prs,
         %Slide{} = slide,
@@ -430,6 +477,8 @@ defmodule Podium.Presentation do
   Position is inherited from the template layout. Any user-supplied x/y/width/height in opts
   are silently dropped.
   """
+  @spec set_table_placeholder(t(), Podium.Slide.t(), atom(), [[term()]], keyword()) ::
+          {t(), Podium.Slide.t()}
   def set_table_placeholder(%__MODULE__{} = prs, %Slide{} = slide, name, rows, opts \\ [])
       when is_atom(name) do
     layout_index = slide.layout_index
@@ -490,6 +539,7 @@ defmodule Podium.Presentation do
   @doc """
   Sets core document properties (Dublin Core metadata).
   """
+  @spec set_core_properties(t(), keyword()) :: t()
   def set_core_properties(%__MODULE__{} = prs, opts) when is_list(opts) do
     %{prs | core_properties: CoreProperties.new(opts)}
   end
@@ -497,6 +547,7 @@ defmodule Podium.Presentation do
   @doc """
   Replaces a slide in the presentation (by matching slide index).
   """
+  @spec put_slide(t(), Podium.Slide.t()) :: t()
   def put_slide(%__MODULE__{} = prs, %Slide{} = slide) do
     %{prs | slides: replace_slide(prs.slides, slide)}
   end
@@ -504,6 +555,7 @@ defmodule Podium.Presentation do
   @doc """
   Saves the presentation to a file.
   """
+  @spec save(t(), String.t()) :: :ok | {:error, term()}
   def save(%__MODULE__{} = prs, path) do
     parts = build_parts(prs)
     Package.write(parts, path)
@@ -512,6 +564,7 @@ defmodule Podium.Presentation do
   @doc """
   Saves the presentation to an in-memory binary.
   """
+  @spec save_to_memory(t()) :: {:ok, binary()} | {:error, term()}
   def save_to_memory(%__MODULE__{} = prs) do
     parts = build_parts(prs)
     Package.write_to_memory(parts)

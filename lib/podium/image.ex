@@ -1,5 +1,10 @@
 defmodule Podium.Image do
-  @moduledoc false
+  @moduledoc """
+  Embedded image with format auto-detection from magic bytes.
+
+  Supports PNG, JPEG, BMP, GIF, TIFF, EMF, and WMF formats. Image dimensions
+  are read from binary headers for automatic aspect-ratio sizing.
+  """
 
   alias Podium.OPC.Constants
   alias Podium.Units
@@ -18,6 +23,20 @@ defmodule Podium.Image do
     shape: "rect"
   ]
 
+  @type t :: %__MODULE__{
+          image_index: pos_integer(),
+          binary: binary(),
+          extension: String.t(),
+          sha1: String.t(),
+          x: non_neg_integer(),
+          y: non_neg_integer(),
+          width: non_neg_integer(),
+          height: non_neg_integer(),
+          crop: keyword() | nil,
+          rotation: number() | nil,
+          shape: String.t()
+        }
+
   @doc """
   Creates a new image from binary data and position options.
   Extension is auto-detected from magic bytes.
@@ -25,6 +44,7 @@ defmodule Podium.Image do
   ## Options
     * `:crop` - keyword list with `:left`, `:right`, `:top`, `:bottom` (values in 1/1000ths of a percent, 0–100_000)
   """
+  @spec new(binary(), pos_integer(), keyword()) :: t()
   def new(binary, image_index, opts) when is_binary(binary) do
     extension = detect_extension(binary)
     sha1 = :crypto.hash(:sha, binary) |> Base.encode16(case: :lower)
@@ -52,12 +72,14 @@ defmodule Podium.Image do
   @doc """
   Returns the partname for the image media file.
   """
+  @spec partname(t()) :: String.t()
   def partname(%__MODULE__{image_index: idx, extension: ext}),
     do: "ppt/media/image#{idx}.#{ext}"
 
   @doc """
   Generates the <p:pic> XML for embedding the image in a slide.
   """
+  @spec pic_xml(t(), pos_integer(), String.t()) :: String.t()
   def pic_xml(%__MODULE__{} = image, shape_id, r_id) do
     ns_a = Constants.ns(:a)
     ns_p = Constants.ns(:p)

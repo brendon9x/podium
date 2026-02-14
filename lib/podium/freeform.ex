@@ -24,6 +24,18 @@ defmodule Podium.Freeform do
 
   defstruct [:start_x, :start_y, :x_scale, :y_scale, operations: []]
 
+  @type t :: %__MODULE__{
+          start_x: number(),
+          start_y: number(),
+          x_scale: float(),
+          y_scale: float(),
+          operations: [
+            {:line_to, number(), number()}
+            | {:move_to, number(), number()}
+            | :close
+          ]
+        }
+
   @doc """
   Creates a new freeform builder starting at (start_x, start_y).
 
@@ -35,6 +47,7 @@ defmodule Podium.Freeform do
     * `:scale` - scale factor for raw integer coords (default 1.0, meaning EMU)
     * `:x_scale` / `:y_scale` - per-axis scale factors (override `:scale`)
   """
+  @spec new(Podium.dimension() | number(), Podium.dimension() | number(), keyword()) :: t()
   def new(start_x, start_y, opts \\ []) do
     default_scale = Keyword.get(opts, :scale, 1.0)
     x_scale = Keyword.get(opts, :x_scale, default_scale)
@@ -52,6 +65,7 @@ defmodule Podium.Freeform do
   @doc """
   Adds a line segment to (x, y).
   """
+  @spec line_to(t(), Podium.dimension() | number(), Podium.dimension() | number()) :: t()
   def line_to(%__MODULE__{} = fb, x, y) do
     %{fb | operations: fb.operations ++ [{:line_to, resolve_coord(x), resolve_coord(y)}]}
   end
@@ -59,6 +73,7 @@ defmodule Podium.Freeform do
   @doc """
   Starts a new contour at (x, y) without drawing a line.
   """
+  @spec move_to(t(), Podium.dimension() | number(), Podium.dimension() | number()) :: t()
   def move_to(%__MODULE__{} = fb, x, y) do
     %{fb | operations: fb.operations ++ [{:move_to, resolve_coord(x), resolve_coord(y)}]}
   end
@@ -66,6 +81,7 @@ defmodule Podium.Freeform do
   @doc """
   Closes the current contour.
   """
+  @spec close(t()) :: t()
   def close(%__MODULE__{} = fb) do
     %{fb | operations: fb.operations ++ [:close]}
   end
@@ -76,6 +92,11 @@ defmodule Podium.Freeform do
   ## Options
     * `:close` - if `true`, closes the contour after the last segment
   """
+  @spec add_line_segments(
+          t(),
+          [{Podium.dimension() | number(), Podium.dimension() | number()}],
+          keyword()
+        ) :: t()
   def add_line_segments(%__MODULE__{} = fb, vertices, opts \\ []) do
     fb =
       Enum.reduce(vertices, fb, fn {x, y}, acc ->
@@ -93,6 +114,7 @@ defmodule Podium.Freeform do
   Computes the bounding box in local coordinates (before scale).
   Returns `{min_x, min_y, dx, dy}`.
   """
+  @spec bounding_box(t()) :: {number(), number(), number(), number()}
   def bounding_box(%__MODULE__{} = fb) do
     all_points = [{fb.start_x, fb.start_y} | extract_points(fb.operations)]
 
@@ -109,6 +131,7 @@ defmodule Podium.Freeform do
   Returns operations with coordinates translated so the bounding box origin is (0, 0).
   Includes the initial move_to from the start point.
   """
+  @spec shape_operations(t()) :: [{:move_to | :line_to, number(), number()} | :close]
   def shape_operations(%__MODULE__{} = fb) do
     {min_x, min_y, _dx, _dy} = bounding_box(fb)
 

@@ -1,5 +1,10 @@
 defmodule Podium.Shape do
-  @moduledoc false
+  @moduledoc """
+  Shape structs and XML generation for text boxes, auto shapes, and freeform shapes.
+
+  Shapes are created through `text_box/3`, `auto_shape/3`, or `freeform/3` and
+  rendered to OOXML via `to_xml/3`.
+  """
 
   alias Podium.OPC.Constants
   alias Podium.{AutoShapeType, Drawing, Freeform, Text, Units}
@@ -28,9 +33,34 @@ defmodule Podium.Shape do
     :path_data
   ]
 
+  @type t :: %__MODULE__{
+          type: :text_box | :auto_shape | :freeform,
+          id: pos_integer(),
+          name: String.t(),
+          x: non_neg_integer(),
+          y: non_neg_integer(),
+          width: non_neg_integer(),
+          height: non_neg_integer(),
+          paragraphs: [map()] | nil,
+          fill: Podium.fill() | nil,
+          line: Podium.line() | nil,
+          rotation: number() | nil,
+          margin_left: non_neg_integer() | nil,
+          margin_right: non_neg_integer() | nil,
+          margin_top: non_neg_integer() | nil,
+          margin_bottom: non_neg_integer() | nil,
+          fill_opts: keyword() | nil,
+          preset: atom() | nil,
+          anchor: Podium.anchor() | nil,
+          auto_size: :none | :text_to_fit_shape | :shape_to_fit_text | nil,
+          word_wrap: boolean() | nil,
+          path_data: map() | nil
+        }
+
   @doc """
   Creates a text box shape.
   """
+  @spec text_box(pos_integer(), Podium.rich_text(), keyword()) :: t()
   def text_box(id, text, opts) do
     x = Units.to_emu(Keyword.fetch!(opts, :x))
     y = Units.to_emu(Keyword.fetch!(opts, :y))
@@ -64,6 +94,7 @@ defmodule Podium.Shape do
   @doc """
   Creates an auto shape with a preset geometry.
   """
+  @spec auto_shape(pos_integer(), atom(), keyword()) :: t()
   def auto_shape(id, preset, opts) when is_atom(preset) do
     {_prst, basename} = AutoShapeType.lookup(preset)
 
@@ -107,6 +138,7 @@ defmodule Podium.Shape do
   @doc """
   Creates a freeform shape from a Freeform builder.
   """
+  @spec freeform(pos_integer(), Podium.Freeform.t(), keyword()) :: t()
   def freeform(id, %Freeform{} = fb, opts) do
     {min_x, min_y, dx, dy} = Freeform.bounding_box(fb)
     origin_x = Units.to_emu(Keyword.get(opts, :origin_x, 0))
@@ -131,6 +163,7 @@ defmodule Podium.Shape do
   @doc """
   Generates XML for a shape.
   """
+  @spec to_xml(t(), String.t() | nil, map()) :: String.t()
   def to_xml(shape, fill_rid \\ nil, hyperlink_rids \\ %{})
 
   def to_xml(%__MODULE__{type: :text_box} = shape, fill_rid, hyperlink_rids) do

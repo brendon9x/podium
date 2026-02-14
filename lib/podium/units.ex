@@ -1,5 +1,28 @@
 defmodule Podium.Units do
-  @moduledoc false
+  @moduledoc """
+  EMU (English Metric Units) conversion utilities.
+
+  OOXML uses EMU as its base unit for all measurements. This module converts
+  from human-friendly units to EMU.
+
+    * 1 inch = 914,400 EMU
+    * 1 cm = 360,000 EMU
+    * 1 point = 12,700 EMU
+
+  ## Examples
+
+      iex> Podium.Units.to_emu({1, :inches})
+      914400
+
+      iex> Podium.Units.to_emu({2.54, :cm})
+      914400
+
+      iex> Podium.Units.to_emu({72, :pt})
+      914400
+
+      iex> Podium.Units.to_emu(914400)
+      914400
+  """
 
   @emu_per_inch 914_400
   @emu_per_cm 360_000
@@ -22,6 +45,7 @@ defmodule Podium.Units do
       iex> Podium.Units.to_emu(914400)
       914400
   """
+  @spec to_emu(Podium.dimension()) :: non_neg_integer()
   def to_emu({value, :inches}), do: round(value * @emu_per_inch)
   def to_emu({value, :cm}), do: round(value * @emu_per_cm)
   def to_emu({value, :pt}), do: round(value * @emu_per_pt)

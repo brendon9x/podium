@@ -46,7 +46,8 @@ defmodule Podium.MixProject do
       formatters: ["html"],
       assets: %{"guides/assets" => "assets"},
       extras: extras(),
-      groups_for_extras: groups_for_extras()
+      groups_for_extras: groups_for_extras(),
+      groups_for_modules: groups_for_modules()
     ]
   end
 
@@ -91,6 +92,46 @@ defmodule Podium.MixProject do
       "Advanced Features": ~r/guides\/advanced\//,
       Recipes: ~r/guides\/recipes\//,
       Cheatsheets: ~r/guides\/cheatsheets\//
+    ]
+  end
+
+  defp groups_for_modules do
+    [
+      "Presentation API": [Podium, Podium.Presentation, Podium.Slide],
+      "Shapes and Drawing": [
+        Podium.Shape,
+        Podium.AutoShapeType,
+        Podium.Connector,
+        Podium.Freeform,
+        Podium.Drawing,
+        Podium.Pattern
+      ],
+      "Text and Tables": [Podium.Text, Podium.Table],
+      Charts: [
+        Podium.Chart,
+        Podium.Chart.ChartData,
+        Podium.Chart.XyChartData,
+        Podium.Chart.BubbleChartData,
+        Podium.Chart.ComboChart,
+        Podium.Chart.ChartType
+      ],
+      Media: [Podium.Image, Podium.Video],
+      "Slide Content": [
+        Podium.Placeholder,
+        Podium.NotesSlide,
+        Podium.CoreProperties,
+        Podium.Units
+      ],
+      Internals: [
+        Podium.TemplatePlaceholders,
+        Podium.Chart.XmlWriter,
+        Podium.Chart.XlsxWriter,
+        Podium.OPC.Package,
+        Podium.OPC.Relationships,
+        Podium.OPC.ContentTypes,
+        Podium.OPC.Constants,
+        Podium.XML.Builder
+      ]
     ]
   end
 end

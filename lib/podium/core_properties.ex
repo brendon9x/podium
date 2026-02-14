@@ -1,5 +1,10 @@
 defmodule Podium.CoreProperties do
-  @moduledoc false
+  @moduledoc """
+  Dublin Core metadata for presentation document properties.
+
+  Manages the `docProps/core.xml` part containing title, author, subject,
+  keywords, and other Dublin Core / OPC core property fields.
+  """
 
   alias Podium.OPC.Constants
   alias Podium.XML.Builder
@@ -21,9 +26,27 @@ defmodule Podium.CoreProperties do
     :version
   ]
 
+  @type t :: %__MODULE__{
+          title: String.t() | nil,
+          author: String.t() | nil,
+          subject: String.t() | nil,
+          keywords: String.t() | nil,
+          category: String.t() | nil,
+          comments: String.t() | nil,
+          last_modified_by: String.t() | nil,
+          created: DateTime.t() | nil,
+          modified: DateTime.t() | nil,
+          last_printed: DateTime.t() | nil,
+          revision: integer() | nil,
+          content_status: String.t() | nil,
+          language: String.t() | nil,
+          version: String.t() | nil
+        }
+
   @doc """
   Creates a CoreProperties struct from a keyword list.
   """
+  @spec new(keyword()) :: t()
   def new(opts \\ []) do
     %__MODULE__{
       title: Keyword.get(opts, :title),
@@ -46,6 +69,7 @@ defmodule Podium.CoreProperties do
   @doc """
   Generates the Dublin Core XML for docProps/core.xml.
   """
+  @spec to_xml(t()) :: String.t()
   def to_xml(%__MODULE__{} = props) do
     children =
       [

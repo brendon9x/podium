@@ -1,5 +1,10 @@
 defmodule Podium.Chart.XlsxWriter do
-  @moduledoc false
+  @moduledoc """
+  Embedded Excel workbook generation for chart data.
+
+  Generates the `.xlsx` binary embedded alongside each chart, providing
+  the editable data source when the chart is opened in PowerPoint.
+  """
 
   alias Podium.Chart.{BubbleChartData, ChartData, XyChartData}
 
@@ -7,6 +12,7 @@ defmodule Podium.Chart.XlsxWriter do
   Generates an embedded Excel workbook binary from chart data.
   Uses elixlsx to create the .xlsx file.
   """
+  @spec to_xlsx(ChartData.t() | XyChartData.t() | BubbleChartData.t()) :: binary()
   def to_xlsx(%ChartData{} = chart_data) do
     rows = build_rows(chart_data)
     write_xlsx(rows)

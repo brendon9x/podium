@@ -1,16 +1,24 @@
 defmodule Podium.OPC.ContentTypes do
-  @moduledoc false
+  @moduledoc """
+  `[Content_Types].xml` management for the OPC package.
+
+  Tracks default content types (by file extension) and override content types
+  (by part name) and renders them to the XML expected at the package root.
+  """
 
   alias Podium.OPC.Constants
 
-  @doc """
-  Builds a content types struct from existing defaults/overrides and a list of parts to add.
-  """
   defstruct defaults: %{}, overrides: %{}
+
+  @type t :: %__MODULE__{
+          defaults: %{String.t() => String.t()},
+          overrides: %{String.t() => String.t()}
+        }
 
   @doc """
   Returns the base content types from the default template.
   """
+  @spec from_template() :: t()
   def from_template do
     %__MODULE__{
       defaults: %{
@@ -46,6 +54,7 @@ defmodule Podium.OPC.ContentTypes do
   @doc """
   Adds an override content type for a specific part.
   """
+  @spec add_override(t(), String.t(), String.t()) :: t()
   def add_override(%__MODULE__{} = ct, part_name, content_type) do
     %{ct | overrides: Map.put(ct.overrides, part_name, content_type)}
   end
@@ -53,6 +62,7 @@ defmodule Podium.OPC.ContentTypes do
   @doc """
   Adds a default content type for a file extension.
   """
+  @spec add_default(t(), String.t(), String.t()) :: t()
   def add_default(%__MODULE__{} = ct, extension, content_type) do
     %{ct | defaults: Map.put(ct.defaults, extension, content_type)}
   end
@@ -60,6 +70,7 @@ defmodule Podium.OPC.ContentTypes do
   @doc """
   Generates the [Content_Types].xml string.
   """
+  @spec to_xml(t()) :: String.t()
   def to_xml(%__MODULE__{} = ct) do
     defaults_xml =
       ct.defaults

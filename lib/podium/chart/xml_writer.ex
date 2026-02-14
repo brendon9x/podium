@@ -1,5 +1,10 @@
 defmodule Podium.Chart.XmlWriter do
-  @moduledoc false
+  @moduledoc """
+  Chart XML generation for the chart part (`ppt/charts/chartN.xml`).
+
+  Renders the complete chart XML including plot area, series, axes, title,
+  legend, and data labels for all supported chart types.
+  """
 
   alias Podium.Chart
   alias Podium.Chart.{BubbleChartData, ChartData, ChartType, ComboChart, XyChartData}
@@ -30,6 +35,8 @@ defmodule Podium.Chart.XmlWriter do
   Generates the chart XML. Accepts either a `%Chart{}` struct or
   `(chart_type, chart_data)` for backwards compatibility.
   """
+  @spec to_xml(Podium.Chart.t()) :: String.t()
+  @spec to_xml(atom(), struct()) :: String.t()
   def to_xml(%Chart{combo: %ComboChart{}} = chart) do
     Builder.xml_declaration() <> combo_chart_space_xml(chart)
   end
