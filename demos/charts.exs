@@ -171,16 +171,15 @@ s8 =
     legend: :bottom
   )
 
-prs =
-  prs
-  |> Podium.add_slide(s1)
-  |> Podium.add_slide(s2)
-  |> Podium.add_slide(s3)
-  |> Podium.add_slide(s4)
-  |> Podium.add_slide(s5)
-  |> Podium.add_slide(s6)
-  |> Podium.add_slide(s7)
-  |> Podium.add_slide(s8)
-  |> Podium.save("demos/output/charts.pptx")
+prs
+|> Podium.add_slide(s1)
+|> Podium.add_slide(s2)
+|> Podium.add_slide(s3)
+|> Podium.add_slide(s4)
+|> Podium.add_slide(s5)
+|> Podium.add_slide(s6)
+|> Podium.add_slide(s7)
+|> Podium.add_slide(s8)
+|> Podium.save("demos/output/charts.pptx")
 
 IO.puts("Generated demos/output/charts.pptx")

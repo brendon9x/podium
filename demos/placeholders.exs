@@ -85,13 +85,12 @@ s5 =
     legend: :bottom
   )
 
-prs =
-  prs
-  |> Podium.add_slide(s1)
-  |> Podium.add_slide(s2)
-  |> Podium.add_slide(s3)
-  |> Podium.add_slide(s4)
-  |> Podium.add_slide(s5)
-  |> Podium.save("demos/output/placeholders.pptx")
+prs
+|> Podium.add_slide(s1)
+|> Podium.add_slide(s2)
+|> Podium.add_slide(s3)
+|> Podium.add_slide(s4)
+|> Podium.add_slide(s5)
+|> Podium.save("demos/output/placeholders.pptx")
 
 IO.puts("Generated demos/output/placeholders.pptx")

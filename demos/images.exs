@@ -67,11 +67,10 @@ s3 =
     rotation: 15
   )
 
-prs =
-  prs
-  |> Podium.add_slide(s1)
-  |> Podium.add_slide(s2)
-  |> Podium.add_slide(s3)
-  |> Podium.save("demos/output/images.pptx")
+prs
+|> Podium.add_slide(s1)
+|> Podium.add_slide(s2)
+|> Podium.add_slide(s3)
+|> Podium.save("demos/output/images.pptx")
 
 IO.puts("Generated demos/output/images.pptx")

@@ -20,8 +20,6 @@ slide = Podium.add_image(slide, image_data,
 `Podium.add_image/3` takes the slide, image binary, and options.
 It returns the updated slide:
 
-![Basic image placement with explicit dimensions](assets/core/images/basic-placement.png)
-
 ```elixir
 prs = Podium.new()
 slide = Podium.Slide.new()
@@ -35,6 +33,8 @@ slide = Podium.add_image(slide, logo,
 prs = Podium.add_slide(prs, slide)
 Podium.save(prs, "with_image.pptx")
 ```
+
+![Basic image placement with explicit dimensions](assets/core/images/basic-placement.png)
 
 ## Supported Formats
 
@@ -107,8 +107,6 @@ This crops 10% from the left and right, and 5% from the top and bottom.
 By default, images use a rectangular frame. Pass the `:shape` option to
 mask the image with a shape preset:
 
-![Image with ellipse shape mask and cropping](assets/core/images/shape-mask-cropping.png)
-
 ```elixir
 # Circular profile photo
 slide = Podium.add_image(slide, headshot,
@@ -116,6 +114,8 @@ slide = Podium.add_image(slide, headshot,
   width: {3, :inches}, height: {3, :inches},
   shape: :ellipse)
 ```
+
+![Image with ellipse shape mask and cropping](assets/core/images/shape-mask-cropping.png)
 
 Available shape masks: `:ellipse`, `:diamond`, `:round_rect`, `:star5`,
 `:star6`, `:star8`, `:heart`, `:triangle`, `:hexagon`, `:octagon`, or any
@@ -125,14 +125,14 @@ OOXML preset geometry string.
 
 Rotate an image with the `:rotation` option, specified in degrees clockwise:
 
-![Image rotated 15 degrees](assets/core/images/image-rotation.png)
-
 ```elixir
 slide = Podium.add_image(slide, badge,
   x: {4, :inches}, y: {2, :inches},
   width: {3, :inches}, height: {3, :inches},
   rotation: 15)
 ```
+
+![Image rotated 15 degrees](assets/core/images/image-rotation.png)
 
 ## SHA-1 Deduplication
 

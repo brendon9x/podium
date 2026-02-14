@@ -72,12 +72,11 @@ s4 =
     "Picture backgrounds use {:picture, binary} tuple.\nThe image is stretched to fill the entire slide."
   )
 
-prs =
-  prs
-  |> Podium.add_slide(s1)
-  |> Podium.add_slide(s2)
-  |> Podium.add_slide(s3)
-  |> Podium.add_slide(s4)
-  |> Podium.save("demos/output/slide-backgrounds-and-notes.pptx")
+prs
+|> Podium.add_slide(s1)
+|> Podium.add_slide(s2)
+|> Podium.add_slide(s3)
+|> Podium.add_slide(s4)
+|> Podium.save("demos/output/slide-backgrounds-and-notes.pptx")
 
 IO.puts("Generated demos/output/slide-backgrounds-and-notes.pptx")

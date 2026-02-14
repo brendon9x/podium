@@ -8,8 +8,6 @@ inherit their position and size from the slide master template.
 >
 > Run `mix run demos/placeholders.exs` to generate a presentation with all the examples from this guide.
 
-![Title slide layout with styled title and subtitle](assets/core/placeholders/title-slide-layout.png)
-
 ```elixir
 slide = Podium.Slide.new(:title_slide)
 
@@ -18,6 +16,8 @@ slide =
   |> Podium.set_placeholder(:title, "Annual Report 2025")
   |> Podium.set_placeholder(:subtitle, "Engineering Division")
 ```
+
+![Title slide layout with styled title and subtitle](assets/core/placeholders/title-slide-layout.png)
 
 ## What Placeholders Are
 
@@ -106,8 +106,6 @@ slide =
 
 **Comparison** -- five placeholders for side-by-side comparison:
 
-![Comparison layout with before/after content](assets/core/placeholders/comparison-layout.png)
-
 ```elixir
 slide = Podium.Slide.new(:comparison)
 
@@ -126,9 +124,9 @@ slide =
   ])
 ```
 
-**Content with caption** -- a content area paired with a caption:
+![Comparison layout with before/after content](assets/core/placeholders/comparison-layout.png)
 
-![Content with caption layout](assets/core/placeholders/content-caption-layout.png)
+**Content with caption** -- a content area paired with a caption:
 
 ```elixir
 slide = Podium.Slide.new(:content_caption)
@@ -139,6 +137,8 @@ slide =
   |> Podium.set_placeholder(:content, "Main visualization area")
   |> Podium.set_placeholder(:caption, "Source: Internal analytics, Jan 2026")
 ```
+
+![Content with caption layout](assets/core/placeholders/content-caption-layout.png)
 
 ## Picture Placeholders
 
@@ -168,8 +168,6 @@ Content placeholders (`:content`, `:left_content`, `:right_content`) can hold
 charts. Use `Podium.set_chart_placeholder/6` to place a chart with position and
 size inherited from the template layout:
 
-![Column chart inside a content placeholder](assets/core/placeholders/chart-placeholder.png)
-
 ```elixir
 alias Podium.Chart.ChartData
 
@@ -185,6 +183,8 @@ slide = Podium.set_chart_placeholder(prs, slide, :content,
   :column_clustered, chart_data,
   title: "Quarterly Revenue", legend: :bottom)
 ```
+
+![Column chart inside a content placeholder](assets/core/placeholders/chart-placeholder.png)
 
 Any `:x`, `:y`, `:width`, or `:height` values in the options are silently dropped.
 The chart inherits its position from the template. Other chart options like
@@ -210,8 +210,6 @@ slide = Podium.set_table_placeholder(prs, slide, :content, [
 
 The `:two_content` layout is useful for placing a table and chart next to each
 other:
-
-![Two-content layout with table and pie chart side by side](assets/core/placeholders/two-content-layout.png)
 
 ```elixir
 alias Podium.Chart.ChartData
@@ -239,6 +237,8 @@ slide = Podium.set_chart_placeholder(prs, slide, :right_content,
   title: "Revenue Split", legend: :bottom,
   data_labels: [:category, :percent])
 ```
+
+![Two-content layout with table and pie chart side by side](assets/core/placeholders/two-content-layout.png)
 
 ## Footer, Date, and Slide Numbers
 
