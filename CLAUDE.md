@@ -1,6 +1,6 @@
 # Podium
 
-Elixir library aiming to be the definitive PowerPoint (.pptx) generation library for Elixir. We use [python-pptx](https://github.com/scanny/python-pptx) as our reference implementation — the goal is to match its features and test coverage.
+Elixir library aiming to be a robust PowerPoint (.pptx) generation library for Elixir. We use [python-pptx](https://github.com/scanny/python-pptx) as our reference implementation — the goal is to match its features and test coverage except for niche cases. Also, we're not aiming to have a library that can read and edit Powerpoint.
 
 ## Project Goals
 
