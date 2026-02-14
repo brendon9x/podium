@@ -1,9 +1,15 @@
 defmodule Podium.OPC.Package do
-  @moduledoc false
+  @moduledoc """
+  OPC (Open Packaging Convention) ZIP package read/write operations.
+
+  Reads and writes `.pptx` files as ZIP archives containing XML parts and
+  binary resources. Each part is represented as a `%{path => binary}` map.
+  """
 
   @doc """
   Reads a .pptx file and returns a map of %{path => binary}.
   """
+  @spec read(String.t()) :: {:ok, %{String.t() => binary()}} | {:error, term()}
   def read(path) do
     path = to_charlist(path)
 
@@ -24,6 +30,7 @@ defmodule Podium.OPC.Package do
   @doc """
   Reads the default.pptx template bundled with the library.
   """
+  @spec read_template() :: {:ok, %{String.t() => binary()}} | {:error, term()}
   def read_template do
     template_path = Application.app_dir(:podium, "priv/templates/default.pptx")
     read(template_path)
@@ -32,6 +39,7 @@ defmodule Podium.OPC.Package do
   @doc """
   Writes a map of %{path => binary} as a .pptx (ZIP) file.
   """
+  @spec write(%{String.t() => binary()}, String.t()) :: :ok | {:error, term()}
   def write(parts, output_path) when is_map(parts) do
     entries =
       Enum.map(parts, fn {name, binary} ->
@@ -47,6 +55,7 @@ defmodule Podium.OPC.Package do
   @doc """
   Writes a map of parts to an in-memory ZIP binary.
   """
+  @spec write_to_memory(%{String.t() => binary()}) :: {:ok, binary()} | {:error, term()}
   def write_to_memory(parts) when is_map(parts) do
     entries =
       Enum.map(parts, fn {name, binary} ->

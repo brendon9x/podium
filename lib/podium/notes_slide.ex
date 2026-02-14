@@ -1,5 +1,10 @@
 defmodule Podium.NotesSlide do
-  @moduledoc false
+  @moduledoc """
+  Speaker notes XML generation.
+
+  Generates notesSlide XML, notes master XML, and the associated theme
+  for the notes master (following the python-pptx pattern).
+  """
 
   alias Podium.OPC.Constants
   alias Podium.XML.Builder
@@ -12,6 +17,7 @@ defmodule Podium.NotesSlide do
   @doc """
   Generates the XML for a notes slide with the given text.
   """
+  @spec to_xml(String.t()) :: String.t()
   def to_xml(notes_text) do
     ns_a = Constants.ns(:a)
     ns_p = Constants.ns(:p)
@@ -65,6 +71,7 @@ defmodule Podium.NotesSlide do
   @doc """
   Returns the notes master XML (python-pptx template embedded verbatim).
   """
+  @spec master_xml() :: String.t()
   def master_xml do
     @notes_master_template
   end
@@ -72,6 +79,7 @@ defmodule Podium.NotesSlide do
   @doc """
   Returns the notes theme XML (separate theme for notes master, per python-pptx).
   """
+  @spec theme_xml() :: String.t()
   def theme_xml do
     @notes_theme_template
   end
@@ -79,6 +87,7 @@ defmodule Podium.NotesSlide do
   @doc """
   Generates the rels XML for the notes master (link to its own theme).
   """
+  @spec master_rels_xml(String.t()) :: String.t()
   def master_rels_xml(theme_partname \\ "../theme/theme2.xml") do
     alias Podium.OPC.Relationships
 

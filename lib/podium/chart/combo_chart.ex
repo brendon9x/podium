@@ -1,14 +1,30 @@
 defmodule Podium.Chart.ComboChart do
-  @moduledoc false
+  @moduledoc """
+  Multi-type combo chart combining different chart types in one plot area.
+
+  A combo chart splits the series from a single `ChartData` struct across
+  multiple plot specs, each with its own chart type and optional secondary axis.
+  """
 
   alias Podium.Chart.ChartType
 
   defmodule PlotSpec do
-    @moduledoc false
+    @moduledoc "Specification for a single plot within a combo chart."
     defstruct [:chart_type, :series_indices, secondary_axis: false]
+
+    @type t :: %__MODULE__{
+            chart_type: atom(),
+            series_indices: [non_neg_integer()],
+            secondary_axis: boolean()
+          }
   end
 
   defstruct [:chart_data, :plots]
+
+  @type t :: %__MODULE__{
+          chart_data: Podium.Chart.ChartData.t(),
+          plots: [PlotSpec.t()]
+        }
 
   @allowed_types [
     :column_clustered,
@@ -31,6 +47,14 @@ defmodule Podium.Chart.ComboChart do
   @bar_types [:bar_clustered, :bar_stacked, :bar_stacked_100]
   @column_types [:column_clustered, :column_stacked, :column_stacked_100]
 
+  @doc """
+  Creates a new combo chart from chart data and plot specifications.
+
+  Each plot spec is a `{chart_type, opts}` tuple where opts must include
+  `:series` (list of zero-based series indices). Validates that at least
+  2 plots exist, series indices don't overlap, and bar/column types aren't mixed.
+  """
+  @spec new(Podium.Chart.ChartData.t(), [{atom(), keyword()}]) :: t()
   def new(chart_data, plot_specs) do
     plots = Enum.map(plot_specs, &parse_plot_spec/1)
     validate!(chart_data, plots)

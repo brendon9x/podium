@@ -20,6 +20,11 @@ defmodule Podium.Chart.ChartData do
 
   defstruct categories: [], series: []
 
+  @type t :: %__MODULE__{
+          categories: [String.t()],
+          series: [Series.t()]
+        }
+
   defmodule Series do
     @moduledoc false
     defstruct [
@@ -38,11 +43,13 @@ defmodule Podium.Chart.ChartData do
   @doc """
   Creates a new empty ChartData.
   """
+  @spec new() :: t()
   def new, do: %__MODULE__{}
 
   @doc """
   Adds categories to the chart data.
   """
+  @spec add_categories(t(), [String.t()]) :: t()
   def add_categories(%__MODULE__{} = data, categories) when is_list(categories) do
     %{data | categories: categories}
   end
@@ -50,6 +57,7 @@ defmodule Podium.Chart.ChartData do
   @doc """
   Adds a series with a name and numeric values.
   """
+  @spec add_series(t(), String.t(), [number()], keyword()) :: t()
   def add_series(%__MODULE__{} = data, name, values, opts \\ []) when is_list(values) do
     unless Enum.all?(values, &is_number/1) do
       raise ArgumentError, "chart series values must be numbers, got: #{inspect(values)}"
@@ -78,6 +86,7 @@ defmodule Podium.Chart.ChartData do
   Returns the Excel worksheet reference for the categories range.
   e.g. "Sheet1!$A$2:$A$5" for 4 categories.
   """
+  @spec categories_ref(t()) :: String.t()
   def categories_ref(%__MODULE__{} = data) do
     count = length(data.categories)
     "Sheet1!$A$2:$A$#{count + 1}"
@@ -87,6 +96,7 @@ defmodule Podium.Chart.ChartData do
   Returns the Excel worksheet reference for a series name cell.
   e.g. "Sheet1!$B$1" for series index 0.
   """
+  @spec series_name_ref(t(), Series.t()) :: String.t()
   def series_name_ref(%__MODULE__{}, %Series{index: index}) do
     col = column_letter(index + 1)
     "Sheet1!$#{col}$1"
@@ -96,6 +106,7 @@ defmodule Podium.Chart.ChartData do
   Returns the Excel worksheet reference for a series values range.
   e.g. "Sheet1!$B$2:$B$5" for series index 0 with 4 values.
   """
+  @spec series_values_ref(t(), Series.t()) :: String.t()
   def series_values_ref(%__MODULE__{}, %Series{index: index, values: values}) do
     col = column_letter(index + 1)
     count = length(values)
@@ -106,6 +117,7 @@ defmodule Podium.Chart.ChartData do
   Converts a 1-based column number to an Excel column letter.
   1 -> "B", 2 -> "C", etc. (offset by 1 because column A is categories)
   """
+  @spec column_letter(pos_integer()) :: String.t()
   def column_letter(series_index) when series_index >= 1 and series_index <= 25 do
     # Column A (index 0) is categories, series start at B
     col_num = series_index + 1

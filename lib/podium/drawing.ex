@@ -1,5 +1,10 @@
 defmodule Podium.Drawing do
-  @moduledoc false
+  @moduledoc """
+  DrawingML fill and line XML fragment generation.
+
+  Provides `fill_xml/1` and `line_xml/1` to render fill and line properties
+  as OOXML fragments used inside shape, chart, and table elements.
+  """
 
   alias Podium.{Pattern, Units}
 
@@ -11,6 +16,11 @@ defmodule Podium.Drawing do
   - `{:gradient, stops, opts}` → gradient fill
   - `{:pattern, preset, opts}` → pattern fill
   """
+  @spec fill_xml(
+          Podium.fill()
+          | {:picture, String.t(), keyword()}
+          | {:picture_fill, non_neg_integer()}
+        ) :: String.t()
   def fill_xml(nil), do: "<a:noFill/>"
 
   def fill_xml(color) when is_binary(color),
@@ -67,6 +77,7 @@ defmodule Podium.Drawing do
   - `"000000"` → line with default width
   - `[color: "000000", width: {2, :pt}, dash_style: :dash]` → line with width and dash style
   """
+  @spec line_xml(Podium.line()) :: String.t()
   def line_xml(nil), do: ""
 
   def line_xml(color) when is_binary(color) do

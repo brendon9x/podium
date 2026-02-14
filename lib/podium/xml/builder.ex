@@ -1,9 +1,15 @@
 defmodule Podium.XML.Builder do
-  @moduledoc false
+  @moduledoc """
+  XML declaration and character escaping utilities.
+
+  Provides the standard XML declaration header and escapes special characters
+  (`&`, `<`, `>`, `"`, `'`) in text content for safe XML embedding.
+  """
 
   @doc """
   Returns the XML declaration header.
   """
+  @spec xml_declaration() :: String.t()
   def xml_declaration do
     ~s(<?xml version="1.0" encoding="UTF-8" standalone="yes"?>)
   end
@@ -11,6 +17,7 @@ defmodule Podium.XML.Builder do
   @doc """
   Escapes special characters for XML text content.
   """
+  @spec escape(String.t() | term()) :: String.t()
   def escape(text) when is_binary(text) do
     text
     |> String.replace("&", "&amp;")

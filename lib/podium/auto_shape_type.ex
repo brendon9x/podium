@@ -205,6 +205,13 @@ defmodule Podium.AutoShapeType do
     wave: {"wave", "Wave"}
   }
 
+  @doc """
+  Looks up the OOXML preset string and display name for a shape type atom.
+
+  Returns a `{prst_string, basename}` tuple. Raises `ArgumentError` if the
+  preset is not recognized.
+  """
+  @spec lookup(atom()) :: {String.t(), String.t()}
   def lookup(preset) when is_atom(preset) do
     case Map.get(@shape_types, preset) do
       nil ->
@@ -217,15 +224,21 @@ defmodule Podium.AutoShapeType do
     end
   end
 
+  @doc "Returns the OOXML preset geometry string for a shape type atom."
+  @spec prst(atom()) :: String.t()
   def prst(preset) when is_atom(preset) do
     {prst_val, _basename} = lookup(preset)
     prst_val
   end
 
+  @doc "Returns the display name for a shape type atom."
+  @spec basename(atom()) :: String.t()
   def basename(preset) when is_atom(preset) do
     {_prst_val, basename_val} = lookup(preset)
     basename_val
   end
 
+  @doc "Returns a sorted list of all available shape type atoms."
+  @spec all_types() :: [atom()]
   def all_types, do: Map.keys(@shape_types) |> Enum.sort()
 end

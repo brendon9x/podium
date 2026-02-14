@@ -20,6 +20,8 @@ defmodule Podium.Chart.XyChartData do
 
   defstruct series: []
 
+  @type t :: %__MODULE__{series: [Series.t()]}
+
   defmodule Series do
     @moduledoc false
 
@@ -37,8 +39,22 @@ defmodule Podium.Chart.XyChartData do
     ]
   end
 
+  @doc "Creates a new empty XyChartData."
+  @spec new() :: t()
   def new, do: %__MODULE__{}
 
+  @doc """
+  Adds a scatter series with paired X and Y values.
+
+  ## Options
+    * `:color` - series color (hex RGB string)
+    * `:pattern` - pattern fill keyword list
+    * `:marker` - marker options keyword list
+    * `:point_colors` - `%{index => color}` map for per-point colors
+    * `:point_formats` - `%{index => opts}` map for per-point formatting
+    * `:data_labels` - `%{index => opts}` map for per-point data labels
+  """
+  @spec add_series(t(), String.t(), [number()], [number()], keyword()) :: t()
   def add_series(%__MODULE__{} = data, name, x_values, y_values, opts \\ []) do
     unless length(x_values) == length(y_values) do
       raise ArgumentError,
@@ -72,17 +88,23 @@ defmodule Podium.Chart.XyChartData do
   # Excel layout: 2 columns per series (X, Y)
   # Series 0 -> cols A,B; Series 1 -> cols C,D
 
+  @doc "Returns the Excel cell reference for a series name."
+  @spec series_name_ref(t(), Series.t()) :: String.t()
   def series_name_ref(%__MODULE__{}, %Series{index: index}) do
     col = xy_column_letter(index * 2)
     "Sheet1!$#{col}$1"
   end
 
+  @doc "Returns the Excel range reference for a series' X values."
+  @spec series_x_values_ref(t(), Series.t()) :: String.t()
   def series_x_values_ref(%__MODULE__{}, %Series{index: index, x_values: x_values}) do
     col = xy_column_letter(index * 2)
     count = length(x_values)
     "Sheet1!$#{col}$2:$#{col}$#{count + 1}"
   end
 
+  @doc "Returns the Excel range reference for a series' Y values."
+  @spec series_y_values_ref(t(), Series.t()) :: String.t()
   def series_y_values_ref(%__MODULE__{}, %Series{index: index, y_values: y_values}) do
     col = xy_column_letter(index * 2 + 1)
     count = length(y_values)

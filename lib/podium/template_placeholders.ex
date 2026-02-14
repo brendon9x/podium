@@ -1,5 +1,12 @@
 defmodule Podium.TemplatePlaceholders do
-  @moduledoc false
+  @moduledoc """
+  Template layout position parsing for content placeholders.
+
+  Parses the bundled template's slide layout and master XMLs to extract
+  placeholder positions. These positions are used when placing charts or
+  tables into content placeholders via `Podium.set_chart_placeholder/6`
+  and `Podium.set_table_placeholder/5`.
+  """
 
   alias Podium.Placeholder
 
@@ -10,6 +17,7 @@ defmodule Podium.TemplatePlaceholders do
   only content placeholders (type: nil) are included — these are the ones that can
   accept charts and tables.
   """
+  @spec resolve_positions(map()) :: %{pos_integer() => %{atom() => map()}}
   def resolve_positions(template_parts) do
     master_positions = parse_master_positions(template_parts)
 

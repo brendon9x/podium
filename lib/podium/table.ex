@@ -1,5 +1,10 @@
 defmodule Podium.Table do
-  @moduledoc false
+  @moduledoc """
+  Table struct and XML generation for slide tables.
+
+  Tables are represented as a grid of rows and cells with optional column/row
+  spans, per-cell formatting, and table style booleans.
+  """
 
   alias Podium.OPC.Constants
   alias Podium.{Drawing, Text, Units}
@@ -16,6 +21,18 @@ defmodule Podium.Table do
     table_style: []
   ]
 
+  @type t :: %__MODULE__{
+          id: pos_integer() | nil,
+          x: non_neg_integer() | nil,
+          y: non_neg_integer() | nil,
+          width: non_neg_integer() | nil,
+          height: non_neg_integer() | nil,
+          rows: [[term()]],
+          col_widths: [non_neg_integer()] | nil,
+          row_heights: [non_neg_integer()] | nil,
+          table_style: keyword()
+        }
+
   @doc """
   Creates a new table from a list of rows (each row is a list of cell values).
 
@@ -25,6 +42,7 @@ defmodule Podium.Table do
     - Cell tuple with options: `{"text", col_span: 2, row_span: 2, fill: "FF0000", ...}`
     - `:merge` placeholder for cells covered by a merge span
   """
+  @spec new(pos_integer(), [[term()]], keyword()) :: t()
   def new(id, rows, opts) do
     col_widths =
       case Keyword.get(opts, :col_widths) do
@@ -54,6 +72,7 @@ defmodule Podium.Table do
   @doc """
   Generates the <p:graphicFrame> XML for a table.
   """
+  @spec to_xml(t()) :: String.t()
   def to_xml(%__MODULE__{} = table) do
     ns_a = Constants.ns(:a)
     ns_p = Constants.ns(:p)
