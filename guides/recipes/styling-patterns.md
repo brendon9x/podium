@@ -103,10 +103,8 @@ end
 Usage becomes concise and consistent:
 
 ```elixir
-{prs, slide} = Podium.add_slide(prs)
-
 slide =
-  slide
+  Podium.Slide.new()
   |> Acme.Slides.slide_title("Q4 2025 Performance")
   |> Acme.Slides.body_text([
     {["Revenue grew 35% year-over-year"], bullet: true},
@@ -115,7 +113,7 @@ slide =
   ])
   |> Acme.Slides.footnote("Source: Internal analytics, Jan 2026")
 
-prs = Podium.put_slide(prs, slide)
+prs = Podium.add_slide(prs, slide)
 ```
 
 ## Consistent Chart Styling
@@ -134,7 +132,7 @@ defmodule Acme.Charts do
     height: {5.5, :inches}
   ]
 
-  def add_chart(prs, slide, chart_type, chart_data, opts \\ []) do
+  def add_chart(slide, chart_type, chart_data, opts \\ []) do
     merged_opts =
       @default_chart_opts
       |> Keyword.merge(
@@ -145,7 +143,7 @@ defmodule Acme.Charts do
       )
       |> Keyword.merge(opts)
 
-    Podium.add_chart(prs, slide, chart_type, chart_data, merged_opts)
+    Podium.add_chart(slide, chart_type, chart_data, merged_opts)
   end
 
   def revenue_chart_data(categories, values) do
@@ -156,7 +154,7 @@ defmodule Acme.Charts do
 end
 ```
 
-Every chart created through `Acme.Charts.add_chart/5` gets the same position,
+Every chart created through `Acme.Charts.add_chart/4` gets the same position,
 legend style, and gridline settings:
 
 ```elixir
@@ -164,9 +162,9 @@ chart_data = Acme.Charts.revenue_chart_data(
   ["Q1", "Q2", "Q3", "Q4"],
   [12_500, 14_600, 15_200, 18_100])
 
-{prs, slide} = Acme.Charts.add_chart(prs, slide,
-  :column_clustered, chart_data,
-  title: "Quarterly Revenue")
+slide =
+  Acme.Charts.add_chart(slide, :column_clustered, chart_data,
+    title: "Quarterly Revenue")
 ```
 
 ## Professional Table Styling
@@ -230,31 +228,28 @@ defmodule Acme.ReportBuilder do
   alias Acme.{Charts, Slides, Tables}
 
   def title_slide(prs, title, subtitle) do
-    {prs, slide} = Podium.add_slide(prs, layout: :title_slide)
-
     slide =
-      slide
+      Podium.Slide.new(:title_slide)
       |> Podium.set_placeholder(:title, [
         [{title, bold: true, font_size: 44, color: Acme.Style.navy()}]
       ])
       |> Podium.set_placeholder(:subtitle, subtitle)
 
-    Podium.put_slide(prs, slide)
+    Podium.add_slide(prs, slide)
   end
 
   def data_slide(prs, title, chart_type, chart_data, table_headers, table_rows) do
-    {prs, slide} = Podium.add_slide(prs, layout: :two_content)
-    slide = Podium.set_placeholder(slide, :title, title)
+    slide =
+      Podium.Slide.new(:two_content)
+      |> Podium.set_placeholder(:title, title)
+      |> Podium.set_table_placeholder(prs, :left_content,
+        [table_headers | table_rows],
+        table_style: [first_row: true])
+      |> Podium.set_chart_placeholder(prs, :right_content,
+        chart_type, chart_data,
+        legend: :bottom, data_labels: [:percent])
 
-    {prs, slide} = Podium.set_table_placeholder(prs, slide, :left_content,
-      [table_headers | table_rows],
-      table_style: [first_row: true])
-
-    {prs, slide} = Podium.set_chart_placeholder(prs, slide, :right_content,
-      chart_type, chart_data,
-      legend: :bottom, data_labels: [:percent])
-
-    Podium.put_slide(prs, slide)
+    Podium.add_slide(prs, slide)
   end
 end
 ```
@@ -312,8 +307,8 @@ defmodule Acme.DarkTheme do
   @text_primary "EAEAEA"
   @text_secondary "A0A0A0"
 
-  def dark_slide(prs) do
-    Podium.add_slide(prs, background: @bg_dark)
+  def dark_slide() do
+    Podium.Slide.new(background: @bg_dark)
   end
 
   def dark_title(slide, text) do
@@ -342,17 +337,15 @@ end
 Usage:
 
 ```elixir
-{prs, slide} = Acme.DarkTheme.dark_slide(prs)
-
 slide =
-  slide
+  Acme.DarkTheme.dark_slide()
   |> Acme.DarkTheme.dark_title("Performance Dashboard")
   |> Acme.DarkTheme.dark_card("Revenue", "$18.2M (+35%)",
     x: {0.5, :inches}, y: {1.5, :inches}, width: {5.5, :inches})
   |> Acme.DarkTheme.dark_card("Customers", "1,247 active accounts",
     x: {6.5, :inches}, y: {1.5, :inches}, width: {5.5, :inches})
 
-prs = Podium.put_slide(prs, slide)
+prs = Podium.add_slide(prs, slide)
 ```
 
 ## Light Theme Example
@@ -367,8 +360,8 @@ defmodule Acme.LightTheme do
   @text_body "4B5563"
   @border_light "E5E7EB"
 
-  def light_slide(prs) do
-    Podium.add_slide(prs, background: @bg_white)
+  def light_slide() do
+    Podium.Slide.new(background: @bg_white)
   end
 
   def light_title(slide, text) do

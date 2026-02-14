@@ -3,10 +3,8 @@ File.mkdir_p!("demos/output")
 prs = Podium.new()
 
 # Slide 1: Shape gallery -- rectangle, oval, diamond, arrows, stars
-{prs, s1} = Podium.add_slide(prs)
-
 s1 =
-  s1
+  Podium.Slide.new()
   |> Podium.add_text_box(
     [{[{"Shape Gallery", bold: true, font_size: 28, color: "003366"}], alignment: :center}],
     x: {0.5, :inches},
@@ -84,13 +82,9 @@ s1 =
     text: "Decision"
   )
 
-prs = Podium.put_slide(prs, s1)
-
 # Slide 2: Fill showcase -- solid, gradient, pattern fills side-by-side
-{prs, s2} = Podium.add_slide(prs)
-
 s2 =
-  s2
+  Podium.Slide.new()
   |> Podium.add_text_box(
     [{[{"Fill Types", bold: true, font_size: 28, color: "003366"}], alignment: :center}],
     x: {0.5, :inches},
@@ -151,13 +145,9 @@ s2 =
     ]
   )
 
-prs = Podium.put_slide(prs, s2)
-
 # Slide 3: Line styles -- solid, dashed, gradient line on different shapes
-{prs, s3} = Podium.add_slide(prs)
-
 s3 =
-  s3
+  Podium.Slide.new()
   |> Podium.add_text_box(
     [{[{"Line Styles", bold: true, font_size: 28, color: "003366"}], alignment: :center}],
     x: {0.5, :inches},
@@ -217,13 +207,9 @@ s3 =
     line: [color: "CC9900", width: {2, :pt}, dash_style: :dash_dot]
   )
 
-prs = Podium.put_slide(prs, s3)
-
 # Slide 4: Shape with rich text inside + rotation
-{prs, s4} = Podium.add_slide(prs)
-
 s4 =
-  s4
+  Podium.Slide.new()
   |> Podium.add_text_box(
     [
       {[{"Text in Shapes & Rotation", bold: true, font_size: 28, color: "003366"}],
@@ -285,7 +271,12 @@ s4 =
     line: [color: "CC9900", width: {2, :pt}]
   )
 
-prs = Podium.put_slide(prs, s4)
+prs =
+  prs
+  |> Podium.add_slide(s1)
+  |> Podium.add_slide(s2)
+  |> Podium.add_slide(s3)
+  |> Podium.add_slide(s4)
+  |> Podium.save("demos/output/shapes-and-styling.pptx")
 
-:ok = Podium.save(prs, "demos/output/shapes-and-styling.pptx")
 IO.puts("Generated demos/output/shapes-and-styling.pptx")

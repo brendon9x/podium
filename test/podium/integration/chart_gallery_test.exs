@@ -21,7 +21,7 @@ defmodule Podium.Integration.ChartGalleryTest do
         |> ChartData.add_series("Product C", [55, 40, 35, 40], color: "A5A5A5")
 
       prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
+      slide = Podium.Slide.new()
 
       slide =
         Podium.add_text_box(slide, "Stacked 100% Charts",
@@ -32,39 +32,39 @@ defmodule Podium.Integration.ChartGalleryTest do
           font_size: 24
         )
 
-      {prs, slide} =
-        Podium.add_chart(prs, slide, :column_stacked_100, chart_data,
+      slide =
+        Podium.add_chart(slide, :column_stacked_100, chart_data,
           x: {0.5, :inches},
           y: {1.2, :inches},
           width: {5.9, :inches},
           height: {3, :inches}
         )
 
-      {prs, slide} =
-        Podium.add_chart(prs, slide, :bar_stacked_100, chart_data,
+      slide =
+        Podium.add_chart(slide, :bar_stacked_100, chart_data,
           x: {6.9, :inches},
           y: {1.2, :inches},
           width: {5.9, :inches},
           height: {3, :inches}
         )
 
-      {prs, slide} =
-        Podium.add_chart(prs, slide, :line_stacked_100, chart_data,
+      slide =
+        Podium.add_chart(slide, :line_stacked_100, chart_data,
           x: {0.5, :inches},
           y: {4.3, :inches},
           width: {5.9, :inches},
           height: {3, :inches}
         )
 
-      {prs, slide} =
-        Podium.add_chart(prs, slide, :line_markers_stacked_100, chart_data,
+      slide =
+        Podium.add_chart(slide, :line_markers_stacked_100, chart_data,
           x: {6.9, :inches},
           y: {4.3, :inches},
           width: {5.9, :inches},
           height: {3, :inches}
         )
 
-      prs = Podium.put_slide(prs, slide)
+      prs = Podium.add_slide(prs, slide)
 
       # Save to disk
       output_path = Path.join(@output_dir, "chart_gallery_stacked_100.pptx")
@@ -108,7 +108,7 @@ defmodule Podium.Integration.ChartGalleryTest do
         |> ChartData.add_series("Product C", [55, 40, 35, 40], color: "A5A5A5")
 
       prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
+      slide = Podium.Slide.new()
 
       slide =
         Podium.add_text_box(slide, "Area Charts",
@@ -119,31 +119,31 @@ defmodule Podium.Integration.ChartGalleryTest do
           font_size: 24
         )
 
-      {prs, slide} =
-        Podium.add_chart(prs, slide, :area, chart_data,
+      slide =
+        Podium.add_chart(slide, :area, chart_data,
           x: {0.5, :inches},
           y: {1.2, :inches},
           width: {3.78, :inches},
           height: {3, :inches}
         )
 
-      {prs, slide} =
-        Podium.add_chart(prs, slide, :area_stacked, chart_data,
+      slide =
+        Podium.add_chart(slide, :area_stacked, chart_data,
           x: {4.78, :inches},
           y: {1.2, :inches},
           width: {3.78, :inches},
           height: {3, :inches}
         )
 
-      {prs, slide} =
-        Podium.add_chart(prs, slide, :area_stacked_100, chart_data,
+      slide =
+        Podium.add_chart(slide, :area_stacked_100, chart_data,
           x: {9.05, :inches},
           y: {1.2, :inches},
           width: {3.78, :inches},
           height: {3, :inches}
         )
 
-      prs = Podium.put_slide(prs, slide)
+      prs = Podium.add_slide(prs, slide)
 
       # Save to disk
       output_path = Path.join(@output_dir, "chart_gallery_area.pptx")
@@ -177,7 +177,7 @@ defmodule Podium.Integration.ChartGalleryTest do
         |> ChartData.add_series("Fruit", [35, 25, 20, 20])
 
       prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
+      slide = Podium.Slide.new()
 
       slide =
         Podium.add_text_box(slide, "Pie Exploded & Doughnut Charts",
@@ -188,31 +188,31 @@ defmodule Podium.Integration.ChartGalleryTest do
           font_size: 24
         )
 
-      {prs, slide} =
-        Podium.add_chart(prs, slide, :pie_exploded, pie_data,
+      slide =
+        Podium.add_chart(slide, :pie_exploded, pie_data,
           x: {0.5, :inches},
           y: {1.2, :inches},
           width: {3.78, :inches},
           height: {3, :inches}
         )
 
-      {prs, slide} =
-        Podium.add_chart(prs, slide, :doughnut, pie_data,
+      slide =
+        Podium.add_chart(slide, :doughnut, pie_data,
           x: {4.78, :inches},
           y: {1.2, :inches},
           width: {3.78, :inches},
           height: {3, :inches}
         )
 
-      {prs, slide} =
-        Podium.add_chart(prs, slide, :doughnut_exploded, pie_data,
+      slide =
+        Podium.add_chart(slide, :doughnut_exploded, pie_data,
           x: {9.05, :inches},
           y: {1.2, :inches},
           width: {3.78, :inches},
           height: {3, :inches}
         )
 
-      prs = Podium.put_slide(prs, slide)
+      prs = Podium.add_slide(prs, slide)
 
       # Save to disk
       output_path = Path.join(@output_dir, "chart_gallery_pie_doughnut.pptx")
@@ -255,7 +255,7 @@ defmodule Podium.Integration.ChartGalleryTest do
         |> ChartData.add_series("Model B", [70, 65, 95, 70, 90], color: "ED7D31")
 
       prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
+      slide = Podium.Slide.new()
 
       slide =
         Podium.add_text_box(slide, "Line Stacked & Radar Charts",
@@ -266,47 +266,47 @@ defmodule Podium.Integration.ChartGalleryTest do
           font_size: 24
         )
 
-      {prs, slide} =
-        Podium.add_chart(prs, slide, :line_stacked, line_data,
+      slide =
+        Podium.add_chart(slide, :line_stacked, line_data,
           x: {0.5, :inches},
           y: {1.2, :inches},
           width: {5.9, :inches},
           height: {3, :inches}
         )
 
-      {prs, slide} =
-        Podium.add_chart(prs, slide, :line_markers_stacked, line_data,
+      slide =
+        Podium.add_chart(slide, :line_markers_stacked, line_data,
           x: {6.9, :inches},
           y: {1.2, :inches},
           width: {5.9, :inches},
           height: {3, :inches}
         )
 
-      {prs, slide} =
-        Podium.add_chart(prs, slide, :radar, radar_data,
+      slide =
+        Podium.add_chart(slide, :radar, radar_data,
           x: {0.5, :inches},
           y: {4.3, :inches},
           width: {3.78, :inches},
           height: {3, :inches}
         )
 
-      {prs, slide} =
-        Podium.add_chart(prs, slide, :radar_filled, radar_data,
+      slide =
+        Podium.add_chart(slide, :radar_filled, radar_data,
           x: {4.78, :inches},
           y: {4.3, :inches},
           width: {3.78, :inches},
           height: {3, :inches}
         )
 
-      {prs, slide} =
-        Podium.add_chart(prs, slide, :radar_markers, radar_data,
+      slide =
+        Podium.add_chart(slide, :radar_markers, radar_data,
           x: {9.05, :inches},
           y: {4.3, :inches},
           width: {3.78, :inches},
           height: {3, :inches}
         )
 
-      prs = Podium.put_slide(prs, slide)
+      prs = Podium.add_slide(prs, slide)
 
       # Save to disk
       output_path = Path.join(@output_dir, "chart_gallery_line_radar.pptx")
@@ -361,7 +361,7 @@ defmodule Podium.Integration.ChartGalleryTest do
         )
 
       prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
+      slide = Podium.Slide.new()
 
       slide =
         Podium.add_text_box(slide, "Scatter Charts",
@@ -372,39 +372,39 @@ defmodule Podium.Integration.ChartGalleryTest do
           font_size: 24
         )
 
-      {prs, slide} =
-        Podium.add_chart(prs, slide, :scatter, xy_data,
+      slide =
+        Podium.add_chart(slide, :scatter, xy_data,
           x: {0.5, :inches},
           y: {1.2, :inches},
           width: {5.9, :inches},
           height: {3, :inches}
         )
 
-      {prs, slide} =
-        Podium.add_chart(prs, slide, :scatter_lines, xy_data,
+      slide =
+        Podium.add_chart(slide, :scatter_lines, xy_data,
           x: {6.9, :inches},
           y: {1.2, :inches},
           width: {5.9, :inches},
           height: {3, :inches}
         )
 
-      {prs, slide} =
-        Podium.add_chart(prs, slide, :scatter_lines_no_markers, xy_data,
+      slide =
+        Podium.add_chart(slide, :scatter_lines_no_markers, xy_data,
           x: {0.5, :inches},
           y: {4.3, :inches},
           width: {5.9, :inches},
           height: {3, :inches}
         )
 
-      {prs, slide} =
-        Podium.add_chart(prs, slide, :scatter_smooth, xy_data,
+      slide =
+        Podium.add_chart(slide, :scatter_smooth, xy_data,
           x: {6.9, :inches},
           y: {4.3, :inches},
           width: {5.9, :inches},
           height: {3, :inches}
         )
 
-      prs = Podium.put_slide(prs, slide)
+      prs = Podium.add_slide(prs, slide)
 
       # Save to disk
       output_path = Path.join(@output_dir, "chart_gallery_scatter.pptx")
@@ -461,7 +461,7 @@ defmodule Podium.Integration.ChartGalleryTest do
         )
 
       prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
+      slide = Podium.Slide.new()
 
       slide =
         Podium.add_text_box(slide, "Scatter Smooth & Bubble Charts",
@@ -472,31 +472,31 @@ defmodule Podium.Integration.ChartGalleryTest do
           font_size: 24
         )
 
-      {prs, slide} =
-        Podium.add_chart(prs, slide, :scatter_smooth_no_markers, xy_data,
+      slide =
+        Podium.add_chart(slide, :scatter_smooth_no_markers, xy_data,
           x: {0.5, :inches},
           y: {1.2, :inches},
           width: {3.78, :inches},
           height: {3, :inches}
         )
 
-      {prs, slide} =
-        Podium.add_chart(prs, slide, :bubble, bubble_data,
+      slide =
+        Podium.add_chart(slide, :bubble, bubble_data,
           x: {4.78, :inches},
           y: {1.2, :inches},
           width: {3.78, :inches},
           height: {3, :inches}
         )
 
-      {prs, slide} =
-        Podium.add_chart(prs, slide, :bubble_3d, bubble_data,
+      slide =
+        Podium.add_chart(slide, :bubble_3d, bubble_data,
           x: {9.05, :inches},
           y: {1.2, :inches},
           width: {3.78, :inches},
           height: {3, :inches}
         )
 
-      prs = Podium.put_slide(prs, slide)
+      prs = Podium.add_slide(prs, slide)
 
       # Save to disk
       output_path = Path.join(@output_dir, "chart_gallery_scatter_bubble.pptx")

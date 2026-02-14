@@ -224,16 +224,18 @@ defmodule Podium.Chart.ScatterBubbleTest do
         XyChartData.new()
         |> XyChartData.add_series("Series 1", [1, 2, 3, 4], [10, 30, 20, 40])
 
-      prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
-
-      {prs, _slide} =
-        Podium.add_chart(prs, slide, :scatter, chart_data,
+      slide =
+        Podium.Slide.new()
+        |> Podium.add_chart(:scatter, chart_data,
           x: {1, :inches},
           y: {1, :inches},
           width: {6, :inches},
           height: {4, :inches}
         )
+
+      prs =
+        Podium.new()
+        |> Podium.add_slide(slide)
 
       {:ok, binary} = Podium.save_to_memory(prs)
       parts = Podium.Test.PptxHelpers.unzip_pptx_binary(binary)
@@ -254,16 +256,18 @@ defmodule Podium.Chart.ScatterBubbleTest do
         BubbleChartData.new()
         |> BubbleChartData.add_series("B1", [1, 2, 3], [10, 20, 30], [5, 15, 10])
 
-      prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
-
-      {prs, _slide} =
-        Podium.add_chart(prs, slide, :bubble, chart_data,
+      slide =
+        Podium.Slide.new()
+        |> Podium.add_chart(:bubble, chart_data,
           x: {1, :inches},
           y: {1, :inches},
           width: {6, :inches},
           height: {4, :inches}
         )
+
+      prs =
+        Podium.new()
+        |> Podium.add_slide(slide)
 
       {:ok, binary} = Podium.save_to_memory(prs)
       parts = Podium.Test.PptxHelpers.unzip_pptx_binary(binary)

@@ -8,7 +8,7 @@ defmodule Podium.Integration.ShapesConnectorsTest do
   describe "auto shapes gallery" do
     test "creates slide with multiple auto shapes in rows" do
       prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs, layout: :title_only)
+      slide = Podium.Slide.new(:title_only)
       slide = Podium.set_placeholder(slide, :title, "Auto Shapes Gallery")
 
       # Row 1
@@ -133,7 +133,7 @@ defmodule Podium.Integration.ShapesConnectorsTest do
           rotation: 45
         )
 
-      prs = Podium.put_slide(prs, slide)
+      prs = Podium.add_slide(prs, slide)
 
       # Save to disk for manual inspection
       output_path = Path.join(@output_dir, "shapes_gallery.pptx")
@@ -166,7 +166,7 @@ defmodule Podium.Integration.ShapesConnectorsTest do
   describe "connectors" do
     test "creates slide with straight, elbow, and curved connectors" do
       prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs, layout: :title_only)
+      slide = Podium.Slide.new(:title_only)
       slide = Podium.set_placeholder(slide, :title, "Connectors")
 
       # Pair 1: straight connector
@@ -253,7 +253,7 @@ defmodule Podium.Integration.ShapesConnectorsTest do
           line: [color: "5B9BD5", width: {2.5, :pt}]
         )
 
-      prs = Podium.put_slide(prs, slide)
+      prs = Podium.add_slide(prs, slide)
 
       # Save to disk for manual inspection
       output_path = Path.join(@output_dir, "connectors.pptx")
@@ -284,7 +284,7 @@ defmodule Podium.Integration.ShapesConnectorsTest do
   describe "text auto-size" do
     test "creates slide with different auto-size modes" do
       prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs, layout: :title_only)
+      slide = Podium.Slide.new(:title_only)
       slide = Podium.set_placeholder(slide, :title, "Text Auto-Size")
 
       # No auto-size (fixed)
@@ -358,7 +358,7 @@ defmodule Podium.Integration.ShapesConnectorsTest do
           auto_size: :text_to_fit_shape
         )
 
-      prs = Podium.put_slide(prs, slide)
+      prs = Podium.add_slide(prs, slide)
 
       # Save to disk for manual inspection
       output_path = Path.join(@output_dir, "text_auto_size.pptx")

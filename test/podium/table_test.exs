@@ -5,12 +5,9 @@ defmodule Podium.TableTest do
 
   describe "add_table/3" do
     test "adds a basic table to a slide" do
-      prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
-
       slide =
-        Podium.add_table(
-          slide,
+        Podium.Slide.new()
+        |> Podium.add_table(
           [
             ["Name", "Q1", "Q2"],
             ["Alice", "100", "200"],
@@ -24,7 +21,10 @@ defmodule Podium.TableTest do
 
       assert length(slide.tables) == 1
 
-      prs = Podium.put_slide(prs, slide)
+      prs =
+        Podium.new()
+        |> Podium.add_slide(slide)
+
       {:ok, binary} = Podium.save_to_memory(prs)
 
       parts = PptxHelpers.unzip_pptx_binary(binary)
@@ -44,11 +44,11 @@ defmodule Podium.TableTest do
     end
 
     test "table with rich text cells" do
-      {_prs, slide} = Podium.new() |> Podium.add_slide()
+      slide = Podium.Slide.new()
 
       # Rich text cells: each cell is a Text.normalize-compatible value.
       # A cell with formatting uses the list-of-paragraphs form:
-      #   [[{"Header", bold: true}]]  — one paragraph with one bold run
+      #   [[{"Header", bold: true}]]  -- one paragraph with one bold run
       slide =
         Podium.add_table(
           slide,
@@ -71,7 +71,7 @@ defmodule Podium.TableTest do
     end
 
     test "cell with solid fill" do
-      {_prs, slide} = Podium.new() |> Podium.add_slide()
+      slide = Podium.Slide.new()
 
       slide =
         Podium.add_table(
@@ -94,7 +94,7 @@ defmodule Podium.TableTest do
     end
 
     test "cell with borders" do
-      {_prs, slide} = Podium.new() |> Podium.add_slide()
+      slide = Podium.Slide.new()
 
       slide =
         Podium.add_table(
@@ -118,7 +118,7 @@ defmodule Podium.TableTest do
     end
 
     test "cell with padding" do
-      {_prs, slide} = Podium.new() |> Podium.add_slide()
+      slide = Podium.Slide.new()
 
       slide =
         Podium.add_table(
@@ -142,7 +142,7 @@ defmodule Podium.TableTest do
     end
 
     test "horizontal cell merge" do
-      {_prs, slide} = Podium.new() |> Podium.add_slide()
+      slide = Podium.Slide.new()
 
       slide =
         Podium.add_table(
@@ -165,7 +165,7 @@ defmodule Podium.TableTest do
     end
 
     test "vertical cell merge" do
-      {_prs, slide} = Podium.new() |> Podium.add_slide()
+      slide = Podium.Slide.new()
 
       slide =
         Podium.add_table(
@@ -188,7 +188,7 @@ defmodule Podium.TableTest do
     end
 
     test "cell with gradient fill" do
-      {_prs, slide} = Podium.new() |> Podium.add_slide()
+      slide = Podium.Slide.new()
 
       slide =
         Podium.add_table(
@@ -215,7 +215,7 @@ defmodule Podium.TableTest do
     end
 
     test "cell with pattern fill" do
-      {_prs, slide} = Podium.new() |> Podium.add_slide()
+      slide = Podium.Slide.new()
 
       slide =
         Podium.add_table(
@@ -240,7 +240,7 @@ defmodule Podium.TableTest do
     end
 
     test "default banding flags" do
-      {_prs, slide} = Podium.new() |> Podium.add_slide()
+      slide = Podium.Slide.new()
 
       slide =
         Podium.add_table(
@@ -259,7 +259,7 @@ defmodule Podium.TableTest do
     end
 
     test "custom banding flags" do
-      {_prs, slide} = Podium.new() |> Podium.add_slide()
+      slide = Podium.Slide.new()
 
       slide =
         Podium.add_table(
@@ -282,7 +282,7 @@ defmodule Podium.TableTest do
     end
 
     test "distributes column widths evenly" do
-      {_prs, slide} = Podium.new() |> Podium.add_slide()
+      slide = Podium.Slide.new()
 
       slide =
         Podium.add_table(
@@ -302,7 +302,7 @@ defmodule Podium.TableTest do
     end
 
     test "explicit col_widths produces correct gridCol elements" do
-      {_prs, slide} = Podium.new() |> Podium.add_slide()
+      slide = Podium.Slide.new()
 
       slide =
         Podium.add_table(
@@ -327,7 +327,7 @@ defmodule Podium.TableTest do
     end
 
     test "explicit row_heights produces correct tr h attributes" do
-      {_prs, slide} = Podium.new() |> Podium.add_slide()
+      slide = Podium.Slide.new()
 
       slide =
         Podium.add_table(
@@ -350,7 +350,7 @@ defmodule Podium.TableTest do
     end
 
     test "even distribution rounding: last column absorbs remainder" do
-      {_prs, slide} = Podium.new() |> Podium.add_slide()
+      slide = Podium.Slide.new()
 
       slide =
         Podium.add_table(
@@ -370,7 +370,7 @@ defmodule Podium.TableTest do
     end
 
     test "only col_widths provided, rows still even" do
-      {_prs, slide} = Podium.new() |> Podium.add_slide()
+      slide = Podium.Slide.new()
 
       slide =
         Podium.add_table(
@@ -394,7 +394,7 @@ defmodule Podium.TableTest do
     end
 
     test "raw EMU integers in col_widths work" do
-      {_prs, slide} = Podium.new() |> Podium.add_slide()
+      slide = Podium.Slide.new()
 
       slide =
         Podium.add_table(

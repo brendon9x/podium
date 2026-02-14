@@ -13,11 +13,10 @@ defmodule Podium.Integration.VideoEmbeddingTest do
 
       prs = Podium.new(title: "Video Demo", author: "Podium")
 
-      {prs, slide} = Podium.add_slide(prs, layout: :title_only)
-      slide = Podium.set_placeholder(slide, :title, "Video Embedding Demo")
-
-      {prs, slide} =
-        Podium.add_movie(prs, slide, video_binary,
+      slide =
+        Podium.Slide.new(:title_only)
+        |> Podium.set_placeholder(:title, "Video Embedding Demo")
+        |> Podium.add_movie(video_binary,
           x: {2.67, :inches},
           y: {1.5, :inches},
           width: {8, :inches},
@@ -25,10 +24,7 @@ defmodule Podium.Integration.VideoEmbeddingTest do
           mime_type: "video/mp4",
           poster_frame: poster_png
         )
-
-      slide =
-        Podium.add_text_box(
-          slide,
+        |> Podium.add_text_box(
           "Click play to watch the embedded video",
           x: {2.67, :inches},
           y: {6.2, :inches},
@@ -36,7 +32,7 @@ defmodule Podium.Integration.VideoEmbeddingTest do
           height: {0.5, :inches}
         )
 
-      prs = Podium.put_slide(prs, slide)
+      prs = Podium.add_slide(prs, slide)
 
       # Save to disk for manual inspection
       output_path = Path.join(@output_dir, "video_with_poster.pptx")
@@ -79,11 +75,10 @@ defmodule Podium.Integration.VideoEmbeddingTest do
       prs = Podium.new(title: "Video Demo", author: "Podium")
 
       # First slide with video
-      {prs, slide1} = Podium.add_slide(prs, layout: :title_only)
-      slide1 = Podium.set_placeholder(slide1, :title, "Video Embedding Demo")
-
-      {prs, slide1} =
-        Podium.add_movie(prs, slide1, video_binary,
+      slide1 =
+        Podium.Slide.new(:title_only)
+        |> Podium.set_placeholder(:title, "Video Embedding Demo")
+        |> Podium.add_movie(video_binary,
           x: {2.67, :inches},
           y: {1.5, :inches},
           width: {8, :inches},
@@ -92,14 +87,11 @@ defmodule Podium.Integration.VideoEmbeddingTest do
           poster_frame: poster_png
         )
 
-      prs = Podium.put_slide(prs, slide1)
-
       # Second slide with same video (should be deduped)
-      {prs, slide2} = Podium.add_slide(prs, layout: :title_only)
-      slide2 = Podium.set_placeholder(slide2, :title, "Same Video, Deduped")
-
-      {prs, slide2} =
-        Podium.add_movie(prs, slide2, video_binary,
+      slide2 =
+        Podium.Slide.new(:title_only)
+        |> Podium.set_placeholder(:title, "Same Video, Deduped")
+        |> Podium.add_movie(video_binary,
           x: {1.67, :inches},
           y: {1.5, :inches},
           width: {10, :inches},
@@ -108,7 +100,10 @@ defmodule Podium.Integration.VideoEmbeddingTest do
           poster_frame: poster_png
         )
 
-      prs = Podium.put_slide(prs, slide2)
+      prs =
+        prs
+        |> Podium.add_slide(slide1)
+        |> Podium.add_slide(slide2)
 
       # Save to disk for manual inspection
       output_path = Path.join(@output_dir, "video_dedup.pptx")

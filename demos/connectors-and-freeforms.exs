@@ -5,10 +5,8 @@ alias Podium.Freeform
 prs = Podium.new()
 
 # Slide 1: Flowchart -- 3 shapes with straight, elbow, curved connectors
-{prs, s1} = Podium.add_slide(prs)
-
 s1 =
-  s1
+  Podium.Slide.new()
   |> Podium.add_text_box(
     [{[{"Connectors", bold: true, font_size: 28, color: "003366"}], alignment: :center}],
     x: {0.5, :inches},
@@ -53,13 +51,9 @@ s1 =
     line: [color: "5B9BD5", width: {2, :pt}]
   )
 
-prs = Podium.put_slide(prs, s1)
-
 # Slide 2: Freeform triangle + star
-{prs, s2} = Podium.add_slide(prs)
-
 s2 =
-  s2
+  Podium.Slide.new()
   |> Podium.add_text_box(
     [{[{"Freeform Shapes", bold: true, font_size: 28, color: "003366"}], alignment: :center}],
     x: {0.5, :inches},
@@ -69,35 +63,50 @@ s2 =
   )
 
 # Triangle
-s2 =
+triangle =
   Freeform.new({2, :inches}, {5, :inches})
   |> Freeform.line_to({4, :inches}, {1.5, :inches})
   |> Freeform.line_to({6, :inches}, {5, :inches})
   |> Freeform.close()
-  |> Podium.add_freeform(s2, fill: "4472C4", line: "002060")
+
+s2 = Podium.add_freeform(s2, triangle, fill: "4472C4", line: "002060")
 
 # Star (5-pointed)
-s2 =
+star =
   Freeform.new({9.67, :inches}, {1.5, :inches})
   |> Freeform.add_line_segments(
     [
-      {{7.77, :inches}, {5.5, :inches}},
-      {{13.17, :inches}, {3, :inches}},
-      {{6.17, :inches}, {3, :inches}},
-      {{11.57, :inches}, {5.5, :inches}}
+      {{8.49, :inches}, {5.12, :inches}},
+      {{11.57, :inches}, {2.88, :inches}},
+      {{7.77, :inches}, {2.88, :inches}},
+      {{10.85, :inches}, {5.12, :inches}}
     ],
     close: true
   )
-  |> Podium.add_freeform(s2, fill: "FFD700", line: "CC9900")
 
-prs = Podium.put_slide(prs, s2)
+s2 = Podium.add_freeform(s2, star, fill: "FFD700", line: "CC9900")
 
 # Slide 3: Multi-contour freeform (square with cutout)
-{prs, s3} = Podium.add_slide(prs)
+# Square with square cutout
+cutout =
+  Freeform.new({4.67, :inches}, {1.5, :inches})
+  |> Freeform.add_line_segments([
+    {{8.67, :inches}, {1.5, :inches}},
+    {{8.67, :inches}, {5.5, :inches}},
+    {{4.67, :inches}, {5.5, :inches}}
+  ])
+  |> Freeform.close()
+  |> Freeform.move_to({5.67, :inches}, {2.5, :inches})
+  |> Freeform.add_line_segments([
+    {{7.67, :inches}, {2.5, :inches}},
+    {{7.67, :inches}, {4.5, :inches}},
+    {{5.67, :inches}, {4.5, :inches}}
+  ])
+  |> Freeform.close()
 
 s3 =
-  Podium.add_text_box(
-    s3,
+  Podium.Slide.new()
+  |> Podium.add_text_box(
     [
       {[{"Multi-Contour Freeform", bold: true, font_size: 28, color: "003366"}],
        alignment: :center}
@@ -107,26 +116,13 @@ s3 =
     width: {12, :inches},
     height: {0.7, :inches}
   )
+  |> Podium.add_freeform(cutout, fill: "70AD47")
 
-# Square with rectangular cutout
-s3 =
-  Freeform.new({3, :inches}, {1.5, :inches})
-  |> Freeform.add_line_segments([
-    {{9, :inches}, {1.5, :inches}},
-    {{9, :inches}, {5.5, :inches}},
-    {{3, :inches}, {5.5, :inches}}
-  ])
-  |> Freeform.close()
-  |> Freeform.move_to({5, :inches}, {2.5, :inches})
-  |> Freeform.add_line_segments([
-    {{7, :inches}, {2.5, :inches}},
-    {{7, :inches}, {4.5, :inches}},
-    {{5, :inches}, {4.5, :inches}}
-  ])
-  |> Freeform.close()
-  |> Podium.add_freeform(s3, fill: "70AD47")
+prs =
+  prs
+  |> Podium.add_slide(s1)
+  |> Podium.add_slide(s2)
+  |> Podium.add_slide(s3)
+  |> Podium.save("demos/output/connectors-and-freeforms.pptx")
 
-prs = Podium.put_slide(prs, s3)
-
-:ok = Podium.save(prs, "demos/output/connectors-and-freeforms.pptx")
 IO.puts("Generated demos/output/connectors-and-freeforms.pptx")

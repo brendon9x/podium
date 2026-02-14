@@ -5,7 +5,7 @@ defmodule Podium.ClickActionsTest do
 
   describe "navigation actions" do
     test ":next_slide produces correct action XML" do
-      {_prs, slide} = Podium.new() |> Podium.add_slide()
+      slide = Podium.Slide.new()
 
       slide =
         Podium.add_text_box(
@@ -25,7 +25,7 @@ defmodule Podium.ClickActionsTest do
     end
 
     test ":previous_slide produces correct action XML" do
-      {_prs, slide} = Podium.new() |> Podium.add_slide()
+      slide = Podium.Slide.new()
 
       slide =
         Podium.add_text_box(
@@ -44,7 +44,7 @@ defmodule Podium.ClickActionsTest do
     end
 
     test ":first_slide produces correct action XML" do
-      {_prs, slide} = Podium.new() |> Podium.add_slide()
+      slide = Podium.Slide.new()
 
       slide =
         Podium.add_text_box(
@@ -63,7 +63,7 @@ defmodule Podium.ClickActionsTest do
     end
 
     test ":last_slide produces correct action XML" do
-      {_prs, slide} = Podium.new() |> Podium.add_slide()
+      slide = Podium.Slide.new()
 
       slide =
         Podium.add_text_box(
@@ -82,7 +82,7 @@ defmodule Podium.ClickActionsTest do
     end
 
     test ":end_show produces correct action XML" do
-      {_prs, slide} = Podium.new() |> Podium.add_slide()
+      slide = Podium.Slide.new()
 
       slide =
         Podium.add_text_box(
@@ -101,12 +101,9 @@ defmodule Podium.ClickActionsTest do
     end
 
     test "navigation actions create NO external relationships in slide rels" do
-      prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
-
       slide =
-        Podium.add_text_box(
-          slide,
+        Podium.Slide.new()
+        |> Podium.add_text_box(
           [[{"Next", hyperlink: :next_slide}]],
           x: {1, :inches},
           y: {1, :inches},
@@ -114,7 +111,10 @@ defmodule Podium.ClickActionsTest do
           height: {0.5, :inches}
         )
 
-      prs = Podium.put_slide(prs, slide)
+      prs =
+        Podium.new()
+        |> Podium.add_slide(slide)
+
       {:ok, binary} = Podium.save_to_memory(prs)
 
       parts = PptxHelpers.unzip_pptx_binary(binary)
@@ -128,13 +128,11 @@ defmodule Podium.ClickActionsTest do
 
   describe "slide jump action" do
     test "{:slide, target} produces correct action XML with real r:id" do
-      prs = Podium.new()
-      {prs, slide1} = Podium.add_slide(prs)
-      {prs, slide2} = Podium.add_slide(prs)
+      slide1 = Podium.Slide.new()
 
       slide2 =
-        Podium.add_text_box(
-          slide2,
+        Podium.Slide.new()
+        |> Podium.add_text_box(
           [[{"Go to intro", hyperlink: {:slide, slide1}}]],
           x: {1, :inches},
           y: {1, :inches},
@@ -142,7 +140,11 @@ defmodule Podium.ClickActionsTest do
           height: {0.5, :inches}
         )
 
-      prs = Podium.put_slide(prs, slide2)
+      prs =
+        Podium.new()
+        |> Podium.add_slide(slide1)
+        |> Podium.add_slide(slide2)
+
       {:ok, binary} = Podium.save_to_memory(prs)
 
       parts = PptxHelpers.unzip_pptx_binary(binary)
@@ -155,13 +157,11 @@ defmodule Podium.ClickActionsTest do
     end
 
     test "slide rels contain RT.SLIDE relationship to target slide" do
-      prs = Podium.new()
-      {prs, slide1} = Podium.add_slide(prs)
-      {prs, slide2} = Podium.add_slide(prs)
+      slide1 = Podium.Slide.new()
 
       slide2 =
-        Podium.add_text_box(
-          slide2,
+        Podium.Slide.new()
+        |> Podium.add_text_box(
           [[{"Jump", hyperlink: {:slide, slide1}}]],
           x: {1, :inches},
           y: {1, :inches},
@@ -169,7 +169,11 @@ defmodule Podium.ClickActionsTest do
           height: {0.5, :inches}
         )
 
-      prs = Podium.put_slide(prs, slide2)
+      prs =
+        Podium.new()
+        |> Podium.add_slide(slide1)
+        |> Podium.add_slide(slide2)
+
       {:ok, binary} = Podium.save_to_memory(prs)
 
       parts = PptxHelpers.unzip_pptx_binary(binary)
@@ -182,12 +186,9 @@ defmodule Podium.ClickActionsTest do
 
   describe "mixed hyperlinks" do
     test "URL hyperlink and action on same slide both work" do
-      prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
-
       slide =
-        Podium.add_text_box(
-          slide,
+        Podium.Slide.new()
+        |> Podium.add_text_box(
           [
             [{"Visit site", hyperlink: "https://example.com"}],
             [{"Next slide", hyperlink: :next_slide}]
@@ -198,7 +199,10 @@ defmodule Podium.ClickActionsTest do
           height: {1, :inches}
         )
 
-      prs = Podium.put_slide(prs, slide)
+      prs =
+        Podium.new()
+        |> Podium.add_slide(slide)
+
       {:ok, binary} = Podium.save_to_memory(prs)
 
       parts = PptxHelpers.unzip_pptx_binary(binary)
@@ -223,7 +227,7 @@ defmodule Podium.ClickActionsTest do
     end
 
     test "collect_hyperlink_urls ignores {:slide, _} tuples" do
-      slide_target = %{index: 1}
+      slide_target = %{ref: "ref_123"}
 
       paragraphs =
         Podium.Text.normalize([
@@ -236,8 +240,8 @@ defmodule Podium.ClickActionsTest do
       assert urls == ["https://example.com"]
     end
 
-    test "collect_slide_jumps returns target indices" do
-      slide_target = %{index: 3}
+    test "collect_slide_jumps returns target refs" do
+      slide_target = Podium.Slide.new()
 
       paragraphs =
         Podium.Text.normalize([
@@ -248,20 +252,19 @@ defmodule Podium.ClickActionsTest do
 
       jumps = Podium.Text.collect_slide_jumps(paragraphs)
 
-      assert jumps == [3]
+      assert jumps == [slide_target.ref]
     end
   end
 
   describe "end-to-end" do
     test "click actions produce valid pptx" do
-      prs = Podium.new()
-      {prs, slide1} = Podium.add_slide(prs)
-      {prs, slide2} = Podium.add_slide(prs)
+      slide1 = Podium.Slide.new()
+      slide2 = Podium.Slide.new()
 
       slide1 =
         slide1
         |> Podium.add_text_box(
-          [[{"Next →", hyperlink: :next_slide}]],
+          [[{"Next ->", hyperlink: :next_slide}]],
           x: {1, :inches},
           y: {1, :inches},
           width: {2, :inches},
@@ -279,7 +282,7 @@ defmodule Podium.ClickActionsTest do
         Podium.add_text_box(
           slide2,
           [
-            [{"← Back", hyperlink: :previous_slide}],
+            [{"<- Back", hyperlink: :previous_slide}],
             [{"Go to Slide 1", hyperlink: {:slide, slide1}}]
           ],
           x: {1, :inches},
@@ -288,7 +291,11 @@ defmodule Podium.ClickActionsTest do
           height: {1, :inches}
         )
 
-      prs = prs |> Podium.put_slide(slide1) |> Podium.put_slide(slide2)
+      prs =
+        Podium.new()
+        |> Podium.add_slide(slide1)
+        |> Podium.add_slide(slide2)
+
       {:ok, binary} = Podium.save_to_memory(prs)
 
       parts = PptxHelpers.unzip_pptx_binary(binary)

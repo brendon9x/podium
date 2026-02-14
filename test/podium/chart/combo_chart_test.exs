@@ -139,18 +139,19 @@ defmodule Podium.Chart.ComboChartTest do
         {:line_markers, series: [2], secondary_axis: true}
       ]
 
-      prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
-
-      {prs, slide} =
-        Podium.add_combo_chart(prs, slide, data, plots,
+      slide =
+        Podium.Slide.new()
+        |> Podium.add_combo_chart(data, plots,
           x: {1, :inches},
           y: {1, :inches},
           width: {8, :inches},
           height: {5, :inches}
         )
 
-      prs = Podium.put_slide(prs, slide)
+      prs =
+        Podium.new()
+        |> Podium.add_slide(slide)
+
       {:ok, binary} = Podium.save_to_memory(prs)
       parts = PptxHelpers.unzip_pptx_binary(binary)
 
@@ -168,18 +169,19 @@ defmodule Podium.Chart.ComboChartTest do
         {:line, series: [2]}
       ]
 
-      prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
-
-      {prs, slide} =
-        Podium.add_combo_chart(prs, slide, data, plots,
+      slide =
+        Podium.Slide.new()
+        |> Podium.add_combo_chart(data, plots,
           x: {1, :inches},
           y: {1, :inches},
           width: {8, :inches},
           height: {5, :inches}
         )
 
-      prs = Podium.put_slide(prs, slide)
+      prs =
+        Podium.new()
+        |> Podium.add_slide(slide)
+
       {:ok, binary} = Podium.save_to_memory(prs)
       parts = PptxHelpers.unzip_pptx_binary(binary)
 
@@ -198,18 +200,19 @@ defmodule Podium.Chart.ComboChartTest do
         {:line, series: [2]}
       ]
 
-      prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
-
-      {prs, slide} =
-        Podium.add_combo_chart(prs, slide, data, plots,
+      slide =
+        Podium.Slide.new()
+        |> Podium.add_combo_chart(data, plots,
           x: {1, :inches},
           y: {1, :inches},
           width: {8, :inches},
           height: {5, :inches}
         )
 
-      prs = Podium.put_slide(prs, slide)
+      prs =
+        Podium.new()
+        |> Podium.add_slide(slide)
+
       {:ok, binary} = Podium.save_to_memory(prs)
       parts = PptxHelpers.unzip_pptx_binary(binary)
 
@@ -230,11 +233,9 @@ defmodule Podium.Chart.ComboChartTest do
         {:line_markers, series: [2], secondary_axis: true}
       ]
 
-      prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
-
-      {prs, slide} =
-        Podium.add_combo_chart(prs, slide, data, plots,
+      slide =
+        Podium.Slide.new()
+        |> Podium.add_combo_chart(data, plots,
           x: {1, :inches},
           y: {1, :inches},
           width: {8, :inches},
@@ -242,7 +243,10 @@ defmodule Podium.Chart.ComboChartTest do
           secondary_value_axis: [title: "Margin %", number_format: ~s(0"%")]
         )
 
-      prs = Podium.put_slide(prs, slide)
+      prs =
+        Podium.new()
+        |> Podium.add_slide(slide)
+
       {:ok, binary} = Podium.save_to_memory(prs)
       parts = PptxHelpers.unzip_pptx_binary(binary)
 
@@ -263,18 +267,19 @@ defmodule Podium.Chart.ComboChartTest do
         {:line, series: [2]}
       ]
 
-      prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
-
-      {prs, slide} =
-        Podium.add_combo_chart(prs, slide, data, plots,
+      slide =
+        Podium.Slide.new()
+        |> Podium.add_combo_chart(data, plots,
           x: {1, :inches},
           y: {1, :inches},
           width: {8, :inches},
           height: {5, :inches}
         )
 
-      prs = Podium.put_slide(prs, slide)
+      prs =
+        Podium.new()
+        |> Podium.add_slide(slide)
+
       {:ok, binary} = Podium.save_to_memory(prs)
       parts = PptxHelpers.unzip_pptx_binary(binary)
 
@@ -291,11 +296,9 @@ defmodule Podium.Chart.ComboChartTest do
         {:line, series: [2]}
       ]
 
-      prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
-
-      {prs, slide} =
-        Podium.add_combo_chart(prs, slide, data, plots,
+      slide =
+        Podium.Slide.new()
+        |> Podium.add_combo_chart(data, plots,
           x: {1, :inches},
           y: {1, :inches},
           width: {8, :inches},
@@ -304,7 +307,10 @@ defmodule Podium.Chart.ComboChartTest do
           legend: :bottom
         )
 
-      prs = Podium.put_slide(prs, slide)
+      prs =
+        Podium.new()
+        |> Podium.add_slide(slide)
+
       {:ok, binary} = Podium.save_to_memory(prs)
       parts = PptxHelpers.unzip_pptx_binary(binary)
 
@@ -323,11 +329,9 @@ defmodule Podium.Chart.ComboChartTest do
         {:line_markers, series: [2], secondary_axis: true}
       ]
 
-      prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
-
-      {prs, slide} =
-        Podium.add_combo_chart(prs, slide, data, plots,
+      slide =
+        Podium.Slide.new()
+        |> Podium.add_combo_chart(data, plots,
           x: {1, :inches},
           y: {1, :inches},
           width: {8, :inches},
@@ -335,7 +339,10 @@ defmodule Podium.Chart.ComboChartTest do
           title: "Combo Chart"
         )
 
-      prs = Podium.put_slide(prs, slide)
+      prs =
+        Podium.new()
+        |> Podium.add_slide(slide)
+
       {:ok, binary} = Podium.save_to_memory(prs)
       parts = PptxHelpers.unzip_pptx_binary(binary)
 
@@ -361,18 +368,14 @@ defmodule Podium.Chart.ComboChartTest do
         |> ChartData.add_series("S1", [1, 2, 3])
         |> ChartData.add_series("S2", [4, 5, 6])
 
-      prs = Podium.new()
-      {prs, slide1} = Podium.add_slide(prs)
-
-      {prs, slide1} =
-        Podium.add_chart(prs, slide1, :column_clustered, data,
+      slide1 =
+        Podium.Slide.new()
+        |> Podium.add_chart(:column_clustered, data,
           x: {1, :inches},
           y: {1, :inches},
           width: {6, :inches},
           height: {4, :inches}
         )
-
-      {prs, slide2} = Podium.add_slide(prs)
 
       combo_data =
         ChartData.new()
@@ -380,10 +383,9 @@ defmodule Podium.Chart.ComboChartTest do
         |> ChartData.add_series("A", [10, 20])
         |> ChartData.add_series("B", [30, 40])
 
-      {prs, slide2} =
-        Podium.add_combo_chart(
-          prs,
-          slide2,
+      slide2 =
+        Podium.Slide.new()
+        |> Podium.add_combo_chart(
           combo_data,
           [
             {:column_clustered, series: [0]},
@@ -395,8 +397,11 @@ defmodule Podium.Chart.ComboChartTest do
           height: {4, :inches}
         )
 
-      prs = Podium.put_slide(prs, slide1)
-      prs = Podium.put_slide(prs, slide2)
+      prs =
+        Podium.new()
+        |> Podium.add_slide(slide1)
+        |> Podium.add_slide(slide2)
+
       {:ok, binary} = Podium.save_to_memory(prs)
       parts = PptxHelpers.unzip_pptx_binary(binary)
 

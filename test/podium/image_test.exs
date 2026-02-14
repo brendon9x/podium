@@ -34,11 +34,9 @@ defmodule Podium.ImageTest do
 
   describe "add_image/4" do
     test "adds a PNG image to a slide" do
-      prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
-
-      {prs, slide} =
-        Podium.add_image(prs, slide, @png_binary,
+      slide =
+        Podium.Slide.new()
+        |> Podium.add_image(@png_binary,
           x: {1, :inches},
           y: {1, :inches},
           width: {3, :inches},
@@ -46,9 +44,11 @@ defmodule Podium.ImageTest do
         )
 
       assert length(slide.images) == 1
-      assert prs.next_image_index == 2
 
-      prs = Podium.put_slide(prs, slide)
+      prs =
+        Podium.new()
+        |> Podium.add_slide(slide)
+
       {:ok, binary} = Podium.save_to_memory(prs)
 
       parts = PptxHelpers.unzip_pptx_binary(binary)
@@ -72,16 +72,18 @@ defmodule Podium.ImageTest do
     end
 
     test "detects JPEG format" do
-      prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
-
-      {prs, _slide} =
-        Podium.add_image(prs, slide, @jpeg_binary,
+      slide =
+        Podium.Slide.new()
+        |> Podium.add_image(@jpeg_binary,
           x: {1, :inches},
           y: {1, :inches},
           width: {3, :inches},
           height: {2, :inches}
         )
+
+      prs =
+        Podium.new()
+        |> Podium.add_slide(slide)
 
       {:ok, binary} = Podium.save_to_memory(prs)
       parts = PptxHelpers.unzip_pptx_binary(binary)
@@ -90,16 +92,18 @@ defmodule Podium.ImageTest do
     end
 
     test "detects BMP format" do
-      prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
-
-      {prs, _slide} =
-        Podium.add_image(prs, slide, @bmp_binary,
+      slide =
+        Podium.Slide.new()
+        |> Podium.add_image(@bmp_binary,
           x: {1, :inches},
           y: {1, :inches},
           width: {3, :inches},
           height: {2, :inches}
         )
+
+      prs =
+        Podium.new()
+        |> Podium.add_slide(slide)
 
       {:ok, binary} = Podium.save_to_memory(prs)
       parts = PptxHelpers.unzip_pptx_binary(binary)
@@ -108,16 +112,18 @@ defmodule Podium.ImageTest do
     end
 
     test "detects GIF format" do
-      prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
-
-      {prs, _slide} =
-        Podium.add_image(prs, slide, @gif_binary,
+      slide =
+        Podium.Slide.new()
+        |> Podium.add_image(@gif_binary,
           x: {1, :inches},
           y: {1, :inches},
           width: {3, :inches},
           height: {2, :inches}
         )
+
+      prs =
+        Podium.new()
+        |> Podium.add_slide(slide)
 
       {:ok, binary} = Podium.save_to_memory(prs)
       parts = PptxHelpers.unzip_pptx_binary(binary)
@@ -126,16 +132,18 @@ defmodule Podium.ImageTest do
     end
 
     test "detects TIFF format" do
-      prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
-
-      {prs, _slide} =
-        Podium.add_image(prs, slide, @tiff_binary,
+      slide =
+        Podium.Slide.new()
+        |> Podium.add_image(@tiff_binary,
           x: {1, :inches},
           y: {1, :inches},
           width: {3, :inches},
           height: {2, :inches}
         )
+
+      prs =
+        Podium.new()
+        |> Podium.add_slide(slide)
 
       {:ok, binary} = Podium.save_to_memory(prs)
       parts = PptxHelpers.unzip_pptx_binary(binary)
@@ -144,17 +152,19 @@ defmodule Podium.ImageTest do
     end
 
     test "image cropping" do
-      prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
-
-      {prs, _slide} =
-        Podium.add_image(prs, slide, @png_binary,
+      slide =
+        Podium.Slide.new()
+        |> Podium.add_image(@png_binary,
           x: {1, :inches},
           y: {1, :inches},
           width: {3, :inches},
           height: {2, :inches},
           crop: [left: 10_000, top: 15_000, right: 20_000, bottom: 25_000]
         )
+
+      prs =
+        Podium.new()
+        |> Podium.add_slide(slide)
 
       {:ok, binary} = Podium.save_to_memory(prs)
       parts = PptxHelpers.unzip_pptx_binary(binary)
@@ -168,17 +178,19 @@ defmodule Podium.ImageTest do
     end
 
     test "90 degree rotation" do
-      prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
-
-      {prs, _slide} =
-        Podium.add_image(prs, slide, @png_binary,
+      slide =
+        Podium.Slide.new()
+        |> Podium.add_image(@png_binary,
           x: {1, :inches},
           y: {1, :inches},
           width: {3, :inches},
           height: {2, :inches},
           rotation: 90
         )
+
+      prs =
+        Podium.new()
+        |> Podium.add_slide(slide)
 
       {:ok, binary} = Podium.save_to_memory(prs)
       parts = PptxHelpers.unzip_pptx_binary(binary)
@@ -188,11 +200,10 @@ defmodule Podium.ImageTest do
     end
 
     test "rejects unsupported format" do
-      prs = Podium.new()
-      {_prs, slide} = Podium.add_slide(prs)
+      slide = Podium.Slide.new()
 
       assert_raise ArgumentError, ~r/unsupported image format/, fn ->
-        Podium.add_image(prs, slide, "not an image",
+        Podium.add_image(slide, "not an image",
           x: {1, :inches},
           y: {1, :inches},
           width: {3, :inches},
@@ -202,24 +213,24 @@ defmodule Podium.ImageTest do
     end
 
     test "different images get incrementing indices" do
-      prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
-
-      {prs, slide} =
-        Podium.add_image(prs, slide, @png_binary,
+      slide =
+        Podium.Slide.new()
+        |> Podium.add_image(@png_binary,
           x: {1, :inches},
           y: {1, :inches},
           width: {2, :inches},
           height: {2, :inches}
         )
-
-      {prs, _slide} =
-        Podium.add_image(prs, slide, @jpeg_binary,
+        |> Podium.add_image(@jpeg_binary,
           x: {5, :inches},
           y: {1, :inches},
           width: {2, :inches},
           height: {2, :inches}
         )
+
+      prs =
+        Podium.new()
+        |> Podium.add_slide(slide)
 
       {:ok, binary} = Podium.save_to_memory(prs)
       parts = PptxHelpers.unzip_pptx_binary(binary)
@@ -231,14 +242,16 @@ defmodule Podium.ImageTest do
     test "PNG auto-scale uses native size at 72 DPI" do
       # Our test PNG is 1x1 pixel with no pHYs chunk, so 72 DPI default
       # 914400 * 1 / 72 = 12700 EMU
-      prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
-
-      {prs, _slide} =
-        Podium.add_image(prs, slide, @png_binary,
+      slide =
+        Podium.Slide.new()
+        |> Podium.add_image(@png_binary,
           x: {1, :inches},
           y: {1, :inches}
         )
+
+      prs =
+        Podium.new()
+        |> Podium.add_slide(slide)
 
       {:ok, binary} = Podium.save_to_memory(prs)
       parts = PptxHelpers.unzip_pptx_binary(binary)
@@ -249,16 +262,17 @@ defmodule Podium.ImageTest do
     end
 
     test "width-only auto-calculates height preserving aspect ratio" do
-      prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
-
-      # 1x1 pixel, so width = height when preserving aspect ratio
-      {prs, _slide} =
-        Podium.add_image(prs, slide, @png_binary,
+      slide =
+        Podium.Slide.new()
+        |> Podium.add_image(@png_binary,
           x: {1, :inches},
           y: {1, :inches},
           width: {2, :inches}
         )
+
+      prs =
+        Podium.new()
+        |> Podium.add_slide(slide)
 
       {:ok, binary} = Podium.save_to_memory(prs)
       parts = PptxHelpers.unzip_pptx_binary(binary)
@@ -271,15 +285,17 @@ defmodule Podium.ImageTest do
     end
 
     test "height-only auto-calculates width preserving aspect ratio" do
-      prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
-
-      {prs, _slide} =
-        Podium.add_image(prs, slide, @png_binary,
+      slide =
+        Podium.Slide.new()
+        |> Podium.add_image(@png_binary,
           x: {1, :inches},
           y: {1, :inches},
           height: {3, :inches}
         )
+
+      prs =
+        Podium.new()
+        |> Podium.add_slide(slide)
 
       {:ok, binary} = Podium.save_to_memory(prs)
       parts = PptxHelpers.unzip_pptx_binary(binary)
@@ -291,16 +307,18 @@ defmodule Podium.ImageTest do
     end
 
     test "EMF format detection" do
-      prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
-
-      {prs, _slide} =
-        Podium.add_image(prs, slide, @emf_binary,
+      slide =
+        Podium.Slide.new()
+        |> Podium.add_image(@emf_binary,
           x: {1, :inches},
           y: {1, :inches},
           width: {3, :inches},
           height: {2, :inches}
         )
+
+      prs =
+        Podium.new()
+        |> Podium.add_slide(slide)
 
       {:ok, binary} = Podium.save_to_memory(prs)
       parts = PptxHelpers.unzip_pptx_binary(binary)
@@ -310,16 +328,18 @@ defmodule Podium.ImageTest do
     end
 
     test "WMF format detection" do
-      prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
-
-      {prs, _slide} =
-        Podium.add_image(prs, slide, @wmf_binary,
+      slide =
+        Podium.Slide.new()
+        |> Podium.add_image(@wmf_binary,
           x: {1, :inches},
           y: {1, :inches},
           width: {3, :inches},
           height: {2, :inches}
         )
+
+      prs =
+        Podium.new()
+        |> Podium.add_slide(slide)
 
       {:ok, binary} = Podium.save_to_memory(prs)
       parts = PptxHelpers.unzip_pptx_binary(binary)
@@ -329,11 +349,10 @@ defmodule Podium.ImageTest do
     end
 
     test "TIFF without explicit size raises" do
-      prs = Podium.new()
-      {_prs, slide} = Podium.add_slide(prs)
+      slide = Podium.Slide.new()
 
       assert_raise ArgumentError, ~r/explicit :width and :height are required for TIFF/, fn ->
-        Podium.add_image(prs, slide, @tiff_binary,
+        Podium.add_image(slide, @tiff_binary,
           x: {1, :inches},
           y: {1, :inches}
         )
@@ -341,11 +360,10 @@ defmodule Podium.ImageTest do
     end
 
     test "EMF without explicit size raises" do
-      prs = Podium.new()
-      {_prs, slide} = Podium.add_slide(prs)
+      slide = Podium.Slide.new()
 
       assert_raise ArgumentError, ~r/explicit :width and :height are required for EMF/, fn ->
-        Podium.add_image(prs, slide, @emf_binary,
+        Podium.add_image(slide, @emf_binary,
           x: {1, :inches},
           y: {1, :inches}
         )
@@ -353,17 +371,19 @@ defmodule Podium.ImageTest do
     end
 
     test "image masking with ellipse shape" do
-      prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
-
-      {prs, _slide} =
-        Podium.add_image(prs, slide, @png_binary,
+      slide =
+        Podium.Slide.new()
+        |> Podium.add_image(@png_binary,
           x: {1, :inches},
           y: {1, :inches},
           width: {3, :inches},
           height: {3, :inches},
           shape: :ellipse
         )
+
+      prs =
+        Podium.new()
+        |> Podium.add_slide(slide)
 
       {:ok, binary} = Podium.save_to_memory(prs)
       parts = PptxHelpers.unzip_pptx_binary(binary)
@@ -374,16 +394,18 @@ defmodule Podium.ImageTest do
     end
 
     test "image masking defaults to rect" do
-      prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
-
-      {prs, _slide} =
-        Podium.add_image(prs, slide, @png_binary,
+      slide =
+        Podium.Slide.new()
+        |> Podium.add_image(@png_binary,
           x: {1, :inches},
           y: {1, :inches},
           width: {3, :inches},
           height: {3, :inches}
         )
+
+      prs =
+        Podium.new()
+        |> Podium.add_slide(slide)
 
       {:ok, binary} = Podium.save_to_memory(prs)
       parts = PptxHelpers.unzip_pptx_binary(binary)
@@ -393,17 +415,19 @@ defmodule Podium.ImageTest do
     end
 
     test "image masking with raw string preset" do
-      prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
-
-      {prs, _slide} =
-        Podium.add_image(prs, slide, @png_binary,
+      slide =
+        Podium.Slide.new()
+        |> Podium.add_image(@png_binary,
           x: {1, :inches},
           y: {1, :inches},
           width: {3, :inches},
           height: {3, :inches},
           shape: "star5"
         )
+
+      prs =
+        Podium.new()
+        |> Podium.add_slide(slide)
 
       {:ok, binary} = Podium.save_to_memory(prs)
       parts = PptxHelpers.unzip_pptx_binary(binary)
@@ -413,27 +437,24 @@ defmodule Podium.ImageTest do
     end
 
     test "duplicate images are deduplicated" do
-      prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
-
-      {prs, slide} =
-        Podium.add_image(prs, slide, @png_binary,
+      slide =
+        Podium.Slide.new()
+        |> Podium.add_image(@png_binary,
           x: {1, :inches},
           y: {1, :inches},
           width: {2, :inches},
           height: {2, :inches}
         )
-
-      {prs, _slide} =
-        Podium.add_image(prs, slide, @png_binary,
+        |> Podium.add_image(@png_binary,
           x: {5, :inches},
           y: {1, :inches},
           width: {2, :inches},
           height: {2, :inches}
         )
 
-      # next_image_index should NOT have incremented for the dup
-      assert prs.next_image_index == 2
+      prs =
+        Podium.new()
+        |> Podium.add_slide(slide)
 
       {:ok, binary} = Podium.save_to_memory(prs)
       parts = PptxHelpers.unzip_pptx_binary(binary)

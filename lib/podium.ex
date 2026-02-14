@@ -2,9 +2,28 @@ defmodule Podium do
   @moduledoc """
   Elixir library for generating PowerPoint (.pptx) files with editable charts.
 
-  Podium provides a functional API for building presentations programmatically.
-  Create a presentation with `new/1`, add slides with `add_slide/2`, then populate
-  them with text boxes, charts, images, tables, and shapes.
+  Podium provides a pipe-friendly API for building presentations programmatically.
+  Create slides independently with `Podium.Slide.new/1`, populate them with
+  content using `add_chart/4`, `add_image/3`, `add_text_box/3`, etc., then
+  add them to a presentation with `add_slide/2` and save.
+
+  ## Example
+
+      alias Podium.Chart.ChartData
+
+      data =
+        ChartData.new()
+        |> ChartData.add_categories(["Q1", "Q2", "Q3"])
+        |> ChartData.add_series("Revenue", [100, 200, 300])
+
+      slide =
+        Podium.Slide.new(:title_content)
+        |> Podium.add_chart(:column_clustered, data, x: {1, :inches}, y: {2, :inches}, width: {8, :inches}, height: {4, :inches})
+        |> Podium.add_text_box("Hello", x: {1, :inches}, y: {6, :inches}, width: {4, :inches}, height: {1, :inches})
+
+      Podium.new()
+      |> Podium.add_slide(slide)
+      |> Podium.save("output.pptx")
 
   ## Text Formatting Reference
 
@@ -121,7 +140,7 @@ defmodule Podium do
           | :bubble_3d
   @type connector_type :: :straight | :elbow | :curved
 
-  alias Podium.{Placeholder, Presentation, Slide}
+  alias Podium.{Presentation, Slide}
 
   @doc """
   Creates a new presentation.
@@ -150,23 +169,19 @@ defmodule Podium do
   end
 
   @doc """
-  Adds a slide to the presentation.
-  Returns `{presentation, slide}`.
+  Adds a slide to the presentation. Returns the updated presentation.
 
-  ## Options
-    * `:layout` - layout atom or integer index (1..11)
-    * `:layout_index` - integer layout index (legacy, prefer `:layout`)
+  Slides are created independently with `Podium.Slide.new/1`, populated
+  with content, then added to the presentation.
 
-  ## Available layouts
-    * `:title_slide` (1), `:title_content` (2), `:section_header` (3),
-      `:two_content` (4), `:comparison` (5), `:title_only` (6),
-      `:blank` (7), `:content_caption` (8), `:picture_caption` (9),
-      `:title_vertical_text` (10), `:vertical_title_text` (11)
+  ## Example
+
+      slide = Podium.Slide.new(:title_content)
+      prs = Podium.add_slide(prs, slide)
   """
-  @spec add_slide(Podium.Presentation.t(), keyword()) ::
-          {Podium.Presentation.t(), Podium.Slide.t()}
-  def add_slide(prs, opts \\ []) do
-    Presentation.add_slide(prs, opts)
+  @spec add_slide(Podium.Presentation.t(), Podium.Slide.t()) :: Podium.Presentation.t()
+  def add_slide(prs, slide) do
+    Presentation.add_slide(prs, slide)
   end
 
   @doc """
@@ -245,7 +260,7 @@ defmodule Podium do
   end
 
   @doc """
-  Adds a chart to a slide. Returns `{presentation, slide}`.
+  Adds a chart to a slide. Returns the updated slide.
 
   ## Parameters
     * `chart_type` - chart type atom (see `Podium.Chart.ChartType` for all types)
@@ -274,21 +289,20 @@ defmodule Podium do
       `:reverse`, `:crosses`, `:label_rotation`, `:major_tick_mark`, `:minor_tick_mark`
   """
   @spec add_chart(
-          Podium.Presentation.t(),
           Podium.Slide.t(),
           chart_type(),
           Podium.Chart.ChartData.t()
           | Podium.Chart.XyChartData.t()
           | Podium.Chart.BubbleChartData.t(),
           keyword()
-        ) :: {Podium.Presentation.t(), Podium.Slide.t()}
-  def add_chart(prs, slide, chart_type, chart_data, opts) do
-    Presentation.add_chart(prs, slide, chart_type, chart_data, opts)
+        ) :: Podium.Slide.t()
+  def add_chart(slide, chart_type, chart_data, opts) do
+    Slide.add_chart(slide, chart_type, chart_data, opts)
   end
 
   @doc """
   Adds a combo chart (multiple chart types in one plot area) to a slide.
-  Returns `{presentation, slide}`.
+  Returns the updated slide.
 
   ## Parameters
     * `chart_data` - `%ChartData{}` with shared categories and series
@@ -308,18 +322,17 @@ defmodule Podium do
     * `:secondary_value_axis` - secondary value axis options (same keys as `:value_axis`)
   """
   @spec add_combo_chart(
-          Podium.Presentation.t(),
           Podium.Slide.t(),
           Podium.Chart.ChartData.t(),
           [{chart_type(), keyword()}],
           keyword()
-        ) :: {Podium.Presentation.t(), Podium.Slide.t()}
-  def add_combo_chart(prs, slide, chart_data, plots, opts) do
-    Presentation.add_combo_chart(prs, slide, chart_data, plots, opts)
+        ) :: Podium.Slide.t()
+  def add_combo_chart(slide, chart_data, plots, opts) do
+    Slide.add_combo_chart(slide, chart_data, plots, opts)
   end
 
   @doc """
-  Adds an image to a slide. Returns `{presentation, slide}`.
+  Adds an image to a slide. Returns the updated slide.
 
   Image format is auto-detected from magic bytes. Supported formats:
   PNG, JPEG, BMP, GIF, TIFF, EMF, WMF.
@@ -337,14 +350,13 @@ defmodule Podium do
       `:star6`, `:star8`, `:heart`, `:triangle`, `:hexagon`, `:octagon`, or a preset
       geometry string (default `"rect"`)
   """
-  @spec add_image(Podium.Presentation.t(), Podium.Slide.t(), binary(), keyword()) ::
-          {Podium.Presentation.t(), Podium.Slide.t()}
-  def add_image(prs, slide, binary, opts) do
-    Presentation.add_image(prs, slide, binary, opts)
+  @spec add_image(Podium.Slide.t(), binary(), keyword()) :: Podium.Slide.t()
+  def add_image(slide, binary, opts) do
+    Slide.add_image(slide, binary, opts)
   end
 
   @doc """
-  Adds a text box with a picture (blip) fill to a slide. Returns `{presentation, slide}`.
+  Adds a text box with a picture (blip) fill to a slide. Returns the updated slide.
 
   ## Options (required)
     * `:x`, `:y`, `:width`, `:height` - position and size
@@ -354,14 +366,13 @@ defmodule Podium do
     * All other text box options (`:rotation`, `:margin_*`, `:anchor`, etc.)
   """
   @spec add_picture_fill_text_box(
-          Podium.Presentation.t(),
           Podium.Slide.t(),
           rich_text(),
           binary(),
           keyword()
-        ) :: {Podium.Presentation.t(), Podium.Slide.t()}
-  def add_picture_fill_text_box(prs, slide, text, image_binary, opts) do
-    Presentation.add_picture_fill_text_box(prs, slide, text, image_binary, opts)
+        ) :: Podium.Slide.t()
+  def add_picture_fill_text_box(slide, text, image_binary, opts) do
+    Slide.add_picture_fill_text_box(slide, text, image_binary, opts)
   end
 
   @doc """
@@ -373,13 +384,13 @@ defmodule Podium do
     * `:line` - line color or line opts
     * `:rotation` - rotation in degrees
   """
-  @spec add_freeform(Podium.Freeform.t(), Podium.Slide.t(), keyword()) :: Podium.Slide.t()
-  def add_freeform(%Podium.Freeform{} = fb, slide, opts \\ []) do
+  @spec add_freeform(Podium.Slide.t(), Podium.Freeform.t(), keyword()) :: Podium.Slide.t()
+  def add_freeform(slide, %Podium.Freeform{} = fb, opts \\ []) do
     Slide.add_freeform(slide, fb, opts)
   end
 
   @doc """
-  Adds a video (movie) to a slide. Returns `{presentation, slide}`.
+  Adds a video (movie) to a slide. Returns the updated slide.
 
   All position/size options are required (no auto-scaling for video).
 
@@ -390,10 +401,9 @@ defmodule Podium do
     * `:mime_type` - MIME type string (default `"video/unknown"`)
     * `:poster_frame` - poster frame image binary (default: 1x1 transparent PNG)
   """
-  @spec add_movie(Podium.Presentation.t(), Podium.Slide.t(), binary(), keyword()) ::
-          {Podium.Presentation.t(), Podium.Slide.t()}
-  def add_movie(prs, slide, binary, opts) do
-    Presentation.add_movie(prs, slide, binary, opts)
+  @spec add_movie(Podium.Slide.t(), binary(), keyword()) :: Podium.Slide.t()
+  def add_movie(slide, binary, opts) do
+    Slide.add_video(slide, binary, opts)
   end
 
   @doc """
@@ -441,24 +451,23 @@ defmodule Podium do
   """
   @spec set_placeholder(Podium.Slide.t(), atom(), rich_text()) :: Podium.Slide.t()
   def set_placeholder(slide, name, text) do
-    layout = layout_atom(slide.layout_index)
-    ph = Placeholder.new(layout, name, text)
+    layout = Slide.layout_atom(slide.layout_index)
+    ph = Podium.Placeholder.new(layout, name, text)
     %{slide | placeholders: slide.placeholders ++ [ph]}
   end
 
   @doc """
-  Sets a picture placeholder on a slide. Returns `{presentation, slide}`.
+  Sets a picture placeholder on a slide. Returns the updated slide.
 
   Only works on layouts with picture placeholders (e.g. `:picture_caption`).
   """
-  @spec set_picture_placeholder(Podium.Presentation.t(), Podium.Slide.t(), atom(), binary()) ::
-          {Podium.Presentation.t(), Podium.Slide.t()}
-  def set_picture_placeholder(prs, slide, name, binary) do
-    Presentation.set_picture_placeholder(prs, slide, name, binary)
+  @spec set_picture_placeholder(Podium.Slide.t(), atom(), binary()) :: Podium.Slide.t()
+  def set_picture_placeholder(slide, name, binary) do
+    Slide.set_picture_placeholder(slide, name, binary)
   end
 
   @doc """
-  Places a chart into a content placeholder. Returns `{presentation, slide}`.
+  Places a chart into a content placeholder. Returns the updated slide.
 
   The placeholder must be a content placeholder (type: nil) — e.g. `:content` on
   `:title_content`, or `:left_content`/`:right_content` on `:two_content`.
@@ -471,13 +480,13 @@ defmodule Podium do
           chart_type(),
           Podium.Chart.ChartData.t(),
           keyword()
-        ) :: {Podium.Presentation.t(), Podium.Slide.t()}
+        ) :: Podium.Slide.t()
   def set_chart_placeholder(prs, slide, name, chart_type, chart_data, opts \\ []) do
     Presentation.set_chart_placeholder(prs, slide, name, chart_type, chart_data, opts)
   end
 
   @doc """
-  Places a table into a content placeholder. Returns `{presentation, slide}`.
+  Places a table into a content placeholder. Returns the updated slide.
 
   The placeholder must be a content placeholder (type: nil).
   Position and size are inherited from the template layout.
@@ -488,7 +497,7 @@ defmodule Podium do
           atom(),
           [[term()]],
           keyword()
-        ) :: {Podium.Presentation.t(), Podium.Slide.t()}
+        ) :: Podium.Slide.t()
   def set_table_placeholder(prs, slide, name, rows, opts \\ []) do
     Presentation.set_table_placeholder(prs, slide, name, rows, opts)
   end
@@ -504,22 +513,6 @@ defmodule Podium do
   @spec set_footer(Podium.Presentation.t(), keyword()) :: Podium.Presentation.t()
   def set_footer(prs, opts) do
     Presentation.set_footer(prs, opts)
-  end
-
-  defp layout_atom(1), do: :title_slide
-  defp layout_atom(2), do: :title_content
-  defp layout_atom(3), do: :section_header
-  defp layout_atom(4), do: :two_content
-  defp layout_atom(5), do: :comparison
-  defp layout_atom(6), do: :title_only
-  defp layout_atom(7), do: :blank
-  defp layout_atom(8), do: :content_caption
-  defp layout_atom(9), do: :picture_caption
-  defp layout_atom(10), do: :title_vertical_text
-  defp layout_atom(11), do: :vertical_title_text
-
-  defp layout_atom(n) when is_integer(n) do
-    raise ArgumentError, "unknown layout index #{n}; expected 1..11"
   end
 
   @doc """
@@ -555,7 +548,7 @@ defmodule Podium do
   end
 
   @doc """
-  Replaces a slide in the presentation with an updated version.
+  Replaces a slide in the presentation with an updated version (matched by ref).
   """
   @spec put_slide(Podium.Presentation.t(), Podium.Slide.t()) :: Podium.Presentation.t()
   def put_slide(prs, slide) do

@@ -2,11 +2,25 @@ defmodule Podium.Slide do
   @moduledoc """
   Represents a single slide in a presentation.
 
-  A slide contains shapes, charts, images, tables, connectors, videos, and
-  placeholders. Shapes and content are added through the functions in this
-  module (or via the `Podium` facade).
+  Slides are created independently with `new/1` or `new/2`, then populated
+  with content using pipe-friendly functions, and finally added to a
+  presentation with `Podium.add_slide/2`.
+
+  ## Example
+
+      slide =
+        Podium.Slide.new(:title_content)
+        |> Podium.add_chart(:bar, data, x: {1, :in}, y: {2, :in}, width: {8, :in}, height: {4, :in})
+        |> Podium.add_image(png, x: {1, :in}, y: {1, :in})
+        |> Podium.add_text_box("Hello", x: {1, :in}, y: {6, :in}, width: {4, :in}, height: {1, :in})
+
+      prs
+      |> Podium.add_slide(slide)
+      |> Podium.save("output.pptx")
   """
 
+  alias Podium.Chart
+  alias Podium.Chart.ComboChart
   alias Podium.OPC.Constants
   alias Podium.{Connector, Drawing, Image, Shape, Table, Video}
 
@@ -16,6 +30,7 @@ defmodule Podium.Slide do
     :index,
     :layout_index,
     :pres_rid,
+    ref: nil,
     background: nil,
     background_image: nil,
     notes_text: nil,
@@ -35,6 +50,7 @@ defmodule Podium.Slide do
           index: pos_integer() | nil,
           layout_index: pos_integer() | nil,
           pres_rid: String.t() | nil,
+          ref: reference() | nil,
           background: term(),
           background_image: {binary(), String.t()} | nil,
           notes_text: String.t() | nil,
@@ -51,13 +67,46 @@ defmodule Podium.Slide do
         }
 
   @doc """
-  Creates a new blank slide.
+  Creates a new slide with the given layout.
+
+  The first argument is a layout atom or integer index. Options can set
+  the slide background and notes.
+
+  ## Options
+    * `:background` - background fill (hex color, gradient tuple, pattern tuple,
+      or `{:picture, binary}`)
+    * `:notes` - speaker notes text
+
+  ## Available layouts
+    * `:title_slide` (1), `:title_content` (2), `:section_header` (3),
+      `:two_content` (4), `:comparison` (5), `:title_only` (6),
+      `:blank` (7), `:content_caption` (8), `:picture_caption` (9),
+      `:title_vertical_text` (10), `:vertical_title_text` (11)
   """
-  @spec new(keyword()) :: t()
-  def new(opts \\ []) do
+  @spec new(Podium.layout(), keyword()) :: t()
+  def new(layout \\ :blank, opts \\ [])
+
+  def new(layout, opts) when is_atom(layout) or is_integer(layout) do
+    layout_index = resolve_layout_index(layout)
+    background = Keyword.get(opts, :background)
+
+    {background, background_image} =
+      case background do
+        {:picture, binary} when is_binary(binary) ->
+          ext = detect_fill_extension(binary)
+          {{:picture, binary}, {binary, ext}}
+
+        other ->
+          {other, nil}
+      end
+
     %__MODULE__{
-      index: Keyword.get(opts, :index, 1),
-      layout_index: Keyword.get(opts, :layout_index, @blank_layout_index)
+      ref: make_ref(),
+      index: nil,
+      layout_index: layout_index,
+      background: background,
+      background_image: background_image,
+      notes_text: Keyword.get(opts, :notes)
     }
   end
 
@@ -144,18 +193,12 @@ defmodule Podium.Slide do
     }
   end
 
-  defp detect_fill_extension(<<0x89, 0x50, 0x4E, 0x47, _::binary>>), do: "png"
-  defp detect_fill_extension(<<0xFF, 0xD8, _::binary>>), do: "jpeg"
-  defp detect_fill_extension(<<0x42, 0x4D, _::binary>>), do: "bmp"
-  defp detect_fill_extension(<<0x47, 0x49, 0x46, _::binary>>), do: "gif"
-  defp detect_fill_extension(_), do: "png"
-
   @doc """
-  Adds a chart to the slide. Returns the updated slide.
+  Adds a chart to the slide.
   """
-  @spec add_chart(t(), atom(), struct(), pos_integer(), keyword()) :: t()
-  def add_chart(%__MODULE__{} = slide, chart_type, chart_data, chart_index, opts) do
-    chart = Podium.Chart.new(chart_type, chart_data, chart_index, opts)
+  @spec add_chart(t(), atom(), struct(), keyword()) :: t()
+  def add_chart(%__MODULE__{} = slide, chart_type, chart_data, opts) do
+    chart = Chart.new(chart_type, chart_data, opts)
 
     %{
       slide
@@ -165,15 +208,61 @@ defmodule Podium.Slide do
   end
 
   @doc """
-  Adds an image to the slide. Returns the updated slide.
+  Adds a combo chart to the slide.
   """
-  @spec add_image(t(), Podium.Image.t()) :: t()
-  def add_image(%__MODULE__{} = slide, image) do
+  @spec add_combo_chart(t(), Podium.Chart.ChartData.t(), [{atom(), keyword()}], keyword()) :: t()
+  def add_combo_chart(%__MODULE__{} = slide, chart_data, plot_specs, opts) do
+    combo = ComboChart.new(chart_data, plot_specs)
+    chart = Chart.new_combo(combo, opts)
+
+    %{
+      slide
+      | charts: slide.charts ++ [chart],
+        next_shape_id: slide.next_shape_id + 1
+    }
+  end
+
+  @doc """
+  Adds an image to the slide.
+  """
+  @spec add_image(t(), binary(), keyword()) :: t()
+  def add_image(%__MODULE__{} = slide, binary, opts) when is_binary(binary) do
+    image = Image.new(binary, opts)
+
     %{
       slide
       | images: slide.images ++ [image],
         next_shape_id: slide.next_shape_id + 1
     }
+  end
+
+  @doc """
+  Adds a video to the slide.
+  """
+  @spec add_video(t(), binary(), keyword()) :: t()
+  def add_video(%__MODULE__{} = slide, binary, opts) when is_binary(binary) do
+    video = Video.new(binary, opts)
+
+    %{
+      slide
+      | videos: slide.videos ++ [video],
+        next_shape_id: slide.next_shape_id + 1
+    }
+  end
+
+  @doc """
+  Sets a picture placeholder on the slide. Stores the placeholder, binary,
+  and extension for later index assignment during serialization.
+  """
+  @spec set_picture_placeholder(t(), atom(), binary()) :: t()
+  def set_picture_placeholder(%__MODULE__{} = slide, name, binary)
+      when is_atom(name) and is_binary(binary) do
+    layout_atom = layout_atom(slide.layout_index)
+    ph = Podium.Placeholder.new_picture(layout_atom, name)
+    extension = detect_fill_extension(binary)
+
+    picture_entry = {ph, binary, extension}
+    %{slide | picture_placeholders: slide.picture_placeholders ++ [picture_entry]}
   end
 
   @doc """
@@ -183,18 +272,6 @@ defmodule Podium.Slide do
   def add_freeform(%__MODULE__{} = slide, %Podium.Freeform{} = fb, opts \\ []) do
     shape = Shape.freeform(slide.next_shape_id, fb, opts)
     %{slide | shapes: slide.shapes ++ [shape], next_shape_id: slide.next_shape_id + 1}
-  end
-
-  @doc """
-  Adds a video to the slide.
-  """
-  @spec add_video(t(), Podium.Video.t()) :: t()
-  def add_video(%__MODULE__{} = slide, video) do
-    %{
-      slide
-      | videos: slide.videos ++ [video],
-        next_shape_id: slide.next_shape_id + 1
-    }
   end
 
   @doc """
@@ -339,5 +416,41 @@ defmodule Podium.Slide do
 
   defp background_xml(fill, _bg_rid) do
     ~s(<p:bg><p:bgPr>#{Drawing.fill_xml(fill)}<a:effectLst/></p:bgPr></p:bg>)
+  end
+
+  defp detect_fill_extension(<<0x89, 0x50, 0x4E, 0x47, _::binary>>), do: "png"
+  defp detect_fill_extension(<<0xFF, 0xD8, _::binary>>), do: "jpeg"
+  defp detect_fill_extension(<<0x42, 0x4D, _::binary>>), do: "bmp"
+  defp detect_fill_extension(<<0x47, 0x49, 0x46, _::binary>>), do: "gif"
+  defp detect_fill_extension(_), do: "png"
+
+  defp resolve_layout_index(:title_slide), do: 1
+  defp resolve_layout_index(:title_content), do: 2
+  defp resolve_layout_index(:section_header), do: 3
+  defp resolve_layout_index(:two_content), do: 4
+  defp resolve_layout_index(:comparison), do: 5
+  defp resolve_layout_index(:title_only), do: 6
+  defp resolve_layout_index(:blank), do: @blank_layout_index
+  defp resolve_layout_index(:content_caption), do: 8
+  defp resolve_layout_index(:picture_caption), do: 9
+  defp resolve_layout_index(:title_vertical_text), do: 10
+  defp resolve_layout_index(:vertical_title_text), do: 11
+  defp resolve_layout_index(index) when is_integer(index), do: index
+
+  @doc false
+  def layout_atom(1), do: :title_slide
+  def layout_atom(2), do: :title_content
+  def layout_atom(3), do: :section_header
+  def layout_atom(4), do: :two_content
+  def layout_atom(5), do: :comparison
+  def layout_atom(6), do: :title_only
+  def layout_atom(7), do: :blank
+  def layout_atom(8), do: :content_caption
+  def layout_atom(9), do: :picture_caption
+  def layout_atom(10), do: :title_vertical_text
+  def layout_atom(11), do: :vertical_title_text
+
+  def layout_atom(n) when is_integer(n) do
+    raise ArgumentError, "unknown layout index #{n}; expected 1..11"
   end
 end

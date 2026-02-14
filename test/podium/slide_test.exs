@@ -13,10 +13,12 @@ defmodule Podium.SlideTest do
 
   describe "slide background" do
     test "solid background fill" do
-      prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs, background: "003366")
+      slide = Podium.Slide.new(:blank, background: "003366")
 
-      prs = Podium.put_slide(prs, slide)
+      prs =
+        Podium.new()
+        |> Podium.add_slide(slide)
+
       {:ok, binary} = Podium.save_to_memory(prs)
       parts = PptxHelpers.unzip_pptx_binary(binary)
       slide_xml = parts["ppt/slides/slide1.xml"]
@@ -28,14 +30,15 @@ defmodule Podium.SlideTest do
     end
 
     test "gradient background fill" do
-      prs = Podium.new()
-
-      {prs, slide} =
-        Podium.add_slide(prs,
+      slide =
+        Podium.Slide.new(:blank,
           background: {:gradient, [{0, "FF0000"}, {100_000, "0000FF"}], angle: 5_400_000}
         )
 
-      prs = Podium.put_slide(prs, slide)
+      prs =
+        Podium.new()
+        |> Podium.add_slide(slide)
+
       {:ok, binary} = Podium.save_to_memory(prs)
       parts = PptxHelpers.unzip_pptx_binary(binary)
       slide_xml = parts["ppt/slides/slide1.xml"]
@@ -45,10 +48,12 @@ defmodule Podium.SlideTest do
     end
 
     test "no background when nil" do
-      prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
+      slide = Podium.Slide.new()
 
-      prs = Podium.put_slide(prs, slide)
+      prs =
+        Podium.new()
+        |> Podium.add_slide(slide)
+
       {:ok, binary} = Podium.save_to_memory(prs)
       parts = PptxHelpers.unzip_pptx_binary(binary)
       slide_xml = parts["ppt/slides/slide1.xml"]
@@ -57,10 +62,12 @@ defmodule Podium.SlideTest do
     end
 
     test "picture background fill produces blipFill with r:embed" do
-      prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs, background: {:picture, @png_binary})
+      slide = Podium.Slide.new(:blank, background: {:picture, @png_binary})
 
-      prs = Podium.put_slide(prs, slide)
+      prs =
+        Podium.new()
+        |> Podium.add_slide(slide)
+
       {:ok, binary} = Podium.save_to_memory(prs)
       parts = PptxHelpers.unzip_pptx_binary(binary)
       slide_xml = parts["ppt/slides/slide1.xml"]
@@ -73,10 +80,12 @@ defmodule Podium.SlideTest do
     end
 
     test "picture background stores image in media" do
-      prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs, background: {:picture, @png_binary})
+      slide = Podium.Slide.new(:blank, background: {:picture, @png_binary})
 
-      prs = Podium.put_slide(prs, slide)
+      prs =
+        Podium.new()
+        |> Podium.add_slide(slide)
+
       {:ok, binary} = Podium.save_to_memory(prs)
       parts = PptxHelpers.unzip_pptx_binary(binary)
 
@@ -91,10 +100,12 @@ defmodule Podium.SlideTest do
     end
 
     test "picture background has image relationship in slide rels" do
-      prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs, background: {:picture, @png_binary})
+      slide = Podium.Slide.new(:blank, background: {:picture, @png_binary})
 
-      prs = Podium.put_slide(prs, slide)
+      prs =
+        Podium.new()
+        |> Podium.add_slide(slide)
+
       {:ok, binary} = Podium.save_to_memory(prs)
       parts = PptxHelpers.unzip_pptx_binary(binary)
 
@@ -103,10 +114,12 @@ defmodule Podium.SlideTest do
     end
 
     test "non-picture backgrounds remain unchanged" do
-      prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs, background: "FF0000")
+      slide = Podium.Slide.new(:blank, background: "FF0000")
 
-      prs = Podium.put_slide(prs, slide)
+      prs =
+        Podium.new()
+        |> Podium.add_slide(slide)
+
       {:ok, binary} = Podium.save_to_memory(prs)
       parts = PptxHelpers.unzip_pptx_binary(binary)
       slide_xml = parts["ppt/slides/slide1.xml"]

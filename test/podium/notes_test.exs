@@ -5,11 +5,14 @@ defmodule Podium.NotesTest do
 
   describe "slide notes" do
     test "notes text appears in notesSlide XML" do
-      prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
+      slide =
+        Podium.Slide.new()
+        |> Podium.set_notes("Speaker notes text here")
 
-      slide = Podium.set_notes(slide, "Speaker notes text here")
-      prs = Podium.put_slide(prs, slide)
+      prs =
+        Podium.new()
+        |> Podium.add_slide(slide)
+
       {:ok, binary} = Podium.save_to_memory(prs)
       parts = PptxHelpers.unzip_pptx_binary(binary)
 
@@ -22,14 +25,18 @@ defmodule Podium.NotesTest do
     end
 
     test "notes master created once" do
-      prs = Podium.new()
-      {prs, slide1} = Podium.add_slide(prs)
-      slide1 = Podium.set_notes(slide1, "Notes for slide 1")
-      prs = Podium.put_slide(prs, slide1)
+      slide1 =
+        Podium.Slide.new()
+        |> Podium.set_notes("Notes for slide 1")
 
-      {prs, slide2} = Podium.add_slide(prs)
-      slide2 = Podium.set_notes(slide2, "Notes for slide 2")
-      prs = Podium.put_slide(prs, slide2)
+      slide2 =
+        Podium.Slide.new()
+        |> Podium.set_notes("Notes for slide 2")
+
+      prs =
+        Podium.new()
+        |> Podium.add_slide(slide1)
+        |> Podium.add_slide(slide2)
 
       {:ok, binary} = Podium.save_to_memory(prs)
       parts = PptxHelpers.unzip_pptx_binary(binary)
@@ -52,8 +59,10 @@ defmodule Podium.NotesTest do
     end
 
     test "slide without notes has no notesSlide part" do
-      prs = Podium.new()
-      {prs, _slide} = Podium.add_slide(prs)
+      prs =
+        Podium.new()
+        |> Podium.add_slide(Podium.Slide.new())
+
       {:ok, binary} = Podium.save_to_memory(prs)
       parts = PptxHelpers.unzip_pptx_binary(binary)
 
@@ -62,11 +71,14 @@ defmodule Podium.NotesTest do
     end
 
     test "notes text is XML-escaped" do
-      prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
+      slide =
+        Podium.Slide.new()
+        |> Podium.set_notes("Use <b> tags & \"quotes\"")
 
-      slide = Podium.set_notes(slide, "Use <b> tags & \"quotes\"")
-      prs = Podium.put_slide(prs, slide)
+      prs =
+        Podium.new()
+        |> Podium.add_slide(slide)
+
       {:ok, binary} = Podium.save_to_memory(prs)
       parts = PptxHelpers.unzip_pptx_binary(binary)
 
@@ -75,11 +87,14 @@ defmodule Podium.NotesTest do
     end
 
     test "notesSlide has rels to slide and notesMaster" do
-      prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
+      slide =
+        Podium.Slide.new()
+        |> Podium.set_notes("Some notes")
 
-      slide = Podium.set_notes(slide, "Some notes")
-      prs = Podium.put_slide(prs, slide)
+      prs =
+        Podium.new()
+        |> Podium.add_slide(slide)
+
       {:ok, binary} = Podium.save_to_memory(prs)
       parts = PptxHelpers.unzip_pptx_binary(binary)
 
@@ -89,11 +104,14 @@ defmodule Podium.NotesTest do
     end
 
     test "slide rels contains notesSlide relationship" do
-      prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
+      slide =
+        Podium.Slide.new()
+        |> Podium.set_notes("Some notes")
 
-      slide = Podium.set_notes(slide, "Some notes")
-      prs = Podium.put_slide(prs, slide)
+      prs =
+        Podium.new()
+        |> Podium.add_slide(slide)
+
       {:ok, binary} = Podium.save_to_memory(prs)
       parts = PptxHelpers.unzip_pptx_binary(binary)
 
@@ -102,11 +120,14 @@ defmodule Podium.NotesTest do
     end
 
     test "content types include notesSlide and notesMaster" do
-      prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
+      slide =
+        Podium.Slide.new()
+        |> Podium.set_notes("Some notes")
 
-      slide = Podium.set_notes(slide, "Some notes")
-      prs = Podium.put_slide(prs, slide)
+      prs =
+        Podium.new()
+        |> Podium.add_slide(slide)
+
       {:ok, binary} = Podium.save_to_memory(prs)
       parts = PptxHelpers.unzip_pptx_binary(binary)
 

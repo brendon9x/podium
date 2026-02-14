@@ -3,10 +3,8 @@ File.mkdir_p!("demos/output")
 prs = Podium.new()
 
 # Slide 1: Basic table with header fills and borders
-{prs, s1} = Podium.add_slide(prs)
-
 s1 =
-  s1
+  Podium.Slide.new()
   |> Podium.add_text_box(
     [{[{"Basic Table", bold: true, font_size: 28, color: "003366"}], alignment: :center}],
     x: {0.5, :inches},
@@ -31,13 +29,9 @@ s1 =
     height: {3, :inches}
   )
 
-prs = Podium.put_slide(prs, s1)
-
 # Slide 2: Cell merging -- horizontal merge title row + vertical merge column
-{prs, s2} = Podium.add_slide(prs)
-
 s2 =
-  s2
+  Podium.Slide.new()
   |> Podium.add_text_box(
     [{[{"Cell Merging", bold: true, font_size: 28, color: "003366"}], alignment: :center}],
     x: {0.5, :inches},
@@ -73,13 +67,9 @@ s2 =
     height: {2.5, :inches}
   )
 
-prs = Podium.put_slide(prs, s2)
-
 # Slide 3: Cell formatting -- gradient fill, pattern fill, padding, vertical alignment
-{prs, s3} = Podium.add_slide(prs)
-
 s3 =
-  s3
+  Podium.Slide.new()
   |> Podium.add_text_box(
     [{[{"Cell Formatting", bold: true, font_size: 28, color: "003366"}], alignment: :center}],
     x: {0.5, :inches},
@@ -113,14 +103,10 @@ s3 =
     height: {4, :inches}
   )
 
-prs = Podium.put_slide(prs, s3)
-
 # Slide 4: "Complete Example" professional report table
-{prs, s4} = Podium.add_slide(prs)
-
 s4 =
-  Podium.add_table(
-    s4,
+  Podium.Slide.new()
+  |> Podium.add_table(
     [
       # Merged title row
       [
@@ -170,7 +156,12 @@ s4 =
     height: {4.5, :inches}
   )
 
-prs = Podium.put_slide(prs, s4)
+prs =
+  prs
+  |> Podium.add_slide(s1)
+  |> Podium.add_slide(s2)
+  |> Podium.add_slide(s3)
+  |> Podium.add_slide(s4)
+  |> Podium.save("demos/output/tables.pptx")
 
-:ok = Podium.save(prs, "demos/output/tables.pptx")
 IO.puts("Generated demos/output/tables.pptx")

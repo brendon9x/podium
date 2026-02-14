@@ -13,17 +13,18 @@ departments = [
 
 prs = Podium.new(title: "Department Review")
 
-{prs, _slides} =
-  Enum.reduce(departments, {prs, []}, fn dept, {prs, slides} ->
-    {prs, slide} = Podium.add_slide(prs, layout: :title_content)
-    slide = Podium.set_placeholder(slide, :title, dept.name)
-    slide = Podium.set_placeholder(slide, :content, [
-      ["Headcount: #{dept.headcount}"],
-      ["Budget: $#{dept.budget}K"],
-      ["Satisfaction: #{dept.satisfaction}%"]
-    ])
-    prs = Podium.put_slide(prs, slide)
-    {prs, slides ++ [slide]}
+prs =
+  Enum.reduce(departments, prs, fn dept, prs ->
+    slide =
+      Podium.Slide.new(:title_content)
+      |> Podium.set_placeholder(:title, dept.name)
+      |> Podium.set_placeholder(:content, [
+        ["Headcount: #{dept.headcount}"],
+        ["Budget: $#{dept.budget}K"],
+        ["Satisfaction: #{dept.satisfaction}%"]
+      ])
+
+    Podium.add_slide(prs, slide)
   end)
 
 Podium.save(prs, "departments.pptx")
@@ -103,21 +104,21 @@ prs = Podium.new(title: "Regional Revenue Report")
 
 prs =
   Enum.reduce(regions, prs, fn region, prs ->
-    {prs, slide} = Podium.add_slide(prs, layout: :title_only)
-    slide = Podium.set_placeholder(slide, :title, region.name)
-
     chart_data =
       ChartData.new()
       |> ChartData.add_categories(["Q1", "Q2", "Q3", "Q4"])
       |> ChartData.add_series("Revenue", region.quarters, color: "4472C4")
 
-    {prs, slide} = Podium.add_chart(prs, slide, :column_clustered, chart_data,
-      x: {0.5, :inches}, y: {1.5, :inches},
-      width: {12, :inches}, height: {5.5, :inches},
-      title: "#{region.name} Revenue",
-      value_axis: [number_format: "$#,##0", major_gridlines: true])
+    slide =
+      Podium.Slide.new(:title_only)
+      |> Podium.set_placeholder(:title, region.name)
+      |> Podium.add_chart(:column_clustered, chart_data,
+        x: {0.5, :inches}, y: {1.5, :inches},
+        width: {12, :inches}, height: {5.5, :inches},
+        title: "#{region.name} Revenue",
+        value_axis: [number_format: "$#,##0", major_gridlines: true])
 
-    Podium.put_slide(prs, slide)
+    Podium.add_slide(prs, slide)
   end)
 
 Podium.save(prs, "regional_report.pptx")
@@ -183,10 +184,12 @@ defmodule MyAppWeb.ReportController do
     prs = Podium.new(title: data.title, author: data.author)
 
     # Title slide
-    {prs, slide} = Podium.add_slide(prs, layout: :title_slide)
-    slide = Podium.set_placeholder(slide, :title, data.title)
-    slide = Podium.set_placeholder(slide, :subtitle, data.subtitle)
-    prs = Podium.put_slide(prs, slide)
+    title_slide =
+      Podium.Slide.new(:title_slide)
+      |> Podium.set_placeholder(:title, data.title)
+      |> Podium.set_placeholder(:subtitle, data.subtitle)
+
+    prs = Podium.add_slide(prs, title_slide)
 
     # Data slides
     Enum.reduce(data.sections, prs, fn section, prs ->
@@ -195,21 +198,21 @@ defmodule MyAppWeb.ReportController do
   end
 
   defp add_section_slide(prs, section) do
-    {prs, slide} = Podium.add_slide(prs, layout: :title_only)
-    slide = Podium.set_placeholder(slide, :title, section.heading)
-
     chart_data =
       ChartData.new()
       |> ChartData.add_categories(section.categories)
       |> ChartData.add_series(section.series_name, section.values, color: "4472C4")
 
-    {prs, slide} = Podium.add_chart(prs, slide, :column_clustered, chart_data,
-      x: {0.5, :inches}, y: {1.5, :inches},
-      width: {12, :inches}, height: {5.5, :inches},
-      title: section.chart_title,
-      legend: :bottom)
+    slide =
+      Podium.Slide.new(:title_only)
+      |> Podium.set_placeholder(:title, section.heading)
+      |> Podium.add_chart(:column_clustered, chart_data,
+        x: {0.5, :inches}, y: {1.5, :inches},
+        width: {12, :inches}, height: {5.5, :inches},
+        title: section.chart_title,
+        legend: :bottom)
 
-    Podium.put_slide(prs, slide)
+    Podium.add_slide(prs, slide)
   end
 end
 ```
@@ -226,35 +229,35 @@ defmodule SlideBuilder do
   def add_chart_slide(prs, title, categories, series_list, opts \\ []) do
     chart_type = Keyword.get(opts, :chart_type, :column_clustered)
 
-    {prs, slide} = Podium.add_slide(prs, layout: :title_only)
-    slide = Podium.set_placeholder(slide, :title, title)
-
     chart_data =
       Enum.reduce(series_list, ChartData.new() |> ChartData.add_categories(categories),
         fn {name, values, series_opts}, data ->
           ChartData.add_series(data, name, values, series_opts)
         end)
 
-    {prs, slide} = Podium.add_chart(prs, slide, chart_type, chart_data,
-      x: {0.5, :inches}, y: {1.5, :inches},
-      width: {12, :inches}, height: {5.5, :inches},
-      title: title,
-      legend: :bottom,
-      value_axis: Keyword.get(opts, :value_axis, [major_gridlines: true]))
+    slide =
+      Podium.Slide.new(:title_only)
+      |> Podium.set_placeholder(:title, title)
+      |> Podium.add_chart(chart_type, chart_data,
+        x: {0.5, :inches}, y: {1.5, :inches},
+        width: {12, :inches}, height: {5.5, :inches},
+        title: title,
+        legend: :bottom,
+        value_axis: Keyword.get(opts, :value_axis, [major_gridlines: true]))
 
-    Podium.put_slide(prs, slide)
+    Podium.add_slide(prs, slide)
   end
 
   def add_table_slide(prs, title, rows, opts \\ []) do
-    {prs, slide} = Podium.add_slide(prs, layout: :title_only)
-    slide = Podium.set_placeholder(slide, :title, title)
+    slide =
+      Podium.Slide.new(:title_only)
+      |> Podium.set_placeholder(:title, title)
+      |> Podium.add_table(rows,
+        x: {0.5, :inches}, y: {1.5, :inches},
+        width: {12, :inches}, height: Keyword.get(opts, :height, {5, :inches}),
+        table_style: Keyword.get(opts, :table_style, [first_row: true]))
 
-    slide = Podium.add_table(slide, rows,
-      x: {0.5, :inches}, y: {1.5, :inches},
-      width: {12, :inches}, height: Keyword.get(opts, :height, {5, :inches}),
-      table_style: Keyword.get(opts, :table_style, [first_row: true]))
-
-    Podium.put_slide(prs, slide)
+    Podium.add_slide(prs, slide)
   end
 end
 ```

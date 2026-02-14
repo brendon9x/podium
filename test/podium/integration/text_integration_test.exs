@@ -8,7 +8,7 @@ defmodule Podium.Integration.TextIntegrationTest do
   describe "rich text formatting" do
     test "creates valid pptx with bold, italic, underline, and color variations" do
       prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
+      slide = Podium.Slide.new()
 
       slide =
         Podium.add_text_box(
@@ -33,10 +33,10 @@ defmodule Podium.Integration.TextIntegrationTest do
           height: {2.5, :inches}
         )
 
-      prs = Podium.put_slide(prs, slide)
+      prs = Podium.add_slide(prs, slide)
 
       # Save to disk for manual inspection
-      output_path = Path.join(@output_dir, "text_integration.pptx")
+      output_path = Path.join(@output_dir, "text_rich_formatting.pptx")
       File.mkdir_p!(@output_dir)
       assert :ok = Podium.save(prs, output_path)
 
@@ -54,7 +54,7 @@ defmodule Podium.Integration.TextIntegrationTest do
 
     test "creates valid pptx with strikethrough, superscript, and subscript" do
       prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
+      slide = Podium.Slide.new()
 
       slide =
         Podium.add_text_box(
@@ -79,9 +79,9 @@ defmodule Podium.Integration.TextIntegrationTest do
           height: {2, :inches}
         )
 
-      prs = Podium.put_slide(prs, slide)
+      prs = Podium.add_slide(prs, slide)
 
-      output_path = Path.join(@output_dir, "text_integration.pptx")
+      output_path = Path.join(@output_dir, "text_strikethrough_super_sub.pptx")
       File.mkdir_p!(@output_dir)
       assert :ok = Podium.save(prs, output_path)
 
@@ -96,7 +96,7 @@ defmodule Podium.Integration.TextIntegrationTest do
 
     test "creates valid pptx with various underline styles" do
       prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
+      slide = Podium.Slide.new()
 
       slide =
         Podium.add_text_box(
@@ -116,9 +116,9 @@ defmodule Podium.Integration.TextIntegrationTest do
           height: {0.6, :inches}
         )
 
-      prs = Podium.put_slide(prs, slide)
+      prs = Podium.add_slide(prs, slide)
 
-      output_path = Path.join(@output_dir, "text_integration.pptx")
+      output_path = Path.join(@output_dir, "text_underline_styles.pptx")
       File.mkdir_p!(@output_dir)
       assert :ok = Podium.save(prs, output_path)
 
@@ -137,13 +137,13 @@ defmodule Podium.Integration.TextIntegrationTest do
   describe "bullets and numbering" do
     test "creates valid pptx with bullet lists, nested bullets, and numbering" do
       prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
+      slide = Podium.Slide.new()
 
       slide =
         Podium.add_text_box(
           slide,
           [
-            {[{"Bullet Lists", bold: true, font_size: 20}], space_after: 6},
+            {[{" Bullet Lists", bold: true, font_size: 20}], space_after: 6},
             {["Revenue up 35% year-over-year"], bullet: true},
             {["North America grew fastest"], bullet: true, level: 1},
             {["APAC close behind"], bullet: true, level: 1},
@@ -160,9 +160,9 @@ defmodule Podium.Integration.TextIntegrationTest do
           height: {4, :inches}
         )
 
-      prs = Podium.put_slide(prs, slide)
+      prs = Podium.add_slide(prs, slide)
 
-      output_path = Path.join(@output_dir, "text_integration.pptx")
+      output_path = Path.join(@output_dir, "text_bullets_numbering.pptx")
       File.mkdir_p!(@output_dir)
       assert :ok = Podium.save(prs, output_path)
 
@@ -179,7 +179,7 @@ defmodule Podium.Integration.TextIntegrationTest do
   describe "text alignment and spacing" do
     test "creates valid pptx with center alignment and spacing" do
       prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
+      slide = Podium.Slide.new()
 
       slide =
         Podium.add_text_box(
@@ -194,9 +194,9 @@ defmodule Podium.Integration.TextIntegrationTest do
           fill: {:gradient, [{0, "001133"}, {100_000, "004488"}], angle: 5_400_000}
         )
 
-      prs = Podium.put_slide(prs, slide)
+      prs = Podium.add_slide(prs, slide)
 
-      output_path = Path.join(@output_dir, "text_integration.pptx")
+      output_path = Path.join(@output_dir, "text_alignment_spacing.pptx")
       File.mkdir_p!(@output_dir)
       assert :ok = Podium.save(prs, output_path)
 
@@ -211,7 +211,7 @@ defmodule Podium.Integration.TextIntegrationTest do
   describe "text box fills and effects" do
     test "creates valid pptx with gradient fill and line styling" do
       prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
+      slide = Podium.Slide.new()
 
       slide =
         Podium.add_text_box(
@@ -227,9 +227,9 @@ defmodule Podium.Integration.TextIntegrationTest do
           fill: {:pattern, :lt_horz, foreground: "003366", background: "E8EDF2"}
         )
 
-      prs = Podium.put_slide(prs, slide)
+      prs = Podium.add_slide(prs, slide)
 
-      output_path = Path.join(@output_dir, "text_integration.pptx")
+      output_path = Path.join(@output_dir, "text_pattern_fill.pptx")
       File.mkdir_p!(@output_dir)
       assert :ok = Podium.save(prs, output_path)
 
@@ -242,7 +242,7 @@ defmodule Podium.Integration.TextIntegrationTest do
 
     test "creates valid pptx with rotated text box" do
       prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
+      slide = Podium.Slide.new()
 
       slide =
         Podium.add_text_box(slide, "Rotated!",
@@ -256,9 +256,9 @@ defmodule Podium.Integration.TextIntegrationTest do
           alignment: :center
         )
 
-      prs = Podium.put_slide(prs, slide)
+      prs = Podium.add_slide(prs, slide)
 
-      output_path = Path.join(@output_dir, "text_integration.pptx")
+      output_path = Path.join(@output_dir, "text_rotation.pptx")
       File.mkdir_p!(@output_dir)
       assert :ok = Podium.save(prs, output_path)
 
@@ -273,7 +273,7 @@ defmodule Podium.Integration.TextIntegrationTest do
   describe "line breaks and margins" do
     test "creates valid pptx with line breaks within paragraphs" do
       prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
+      slide = Podium.Slide.new()
 
       slide =
         Podium.add_text_box(
@@ -293,9 +293,9 @@ defmodule Podium.Integration.TextIntegrationTest do
           margin_top: {0.15, :inches}
         )
 
-      prs = Podium.put_slide(prs, slide)
+      prs = Podium.add_slide(prs, slide)
 
-      output_path = Path.join(@output_dir, "text_integration.pptx")
+      output_path = Path.join(@output_dir, "text_line_breaks.pptx")
       File.mkdir_p!(@output_dir)
       assert :ok = Podium.save(prs, output_path)
 
@@ -308,7 +308,7 @@ defmodule Podium.Integration.TextIntegrationTest do
 
     test "creates valid pptx with custom margins" do
       prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
+      slide = Podium.Slide.new()
 
       slide =
         Podium.add_text_box(slide, "Custom Margins",
@@ -325,9 +325,9 @@ defmodule Podium.Integration.TextIntegrationTest do
           alignment: :center
         )
 
-      prs = Podium.put_slide(prs, slide)
+      prs = Podium.add_slide(prs, slide)
 
-      output_path = Path.join(@output_dir, "text_integration.pptx")
+      output_path = Path.join(@output_dir, "text_margins.pptx")
       File.mkdir_p!(@output_dir)
       assert :ok = Podium.save(prs, output_path)
 

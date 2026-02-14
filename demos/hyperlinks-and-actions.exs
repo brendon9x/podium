@@ -3,9 +3,9 @@ File.mkdir_p!("demos/output")
 prs = Podium.new()
 
 # Create all slides upfront so we can reference them for slide jumps
-{prs, s1} = Podium.add_slide(prs)
-{prs, s2} = Podium.add_slide(prs)
-{prs, s3} = Podium.add_slide(prs)
+s1 = Podium.Slide.new()
+s2 = Podium.Slide.new()
+s3 = Podium.Slide.new()
 
 # Slide 1: URL hyperlinks and email links with styled text
 s1 =
@@ -51,8 +51,6 @@ s1 =
     width: {10, :inches},
     height: {4, :inches}
   )
-
-prs = Podium.put_slide(prs, s1)
 
 # Slide 2: Navigation buttons -- Next/Previous/End Show shapes
 s2 =
@@ -110,8 +108,6 @@ s2 =
     alignment: :center
   )
 
-prs = Podium.put_slide(prs, s2)
-
 # Slide 3: Table of contents with slide jump links
 s3 =
   s3
@@ -143,7 +139,11 @@ s3 =
     height: {3, :inches}
   )
 
-prs = Podium.put_slide(prs, s3)
+prs =
+  prs
+  |> Podium.add_slide(s1)
+  |> Podium.add_slide(s2)
+  |> Podium.add_slide(s3)
+  |> Podium.save("demos/output/hyperlinks-and-actions.pptx")
 
-:ok = Podium.save(prs, "demos/output/hyperlinks-and-actions.pptx")
 IO.puts("Generated demos/output/hyperlinks-and-actions.pptx")

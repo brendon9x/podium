@@ -24,7 +24,7 @@ defmodule Podium.Image do
   ]
 
   @type t :: %__MODULE__{
-          image_index: pos_integer(),
+          image_index: pos_integer() | nil,
           binary: binary(),
           extension: String.t(),
           sha1: String.t(),
@@ -44,8 +44,8 @@ defmodule Podium.Image do
   ## Options
     * `:crop` - keyword list with `:left`, `:right`, `:top`, `:bottom` (values in 1/1000ths of a percent, 0–100_000)
   """
-  @spec new(binary(), pos_integer(), keyword()) :: t()
-  def new(binary, image_index, opts) when is_binary(binary) do
+  @spec new(binary(), keyword()) :: t()
+  def new(binary, opts) when is_binary(binary) do
     extension = detect_extension(binary)
     sha1 = :crypto.hash(:sha, binary) |> Base.encode16(case: :lower)
 
@@ -55,7 +55,7 @@ defmodule Podium.Image do
     {width, height} = resolve_size(binary, extension, width_opt, height_opt)
 
     %__MODULE__{
-      image_index: image_index,
+      image_index: nil,
       binary: binary,
       extension: extension,
       sha1: sha1,

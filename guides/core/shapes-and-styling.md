@@ -23,7 +23,7 @@ Use `Podium.add_auto_shape/3` with a preset atom, position, and size:
 
 ```elixir
 prs = Podium.new()
-{prs, slide} = Podium.add_slide(prs)
+slide = Podium.Slide.new()
 
 slide =
   slide

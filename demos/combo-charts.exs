@@ -5,18 +5,15 @@ alias Podium.Chart.ChartData
 prs = Podium.new()
 
 # Slide 1: Column + line overlay (Revenue with Trend)
-{prs, s1} = Podium.add_slide(prs)
-
 data =
   ChartData.new()
   |> ChartData.add_categories(["Q1", "Q2", "Q3", "Q4"])
   |> ChartData.add_series("Revenue", [1500, 4600, 5200, 3200], color: "4472C4")
   |> ChartData.add_series("Trend", [2000, 3000, 4000, 5000], color: "ED7D31")
 
-{prs, s1} =
-  Podium.add_combo_chart(
-    prs,
-    s1,
+s1 =
+  Podium.Slide.new()
+  |> Podium.add_combo_chart(
     data,
     [
       {:column_clustered, series: [0]},
@@ -30,11 +27,7 @@ data =
     legend: :bottom
   )
 
-prs = Podium.put_slide(prs, s1)
-
 # Slide 2: Stacked column + line
-{prs, s2} = Podium.add_slide(prs)
-
 data2 =
   ChartData.new()
   |> ChartData.add_categories(["North", "South", "East", "West"])
@@ -42,10 +35,9 @@ data2 =
   |> ChartData.add_series("Product B", [200, 300, 250, 320], color: "ED7D31")
   |> ChartData.add_series("Target", [550, 600, 500, 500], color: "70AD47")
 
-{prs, s2} =
-  Podium.add_combo_chart(
-    prs,
-    s2,
+s2 =
+  Podium.Slide.new()
+  |> Podium.add_combo_chart(
     data2,
     [
       {:column_stacked, series: [0, 1]},
@@ -59,11 +51,7 @@ data2 =
     legend: :bottom
   )
 
-prs = Podium.put_slide(prs, s2)
-
 # Slide 3: Area + line with secondary Y-axis
-{prs, s3} = Podium.add_slide(prs)
-
 data3 =
   ChartData.new()
   |> ChartData.add_categories(["2020", "2021", "2022", "2023", "2024"])
@@ -71,10 +59,9 @@ data3 =
   |> ChartData.add_series("Active Users", [80, 200, 400, 700, 1100], color: "BDD7EE")
   |> ChartData.add_series("Growth Rate %", [0, 150, 100, 60, 50], color: "ED7D31")
 
-{prs, s3} =
-  Podium.add_combo_chart(
-    prs,
-    s3,
+s3 =
+  Podium.Slide.new()
+  |> Podium.add_combo_chart(
     data3,
     [
       {:area, series: [0, 1]},
@@ -89,7 +76,11 @@ data3 =
     secondary_value_axis: [title: "Growth Rate %"]
   )
 
-prs = Podium.put_slide(prs, s3)
+prs =
+  prs
+  |> Podium.add_slide(s1)
+  |> Podium.add_slide(s2)
+  |> Podium.add_slide(s3)
+  |> Podium.save("demos/output/combo-charts.pptx")
 
-:ok = Podium.save(prs, "demos/output/combo-charts.pptx")
 IO.puts("Generated demos/output/combo-charts.pptx")

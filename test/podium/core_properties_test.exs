@@ -104,8 +104,9 @@ defmodule Podium.CorePropertiesTest do
 
   describe "integration with Podium" do
     test "core properties in saved PPTX via new/1 opts" do
-      prs = Podium.new(title: "My Deck", author: "Alice")
-      {prs, _slide} = Podium.add_slide(prs)
+      prs =
+        Podium.new(title: "My Deck", author: "Alice")
+        |> Podium.add_slide(Podium.Slide.new())
 
       {:ok, binary} = Podium.save_to_memory(prs)
       parts = PptxHelpers.unzip_pptx_binary(binary)
@@ -116,9 +117,10 @@ defmodule Podium.CorePropertiesTest do
     end
 
     test "core properties via set_core_properties/2" do
-      prs = Podium.new()
-      prs = Podium.set_core_properties(prs, title: "Updated Title", subject: "Science")
-      {prs, _slide} = Podium.add_slide(prs)
+      prs =
+        Podium.new()
+        |> Podium.set_core_properties(title: "Updated Title", subject: "Science")
+        |> Podium.add_slide(Podium.Slide.new())
 
       {:ok, binary} = Podium.save_to_memory(prs)
       parts = PptxHelpers.unzip_pptx_binary(binary)
@@ -129,8 +131,9 @@ defmodule Podium.CorePropertiesTest do
     end
 
     test "default template core.xml when no properties set" do
-      prs = Podium.new()
-      {prs, _slide} = Podium.add_slide(prs)
+      prs =
+        Podium.new()
+        |> Podium.add_slide(Podium.Slide.new())
 
       {:ok, binary} = Podium.save_to_memory(prs)
       parts = PptxHelpers.unzip_pptx_binary(binary)
@@ -149,8 +152,7 @@ defmodule Podium.CorePropertiesTest do
           content_status: "Draft",
           language: "en-US"
         )
-
-      {prs, _slide} = Podium.add_slide(prs)
+        |> Podium.add_slide(Podium.Slide.new())
 
       {:ok, binary} = Podium.save_to_memory(prs)
       parts = PptxHelpers.unzip_pptx_binary(binary)

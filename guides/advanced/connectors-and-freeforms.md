@@ -28,10 +28,9 @@ end coordinates, and optional line formatting:
 
 ```elixir
 prs = Podium.new()
-{prs, slide} = Podium.add_slide(prs)
 
 slide =
-  slide
+  Podium.Slide.new()
   |> Podium.add_auto_shape(:rounded_rectangle,
     x: {1, :inches}, y: {2, :inches},
     width: {2, :inches}, height: {1, :inches},
@@ -72,7 +71,7 @@ option is provided, connectors use the theme's default styling.
 
 Freeform shapes let you draw custom vector paths. The `Podium.Freeform` module
 uses a builder pattern: create a builder, chain path operations, then add it
-to a slide with `Podium.add_freeform/3`.
+to a slide with `Podium.add_freeform/3` (slide, freeform, opts).
 
 ### Drawing a Triangle
 
@@ -81,12 +80,13 @@ to a slide with `Podium.add_freeform/3`.
 ```elixir
 alias Podium.Freeform
 
-slide =
+triangle =
   Freeform.new({2, :inches}, {4, :inches})
   |> Freeform.line_to({5, :inches}, {1, :inches})
   |> Freeform.line_to({8, :inches}, {4, :inches})
   |> Freeform.close()
-  |> Podium.add_freeform(slide, fill: "4472C4", line: "002060")
+
+slide = Podium.add_freeform(slide, triangle, fill: "4472C4", line: "002060")
 ```
 
 ### Path Operations
@@ -106,15 +106,16 @@ Use `Freeform.add_line_segments/3` with a list of `{x, y}` vertices:
 ```elixir
 alias Podium.Freeform
 
-slide =
+star =
   Freeform.new({6.67, :inches}, {1.5, :inches})
   |> Freeform.add_line_segments([
-    {{4.77, :inches}, {5.5, :inches}},
-    {{10.17, :inches}, {3, :inches}},
-    {{3.17, :inches}, {3, :inches}},
-    {{8.57, :inches}, {5.5, :inches}}
+    {{5.49, :inches}, {5.12, :inches}},
+    {{8.57, :inches}, {2.88, :inches}},
+    {{4.77, :inches}, {2.88, :inches}},
+    {{7.85, :inches}, {5.12, :inches}}
   ], close: true)
-  |> Podium.add_freeform(slide, fill: "FFD700", line: "CC9900")
+
+slide = Podium.add_freeform(slide, star, fill: "FFD700", line: "CC9900")
 ```
 
 ### Coordinate Scaling
@@ -131,7 +132,7 @@ fb =
   |> Freeform.line_to(150, 260)
   |> Freeform.close()
 
-slide = Podium.add_freeform(fb, slide,
+slide = Podium.add_freeform(slide, fb,
   origin_x: {2, :inches}, origin_y: {2, :inches}, fill: "ED7D31")
 ```
 
@@ -146,23 +147,24 @@ Use `Freeform.move_to/3` to start a new contour within the same shape:
 ```elixir
 alias Podium.Freeform
 
-# Square with a rectangular cutout
-slide =
-  Freeform.new({3, :inches}, {1.5, :inches})
+# Square with a square cutout
+cutout =
+  Freeform.new({4.67, :inches}, {1.5, :inches})
   |> Freeform.add_line_segments([
-    {{9, :inches}, {1.5, :inches}},
-    {{9, :inches}, {5.5, :inches}},
-    {{3, :inches}, {5.5, :inches}}
+    {{8.67, :inches}, {1.5, :inches}},
+    {{8.67, :inches}, {5.5, :inches}},
+    {{4.67, :inches}, {5.5, :inches}}
   ])
   |> Freeform.close()
-  |> Freeform.move_to({5, :inches}, {2.5, :inches})
+  |> Freeform.move_to({5.67, :inches}, {2.5, :inches})
   |> Freeform.add_line_segments([
-    {{7, :inches}, {2.5, :inches}},
-    {{7, :inches}, {4.5, :inches}},
-    {{5, :inches}, {4.5, :inches}}
+    {{7.67, :inches}, {2.5, :inches}},
+    {{7.67, :inches}, {4.5, :inches}},
+    {{5.67, :inches}, {4.5, :inches}}
   ])
   |> Freeform.close()
-  |> Podium.add_freeform(slide, fill: "70AD47")
+
+slide = Podium.add_freeform(slide, cutout, fill: "70AD47")
 ```
 
 ### Freeform Options

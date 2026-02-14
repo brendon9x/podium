@@ -5,18 +5,19 @@ defmodule Podium.HyperlinkTest do
 
   describe "hyperlinks in text boxes" do
     test "hyperlink on text run produces hlinkClick and external relationship" do
-      prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
-
       slide =
-        Podium.add_text_box(slide, [[{"Click here", hyperlink: "https://example.com"}]],
+        Podium.Slide.new()
+        |> Podium.add_text_box([[{"Click here", hyperlink: "https://example.com"}]],
           x: {1, :inches},
           y: {1, :inches},
           width: {4, :inches},
           height: {1, :inches}
         )
 
-      prs = Podium.put_slide(prs, slide)
+      prs =
+        Podium.new()
+        |> Podium.add_slide(slide)
+
       {:ok, binary} = Podium.save_to_memory(prs)
       parts = PptxHelpers.unzip_pptx_binary(binary)
 
@@ -30,12 +31,9 @@ defmodule Podium.HyperlinkTest do
     end
 
     test "hyperlink with tooltip" do
-      prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
-
       slide =
-        Podium.add_text_box(
-          slide,
+        Podium.Slide.new()
+        |> Podium.add_text_box(
           [
             [
               {"Visit site", hyperlink: [url: "https://example.com", tooltip: "Visit Example"]}
@@ -47,7 +45,10 @@ defmodule Podium.HyperlinkTest do
           height: {1, :inches}
         )
 
-      prs = Podium.put_slide(prs, slide)
+      prs =
+        Podium.new()
+        |> Podium.add_slide(slide)
+
       {:ok, binary} = Podium.save_to_memory(prs)
       parts = PptxHelpers.unzip_pptx_binary(binary)
 
@@ -56,12 +57,9 @@ defmodule Podium.HyperlinkTest do
     end
 
     test "multiple runs with same URL share one relationship" do
-      prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
-
       slide =
-        Podium.add_text_box(
-          slide,
+        Podium.Slide.new()
+        |> Podium.add_text_box(
           [
             [
               {"Link A", hyperlink: "https://example.com"},
@@ -74,7 +72,10 @@ defmodule Podium.HyperlinkTest do
           height: {1, :inches}
         )
 
-      prs = Podium.put_slide(prs, slide)
+      prs =
+        Podium.new()
+        |> Podium.add_slide(slide)
+
       {:ok, binary} = Podium.save_to_memory(prs)
       parts = PptxHelpers.unzip_pptx_binary(binary)
 
@@ -90,18 +91,19 @@ defmodule Podium.HyperlinkTest do
     end
 
     test "no hyperlink produces no hlinkClick" do
-      prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
-
       slide =
-        Podium.add_text_box(slide, "No link here",
+        Podium.Slide.new()
+        |> Podium.add_text_box("No link here",
           x: {1, :inches},
           y: {1, :inches},
           width: {4, :inches},
           height: {1, :inches}
         )
 
-      prs = Podium.put_slide(prs, slide)
+      prs =
+        Podium.new()
+        |> Podium.add_slide(slide)
+
       {:ok, binary} = Podium.save_to_memory(prs)
       parts = PptxHelpers.unzip_pptx_binary(binary)
 
@@ -110,18 +112,19 @@ defmodule Podium.HyperlinkTest do
     end
 
     test "mailto URL works" do
-      prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
-
       slide =
-        Podium.add_text_box(slide, [[{"Email us", hyperlink: "mailto:test@example.com"}]],
+        Podium.Slide.new()
+        |> Podium.add_text_box([[{"Email us", hyperlink: "mailto:test@example.com"}]],
           x: {1, :inches},
           y: {1, :inches},
           width: {4, :inches},
           height: {1, :inches}
         )
 
-      prs = Podium.put_slide(prs, slide)
+      prs =
+        Podium.new()
+        |> Podium.add_slide(slide)
+
       {:ok, binary} = Podium.save_to_memory(prs)
       parts = PptxHelpers.unzip_pptx_binary(binary)
 
@@ -131,15 +134,16 @@ defmodule Podium.HyperlinkTest do
     end
 
     test "hyperlink in placeholder text" do
-      prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs, layout: :title_content)
-
       slide =
-        Podium.set_placeholder(slide, :content, [
+        Podium.Slide.new(:title_content)
+        |> Podium.set_placeholder(:content, [
           [{"Click me", hyperlink: "https://example.com"}]
         ])
 
-      prs = Podium.put_slide(prs, slide)
+      prs =
+        Podium.new()
+        |> Podium.add_slide(slide)
+
       {:ok, binary} = Podium.save_to_memory(prs)
       parts = PptxHelpers.unzip_pptx_binary(binary)
 
@@ -152,12 +156,9 @@ defmodule Podium.HyperlinkTest do
     end
 
     test "multiple different URLs produce separate relationships" do
-      prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
-
       slide =
-        Podium.add_text_box(
-          slide,
+        Podium.Slide.new()
+        |> Podium.add_text_box(
           [
             [
               {"One", hyperlink: "https://one.example.com"},
@@ -170,7 +171,10 @@ defmodule Podium.HyperlinkTest do
           height: {1, :inches}
         )
 
-      prs = Podium.put_slide(prs, slide)
+      prs =
+        Podium.new()
+        |> Podium.add_slide(slide)
+
       {:ok, binary} = Podium.save_to_memory(prs)
       parts = PptxHelpers.unzip_pptx_binary(binary)
 

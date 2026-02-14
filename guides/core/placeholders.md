@@ -11,7 +11,7 @@ inherit their position and size from the slide master template.
 ![Title slide layout with styled title and subtitle](assets/core/placeholders/title-slide-layout.png)
 
 ```elixir
-{prs, slide} = Podium.add_slide(prs, layout: :title_slide)
+slide = Podium.Slide.new(:title_slide)
 
 slide =
   slide
@@ -22,23 +22,23 @@ slide =
 ## What Placeholders Are
 
 Every slide layout in a PowerPoint template defines named regions called
-placeholders. When you add a slide with a specific layout, Podium makes those
+placeholders. When you create a slide with a specific layout, Podium makes those
 placeholders available for you to fill with content. The position and size of each
 placeholder come from the template -- you don't need to specify coordinates.
 
-This is different from `Podium.add_text_box/3` or `Podium.add_chart/5`, where you
+This is different from `Podium.add_text_box/3` or `Podium.add_chart/4`, where you
 provide explicit `x`, `y`, `width`, and `height` values. Placeholders give you
 template-driven positioning for a consistent look across slides.
 
 ## Available Layouts
 
-Podium includes 11 slide layouts. Specify a layout by atom or integer index when
-adding a slide with `Podium.add_slide/2`:
+Podium includes 11 slide layouts. Specify a layout when creating a slide with
+`Podium.Slide.new/1`:
 
 ```elixir
-{prs, slide} = Podium.add_slide(prs, layout: :title_content)
+slide = Podium.Slide.new(:title_content)
 # or equivalently:
-{prs, slide} = Podium.add_slide(prs, layout: 2)
+slide = Podium.Slide.new(2)
 ```
 
 | Layout | Index | Placeholders |
@@ -55,9 +55,9 @@ adding a slide with `Podium.add_slide/2`:
 | `:title_vertical_text` | 10 | `:title`, `:body` |
 | `:vertical_title_text` | 11 | `:title`, `:body` |
 
-The `:blank` layout (index 7) is the default when you call `Podium.add_slide/2`
-without a `:layout` option. It has no placeholders -- use it when you want full
-control over positioning with `add_text_box/3`, `add_chart/5`, and other functions.
+The `:blank` layout (index 7) is the default when you call `Podium.Slide.new/0`
+without a layout argument. It has no placeholders -- use it when you want full
+control over positioning with `add_text_box/3`, `add_chart/4`, and other functions.
 
 ## Text Placeholders
 
@@ -67,7 +67,7 @@ all text-based placeholders: `:title`, `:subtitle`, `:content`, `:body`,
 `:right_heading`.
 
 ```elixir
-{prs, slide} = Podium.add_slide(prs, layout: :title_content)
+slide = Podium.Slide.new(:title_content)
 
 slide =
   slide
@@ -96,7 +96,7 @@ slide = Podium.set_placeholder(slide, :content, [
 **Section header** -- use for dividing a presentation into sections:
 
 ```elixir
-{prs, slide} = Podium.add_slide(prs, layout: :section_header)
+slide = Podium.Slide.new(:section_header)
 
 slide =
   slide
@@ -109,7 +109,7 @@ slide =
 ![Comparison layout with before/after content](assets/core/placeholders/comparison-layout.png)
 
 ```elixir
-{prs, slide} = Podium.add_slide(prs, layout: :comparison)
+slide = Podium.Slide.new(:comparison)
 
 slide =
   slide
@@ -131,7 +131,7 @@ slide =
 ![Content with caption layout](assets/core/placeholders/content-caption-layout.png)
 
 ```elixir
-{prs, slide} = Podium.add_slide(prs, layout: :content_caption)
+slide = Podium.Slide.new(:content_caption)
 
 slide =
   slide
@@ -143,10 +143,10 @@ slide =
 ## Picture Placeholders
 
 The `:picture_caption` layout has a `:picture` placeholder that accepts image
-data. Use `Podium.set_picture_placeholder/4` instead of `set_placeholder/3`:
+data. Use `Podium.set_picture_placeholder/3` instead of `set_placeholder/3`:
 
 ```elixir
-{prs, slide} = Podium.add_slide(prs, layout: :picture_caption)
+slide = Podium.Slide.new(:picture_caption)
 
 slide =
   slide
@@ -154,13 +154,13 @@ slide =
   |> Podium.set_placeholder(:caption, "The Acme Widget 3000")
 
 image_binary = File.read!("product_photo.png")
-{prs, slide} = Podium.set_picture_placeholder(prs, slide, :picture, image_binary)
+slide = Podium.set_picture_placeholder(slide, :picture, image_binary)
 ```
 
 > #### Warning {: .warning}
 >
 > Using `set_placeholder/3` on a `:picture` placeholder raises an
-> `ArgumentError`. Use `set_picture_placeholder/4` for picture placeholders.
+> `ArgumentError`. Use `set_picture_placeholder/3` for picture placeholders.
 
 ## Charts in Content Placeholders
 
@@ -173,7 +173,7 @@ size inherited from the template layout:
 ```elixir
 alias Podium.Chart.ChartData
 
-{prs, slide} = Podium.add_slide(prs, layout: :title_content)
+slide = Podium.Slide.new(:title_content)
 slide = Podium.set_placeholder(slide, :title, "Revenue by Quarter")
 
 chart_data =
@@ -181,7 +181,7 @@ chart_data =
   |> ChartData.add_categories(["Q1", "Q2", "Q3", "Q4"])
   |> ChartData.add_series("Revenue", [12_500, 14_600, 15_200, 18_100], color: "4472C4")
 
-{prs, slide} = Podium.set_chart_placeholder(prs, slide, :content,
+slide = Podium.set_chart_placeholder(prs, slide, :content,
   :column_clustered, chart_data,
   title: "Quarterly Revenue", legend: :bottom)
 ```
@@ -195,10 +195,10 @@ The chart inherits its position from the template. Other chart options like
 Content placeholders also accept tables via `Podium.set_table_placeholder/5`:
 
 ```elixir
-{prs, slide} = Podium.add_slide(prs, layout: :title_content)
+slide = Podium.Slide.new(:title_content)
 slide = Podium.set_placeholder(slide, :title, "Regional Summary")
 
-{prs, slide} = Podium.set_table_placeholder(prs, slide, :content, [
+slide = Podium.set_table_placeholder(prs, slide, :content, [
   ["Region", "Revenue", "Growth"],
   ["North America", "$12.5M", "+18%"],
   ["Europe", "$8.2M", "+12%"],
@@ -216,11 +216,11 @@ other:
 ```elixir
 alias Podium.Chart.ChartData
 
-{prs, slide} = Podium.add_slide(prs, layout: :two_content)
+slide = Podium.Slide.new(:two_content)
 slide = Podium.set_placeholder(slide, :title, "Revenue Overview")
 
 # Table on the left
-{prs, slide} = Podium.set_table_placeholder(prs, slide, :left_content, [
+slide = Podium.set_table_placeholder(prs, slide, :left_content, [
   ["Region", "Revenue"],
   ["North America", "$12.5M"],
   ["Europe", "$8.2M"],
@@ -234,7 +234,7 @@ chart_data =
   |> ChartData.add_series("Revenue", [12.5, 8.2, 5.1],
     point_colors: %{0 => "2E75B6", 1 => "BDD7EE", 2 => "ED7D31"})
 
-{prs, slide} = Podium.set_chart_placeholder(prs, slide, :right_content,
+slide = Podium.set_chart_placeholder(prs, slide, :right_content,
   :pie, chart_data,
   title: "Revenue Split", legend: :bottom,
   data_labels: [:category, :percent])
@@ -269,7 +269,7 @@ function works with:
 | Function | Valid Placeholders |
 |----------|-------------------|
 | `set_placeholder/3` | All text placeholders (`:title`, `:subtitle`, `:content`, `:body`, `:caption`, etc.) |
-| `set_picture_placeholder/4` | Picture placeholders only (`:picture`) |
+| `set_picture_placeholder/3` | Picture placeholders only (`:picture`) |
 | `set_chart_placeholder/6` | Content placeholders only (type: nil) -- `:content`, `:left_content`, `:right_content` |
 | `set_table_placeholder/5` | Content placeholders only (type: nil) -- `:content`, `:left_content`, `:right_content` |
 

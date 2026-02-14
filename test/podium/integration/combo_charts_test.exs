@@ -16,27 +16,28 @@ defmodule Podium.Integration.ComboChartsTest do
         |> ChartData.add_series("Margin %", [33, 50, 52, 5])
 
       prs = Podium.new(title: "Combo Charts Test", author: "Podium")
-      {prs, slide} = Podium.add_slide(prs, layout: :title_only)
+      slide = Podium.Slide.new(:title_only)
       slide = Podium.set_placeholder(slide, :title, "Column + Line Combo")
 
-      {prs, slide} =
+      slide =
         Podium.add_combo_chart(
-          prs,
           slide,
           data,
           [
             {:column_clustered, series: [0, 1]},
-            {:line_markers, series: [2]}
+            {:line_markers, series: [2], secondary_axis: true}
           ],
           x: {0.5, :inches},
           y: {1.5, :inches},
           width: {12.33, :inches},
           height: {5.5, :inches},
           title: "Revenue & Expenses with Margin",
-          legend: :bottom
+          legend: :bottom,
+          value_axis: [title: "Revenue / Expenses"],
+          secondary_value_axis: [title: "Margin %"]
         )
 
-      prs = Podium.put_slide(prs, slide)
+      prs = Podium.add_slide(prs, slide)
 
       # Save to disk for manual inspection
       output_path = Path.join(@output_dir, "combo_column_line.pptx")
@@ -79,12 +80,11 @@ defmodule Podium.Integration.ComboChartsTest do
         |> ChartData.add_series("Units", [45, 52, 61, 68, 74, 82])
 
       prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs, layout: :title_only)
+      slide = Podium.Slide.new(:title_only)
       slide = Podium.set_placeholder(slide, :title, "Secondary Axis Demo")
 
-      {prs, slide} =
+      slide =
         Podium.add_combo_chart(
-          prs,
           slide,
           data,
           [
@@ -101,7 +101,7 @@ defmodule Podium.Integration.ComboChartsTest do
           secondary_value_axis: [title: "Units Sold"]
         )
 
-      prs = Podium.put_slide(prs, slide)
+      prs = Podium.add_slide(prs, slide)
 
       # Save to disk for manual inspection
       output_path = Path.join(@output_dir, "combo_secondary_axis.pptx")
@@ -138,12 +138,11 @@ defmodule Podium.Integration.ComboChartsTest do
         |> ChartData.add_series("Growth Rate %", [0, 150, 100, 60, 50])
 
       prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs, layout: :title_only)
+      slide = Podium.Slide.new(:title_only)
       slide = Podium.set_placeholder(slide, :title, "Area + Line Combo")
 
-      {prs, slide} =
+      slide =
         Podium.add_combo_chart(
-          prs,
           slide,
           data,
           [
@@ -159,7 +158,7 @@ defmodule Podium.Integration.ComboChartsTest do
           secondary_value_axis: [title: "Growth Rate %"]
         )
 
-      prs = Podium.put_slide(prs, slide)
+      prs = Podium.add_slide(prs, slide)
 
       # Save to disk for manual inspection
       output_path = Path.join(@output_dir, "combo_area_line.pptx")
@@ -196,12 +195,11 @@ defmodule Podium.Integration.ComboChartsTest do
         |> ChartData.add_series("Target", [550, 600, 500, 500])
 
       prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs, layout: :title_only)
+      slide = Podium.Slide.new(:title_only)
       slide = Podium.set_placeholder(slide, :title, "Stacked Column + Line")
 
-      {prs, slide} =
+      slide =
         Podium.add_combo_chart(
-          prs,
           slide,
           data,
           [
@@ -216,7 +214,7 @@ defmodule Podium.Integration.ComboChartsTest do
           legend: :bottom
         )
 
-      prs = Podium.put_slide(prs, slide)
+      prs = Podium.add_slide(prs, slide)
 
       # Save to disk for manual inspection
       output_path = Path.join(@output_dir, "combo_stacked_line.pptx")

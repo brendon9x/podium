@@ -19,8 +19,10 @@ defmodule PodiumTest do
     end
 
     test "dimensions appear in presentation XML" do
-      prs = Podium.new()
-      {prs, _} = Podium.add_slide(prs)
+      prs =
+        Podium.new()
+        |> Podium.add_slide(Podium.Slide.new())
+
       {:ok, binary} = Podium.save_to_memory(prs)
       parts = PptxHelpers.unzip_pptx_binary(binary)
       pres_xml = parts["ppt/presentation.xml"]
@@ -30,8 +32,10 @@ defmodule PodiumTest do
     end
 
     test "4:3 dimensions in presentation XML" do
-      prs = Podium.new(slide_width: 9_144_000, slide_height: 6_858_000)
-      {prs, _} = Podium.add_slide(prs)
+      prs =
+        Podium.new(slide_width: 9_144_000, slide_height: 6_858_000)
+        |> Podium.add_slide(Podium.Slide.new())
+
       {:ok, binary} = Podium.save_to_memory(prs)
       parts = PptxHelpers.unzip_pptx_binary(binary)
       pres_xml = parts["ppt/presentation.xml"]
@@ -43,21 +47,22 @@ defmodule PodiumTest do
 
   describe "add_slide/2" do
     test "adds a slide to the presentation" do
-      prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
+      slide = Podium.Slide.new()
+      prs = Podium.new() |> Podium.add_slide(slide)
 
       assert length(prs.slides) == 1
-      assert slide.index == 1
     end
 
     test "adds multiple slides" do
-      prs = Podium.new()
-      {prs, slide1} = Podium.add_slide(prs)
-      {prs, slide2} = Podium.add_slide(prs)
+      slide1 = Podium.Slide.new()
+      slide2 = Podium.Slide.new()
+
+      prs =
+        Podium.new()
+        |> Podium.add_slide(slide1)
+        |> Podium.add_slide(slide2)
 
       assert length(prs.slides) == 2
-      assert slide1.index == 1
-      assert slide2.index == 2
     end
   end
 
@@ -75,10 +80,11 @@ defmodule PodiumTest do
     end
 
     test "saves presentation with blank slides" do
-      prs = Podium.new()
-      {prs, _slide1} = Podium.add_slide(prs)
-      {prs, _slide2} = Podium.add_slide(prs)
-      {prs, _slide3} = Podium.add_slide(prs)
+      prs =
+        Podium.new()
+        |> Podium.add_slide(Podium.Slide.new())
+        |> Podium.add_slide(Podium.Slide.new())
+        |> Podium.add_slide(Podium.Slide.new())
 
       tmp_path = Path.join(System.tmp_dir!(), "podium_slides_test.pptx")
       on_exit(fn -> File.rm(tmp_path) end)
@@ -112,8 +118,9 @@ defmodule PodiumTest do
 
   describe "save_to_memory/1" do
     test "produces a valid zip binary" do
-      prs = Podium.new()
-      {prs, _} = Podium.add_slide(prs)
+      prs =
+        Podium.new()
+        |> Podium.add_slide(Podium.Slide.new())
 
       {:ok, binary} = Podium.save_to_memory(prs)
 
@@ -124,8 +131,8 @@ defmodule PodiumTest do
 
   describe "put_slide/2" do
     test "replaces a slide in the presentation" do
-      prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
+      slide = Podium.Slide.new()
+      prs = Podium.new() |> Podium.add_slide(slide)
 
       updated_slide = %{slide | layout_index: 1}
       prs = Podium.put_slide(prs, updated_slide)

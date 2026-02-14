@@ -303,7 +303,7 @@ and formatting:
 
 ```elixir
 prs = Podium.new()
-{prs, slide} = Podium.add_slide(prs)
+slide = Podium.Slide.new()
 
 slide =
   slide
@@ -330,7 +330,7 @@ slide =
     x: {0.5, :inches}, y: {1.5, :inches},
     width: {12, :inches}, height: {5, :inches})
 
-prs = Podium.put_slide(prs, slide)
+prs = Podium.add_slide(prs, slide)
 Podium.save(prs, "text_demo.pptx")
 ```
 

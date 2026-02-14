@@ -15,10 +15,10 @@ defmodule Podium.VideoTest do
   # Fake MP4 binary
   @mp4_binary <<"fakemp4data", 0x00, 0x01, 0x02>>
 
-  describe "Video.new/4" do
+  describe "Video.new/2" do
     test "creates a video with default poster" do
       video =
-        Video.new(@mp4_binary, 1, 1,
+        Video.new(@mp4_binary,
           x: {2, :inches},
           y: {1, :inches},
           width: {6, :inches},
@@ -26,20 +26,20 @@ defmodule Podium.VideoTest do
           mime_type: "video/mp4"
         )
 
-      assert video.media_index == 1
+      assert video.media_index == nil
       assert video.extension == "mp4"
       assert video.mime_type == "video/mp4"
       assert video.x == round(2 * 914_400)
       assert video.y == round(1 * 914_400)
       assert video.width == round(6 * 914_400)
       assert video.height == round(4 * 914_400)
-      assert video.poster_frame.image_index == 1
+      assert video.poster_frame.image_index == nil
       assert video.poster_frame.extension == "png"
     end
 
     test "creates a video with custom poster frame" do
       video =
-        Video.new(@mp4_binary, 1, 2,
+        Video.new(@mp4_binary,
           x: {1, :inches},
           y: {1, :inches},
           width: {4, :inches},
@@ -49,12 +49,12 @@ defmodule Podium.VideoTest do
 
       assert video.poster_frame.binary == @png_binary
       assert video.poster_frame.extension == "png"
-      assert video.poster_frame.image_index == 2
+      assert video.poster_frame.image_index == nil
     end
 
     test "computes SHA1 for deduplication" do
       video =
-        Video.new(@mp4_binary, 1, 1,
+        Video.new(@mp4_binary,
           x: 0,
           y: 0,
           width: 914_400,
@@ -80,7 +80,7 @@ defmodule Podium.VideoTest do
   describe "pic_xml/5" do
     test "generates correct XML structure" do
       video =
-        Video.new(@mp4_binary, 1, 1,
+        Video.new(@mp4_binary,
           x: {2, :inches},
           y: {1, :inches},
           width: {6, :inches},
@@ -119,7 +119,7 @@ defmodule Podium.VideoTest do
   describe "media_partname/1" do
     test "returns correct path" do
       video =
-        Video.new(@mp4_binary, 3, 1,
+        Video.new(@mp4_binary,
           x: 0,
           y: 0,
           width: 914_400,
@@ -127,17 +127,16 @@ defmodule Podium.VideoTest do
           mime_type: "video/mp4"
         )
 
+      video = %{video | media_index: 3}
       assert Video.media_partname(video) == "ppt/media/media3.mp4"
     end
   end
 
   describe "integration" do
     test "basic video add: generates valid pptx" do
-      prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
-
-      {prs, slide} =
-        Podium.add_movie(prs, slide, @mp4_binary,
+      slide =
+        Podium.Slide.new()
+        |> Podium.add_movie(@mp4_binary,
           x: {2, :inches},
           y: {1.5, :inches},
           width: {6, :inches},
@@ -146,7 +145,11 @@ defmodule Podium.VideoTest do
         )
 
       assert length(slide.videos) == 1
-      prs = Podium.put_slide(prs, slide)
+
+      prs =
+        Podium.new()
+        |> Podium.add_slide(slide)
+
       {:ok, binary} = Podium.save_to_memory(prs)
 
       parts = PptxHelpers.unzip_pptx_binary(binary)
@@ -180,8 +183,7 @@ defmodule Podium.VideoTest do
     end
 
     test "SHA1 dedup: same video binary uses one media file" do
-      prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
+      slide = Podium.Slide.new()
 
       opts = [
         x: {1, :inches},
@@ -191,25 +193,19 @@ defmodule Podium.VideoTest do
         mime_type: "video/mp4"
       ]
 
-      {prs, slide} = Podium.add_movie(prs, slide, @mp4_binary, opts)
-
-      {prs, slide} =
-        Podium.add_movie(prs, slide, @mp4_binary, Keyword.merge(opts, x: {5, :inches}))
+      slide = Podium.add_movie(slide, @mp4_binary, opts)
+      slide = Podium.add_movie(slide, @mp4_binary, Keyword.merge(opts, x: {5, :inches}))
 
       assert length(slide.videos) == 2
-      # Both should share the same media index
+      # Both have same SHA1, so serialization will dedup to one media file
       [v1, v2] = slide.videos
-      assert v1.media_index == v2.media_index
-      # But still only one media index allocated
-      assert prs.next_media_index == 2
+      assert v1.sha1 == v2.sha1
     end
 
     test "custom poster frame stored correctly" do
-      prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
-
-      {prs, slide} =
-        Podium.add_movie(prs, slide, @mp4_binary,
+      slide =
+        Podium.Slide.new()
+        |> Podium.add_movie(@mp4_binary,
           x: {1, :inches},
           y: {1, :inches},
           width: {4, :inches},
@@ -217,33 +213,33 @@ defmodule Podium.VideoTest do
           poster_frame: @png_binary
         )
 
-      prs = Podium.put_slide(prs, slide)
+      prs =
+        Podium.new()
+        |> Podium.add_slide(slide)
+
       {:ok, binary} = Podium.save_to_memory(prs)
       parts = PptxHelpers.unzip_pptx_binary(binary)
 
-      [video] = slide.videos
-      poster_path = Video.poster_partname(video)
+      # Poster frame is stored as image1 (indices assigned during serialization)
+      poster_path = "ppt/media/image1.png"
       assert Map.has_key?(parts, poster_path)
       assert parts[poster_path] == @png_binary
     end
 
     test "multiple videos on one slide" do
-      prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
-
+      slide = Podium.Slide.new()
       other_binary = <<"other_video_data">>
 
-      {prs, slide} =
-        Podium.add_movie(prs, slide, @mp4_binary,
+      slide =
+        slide
+        |> Podium.add_movie(@mp4_binary,
           x: {1, :inches},
           y: {1, :inches},
           width: {4, :inches},
           height: {3, :inches},
           mime_type: "video/mp4"
         )
-
-      {prs, slide} =
-        Podium.add_movie(prs, slide, other_binary,
+        |> Podium.add_movie(other_binary,
           x: {6, :inches},
           y: {1, :inches},
           width: {4, :inches},
@@ -253,7 +249,10 @@ defmodule Podium.VideoTest do
 
       assert length(slide.videos) == 2
 
-      prs = Podium.put_slide(prs, slide)
+      prs =
+        Podium.new()
+        |> Podium.add_slide(slide)
+
       {:ok, binary} = Podium.save_to_memory(prs)
       parts = PptxHelpers.unzip_pptx_binary(binary)
 
@@ -263,11 +262,9 @@ defmodule Podium.VideoTest do
     end
 
     test "default mime type works" do
-      prs = Podium.new()
-      {prs, slide} = Podium.add_slide(prs)
-
-      {prs, slide} =
-        Podium.add_movie(prs, slide, @mp4_binary,
+      slide =
+        Podium.Slide.new()
+        |> Podium.add_movie(@mp4_binary,
           x: {1, :inches},
           y: {1, :inches},
           width: {4, :inches},
@@ -278,7 +275,10 @@ defmodule Podium.VideoTest do
       assert video.mime_type == "video/unknown"
       assert video.extension == "bin"
 
-      prs = Podium.put_slide(prs, slide)
+      prs =
+        Podium.new()
+        |> Podium.add_slide(slide)
+
       {:ok, binary} = Podium.save_to_memory(prs)
       parts = PptxHelpers.unzip_pptx_binary(binary)
       assert Map.has_key?(parts, "ppt/media/media1.bin")

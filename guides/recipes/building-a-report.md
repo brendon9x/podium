@@ -37,16 +37,14 @@ Use the `:title_slide` layout for a clean opening with the report name and subti
 ![Title slide with brand colors](assets/recipes/building-a-report/title-slide.png)
 
 ```elixir
-{prs, slide} = Podium.add_slide(prs, layout: :title_slide)
-
 slide =
-  slide
+  Podium.Slide.new(:title_slide)
   |> Podium.set_placeholder(:title, [
     [{"Q4 2025 Business Review", bold: true, font_size: 40, color: primary}]
   ])
   |> Podium.set_placeholder(:subtitle, "Analytics Team -- Prepared February 2026")
 
-prs = Podium.put_slide(prs, slide)
+prs = Podium.add_slide(prs, slide)
 ```
 
 ## Slide 2: Executive Summary
@@ -56,10 +54,8 @@ A text slide with bullet points summarizing the key findings. The gradient heade
 ![Executive summary with gradient header and bullet points](assets/recipes/building-a-report/executive-summary.png)
 
 ```elixir
-{prs, slide} = Podium.add_slide(prs)
-
 slide =
-  slide
+  Podium.Slide.new()
   |> Podium.add_text_box(
     [{[{"Executive Summary", bold: true, font_size: 28, color: white}], alignment: :center}],
     x: {0.5, :inches}, y: {0.3, :inches},
@@ -81,7 +77,7 @@ slide =
   ], x: {0.5, :inches}, y: {1.3, :inches},
      width: {11, :inches}, height: {5, :inches})
 
-prs = Podium.put_slide(prs, slide)
+prs = Podium.add_slide(prs, slide)
 ```
 
 ## Slide 3: Revenue Chart
@@ -91,8 +87,6 @@ A clustered column chart comparing revenue and expenses across quarters. Data la
 ![Quarterly revenue vs expenses column chart](assets/recipes/building-a-report/revenue-chart.png)
 
 ```elixir
-{prs, slide} = Podium.add_slide(prs)
-
 revenue_data =
   ChartData.new()
   |> ChartData.add_categories(["Q1 2025", "Q2 2025", "Q3 2025", "Q4 2025"])
@@ -100,21 +94,25 @@ revenue_data =
   |> ChartData.add_series("Expenses", [10_000, 11_300, 12_500, 13_000], color: accent2)
   |> ChartData.add_series("Net Profit", [2_500, 3_300, 2_700, 5_100], color: accent3)
 
-{prs, _slide} = Podium.add_chart(prs, slide, :column_clustered, revenue_data,
-  x: {0.5, :inches}, y: {0.5, :inches},
-  width: {11, :inches}, height: {6, :inches},
-  title: [text: "Quarterly Revenue vs Expenses", font_size: 18, bold: true, color: primary],
-  legend: [position: :bottom, font_size: 10],
-  data_labels: [show: [:value], position: :outside_end, number_format: "$#,##0"],
-  category_axis: [title: "Quarter"],
-  value_axis: [
-    title: "Amount ($)",
-    number_format: "$#,##0",
-    major_gridlines: true,
-    min: 0,
-    max: 20_000,
-    major_unit: 5_000
-  ])
+slide =
+  Podium.Slide.new()
+  |> Podium.add_chart(:column_clustered, revenue_data,
+    x: {0.5, :inches}, y: {0.5, :inches},
+    width: {11, :inches}, height: {6, :inches},
+    title: [text: "Quarterly Revenue vs Expenses", font_size: 18, bold: true, color: primary],
+    legend: [position: :bottom, font_size: 10],
+    data_labels: [show: [:value], position: :outside_end, number_format: "$#,##0"],
+    category_axis: [title: "Quarter"],
+    value_axis: [
+      title: "Amount ($)",
+      number_format: "$#,##0",
+      major_gridlines: true,
+      min: 0,
+      max: 20_000,
+      major_unit: 5_000
+    ])
+
+prs = Podium.add_slide(prs, slide)
 ```
 
 ## Slide 4: Market Share Pie Chart
@@ -124,20 +122,22 @@ A pie chart with per-point colors and category+percent labels breaks down revenu
 ![Revenue by region pie chart](assets/recipes/building-a-report/market-share-pie.png)
 
 ```elixir
-{prs, slide} = Podium.add_slide(prs)
-
 market_data =
   ChartData.new()
   |> ChartData.add_categories(["North America", "Europe", "Asia Pacific", "Latin America"])
   |> ChartData.add_series("Revenue", [25_200, 16_800, 12_100, 6_300],
     point_colors: %{0 => accent1, 1 => "BDD7EE", 2 => accent2, 3 => "FBE5D6"})
 
-{prs, _slide} = Podium.add_chart(prs, slide, :pie, market_data,
-  x: {1.5, :inches}, y: {0.5, :inches},
-  width: {9, :inches}, height: {6, :inches},
-  title: [text: "Revenue by Region", font_size: 18, bold: true, color: primary],
-  legend: :right,
-  data_labels: [:category, :percent])
+slide =
+  Podium.Slide.new()
+  |> Podium.add_chart(:pie, market_data,
+    x: {1.5, :inches}, y: {0.5, :inches},
+    width: {9, :inches}, height: {6, :inches},
+    title: [text: "Revenue by Region", font_size: 18, bold: true, color: primary],
+    legend: :right,
+    data_labels: [:category, :percent])
+
+prs = Podium.add_slide(prs, slide)
 ```
 
 ## Slide 5: Department Table
@@ -147,10 +147,8 @@ A formatted table with header styling, borders, and a merged title row for a pro
 ![Department performance table with merged title row](assets/recipes/building-a-report/department-table.png)
 
 ```elixir
-{prs, slide} = Podium.add_slide(prs)
-
 slide =
-  slide
+  Podium.Slide.new()
   |> Podium.add_text_box(
     [{[{"Department Performance", bold: true, font_size: 24, color: primary}], alignment: :center}],
     x: {0.5, :inches}, y: {0.3, :inches},
@@ -171,7 +169,7 @@ slide =
   ], x: {0.5, :inches}, y: {1.2, :inches},
      width: {11, :inches}, height: {4.5, :inches})
 
-prs = Podium.put_slide(prs, slide)
+prs = Podium.add_slide(prs, slide)
 ```
 
 ## Slide 6: Trend Chart
@@ -181,8 +179,6 @@ A line chart with markers showing monthly user growth across channels.
 ![Monthly active users trend line chart](assets/recipes/building-a-report/trend-line-chart.png)
 
 ```elixir
-{prs, slide} = Podium.add_slide(prs)
-
 trend_data =
   ChartData.new()
   |> ChartData.add_categories(["Jul", "Aug", "Sep", "Oct", "Nov", "Dec"])
@@ -193,12 +189,16 @@ trend_data =
   |> ChartData.add_series("API", [22, 25, 28, 30, 33, 38],
     color: accent3, marker: [style: :square, size: 6, fill: accent3])
 
-{prs, _slide} = Podium.add_chart(prs, slide, :line_markers, trend_data,
-  x: {0.5, :inches}, y: {0.5, :inches},
-  width: {11, :inches}, height: {6, :inches},
-  title: [text: "Monthly Active Users (H2 2025)", font_size: 18, bold: true, color: primary],
-  legend: :bottom,
-  value_axis: [title: "Users (thousands)", major_gridlines: true])
+slide =
+  Podium.Slide.new()
+  |> Podium.add_chart(:line_markers, trend_data,
+    x: {0.5, :inches}, y: {0.5, :inches},
+    width: {11, :inches}, height: {6, :inches},
+    title: [text: "Monthly Active Users (H2 2025)", font_size: 18, bold: true, color: primary],
+    legend: :bottom,
+    value_axis: [title: "Users (thousands)", major_gridlines: true])
+
+prs = Podium.add_slide(prs, slide)
 ```
 
 ## Slide 7: Image Slide
@@ -206,21 +206,20 @@ trend_data =
 Add a product screenshot or photo. Replace the file path with your own image.
 
 ```elixir
-{prs, slide} = Podium.add_slide(prs)
-
-slide = Podium.add_text_box(slide,
-  [{[{"Product Dashboard", bold: true, font_size: 24, color: primary}], alignment: :center}],
-  x: {0.5, :inches}, y: {0.3, :inches},
-  width: {11, :inches}, height: {0.7, :inches})
-
 # Replace with your actual image path
 image_binary = File.read!("path/to/dashboard_screenshot.png")
 
-{prs, slide} = Podium.add_image(prs, slide, image_binary,
-  x: {1, :inches}, y: {1.3, :inches},
-  width: {10, :inches})
+slide =
+  Podium.Slide.new()
+  |> Podium.add_text_box(
+    [{[{"Product Dashboard", bold: true, font_size: 24, color: primary}], alignment: :center}],
+    x: {0.5, :inches}, y: {0.3, :inches},
+    width: {11, :inches}, height: {0.7, :inches})
+  |> Podium.add_image(image_binary,
+    x: {1, :inches}, y: {1.3, :inches},
+    width: {10, :inches})
 
-prs = Podium.put_slide(prs, slide)
+prs = Podium.add_slide(prs, slide)
 ```
 
 ## Slide 8: Conclusion
@@ -230,10 +229,8 @@ Close with key takeaways using the `:title_content` layout and speaker notes for
 ![Key takeaways and next steps conclusion slide](assets/recipes/building-a-report/conclusion.png)
 
 ```elixir
-{prs, slide} = Podium.add_slide(prs, layout: :title_content)
-
 slide =
-  slide
+  Podium.Slide.new(:title_content)
   |> Podium.set_placeholder(:title, "Key Takeaways & Next Steps")
   |> Podium.set_placeholder(:content, [
     [{"Revenue up 28% YoY, driven by North America and APAC"}],
@@ -249,7 +246,7 @@ slide =
     "Remind the audience about the customer advisory board meeting in March."
   )
 
-prs = Podium.put_slide(prs, slide)
+prs = Podium.add_slide(prs, slide)
 ```
 
 ## Add Footer and Save

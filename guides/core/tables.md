@@ -25,7 +25,7 @@ In the simplest case, every cell is a plain string.
 
 ```elixir
 prs = Podium.new()
-{prs, slide} = Podium.add_slide(prs)
+slide = Podium.Slide.new()
 
 slide = Podium.add_table(slide, [
   ["Department", "Headcount", "Budget"],
@@ -35,7 +35,7 @@ slide = Podium.add_table(slide, [
 ], x: {1, :inches}, y: {1, :inches},
    width: {11, :inches}, height: {3, :inches})
 
-prs = Podium.put_slide(prs, slide)
+prs = Podium.add_slide(prs, slide)
 Podium.save(prs, "table_demo.pptx")
 ```
 
@@ -262,7 +262,7 @@ borders, rich text, vertical merging, and padding:
 
 ```elixir
 prs = Podium.new()
-{prs, slide} = Podium.add_slide(prs)
+slide = Podium.Slide.new()
 
 slide = Podium.add_table(slide, [
   # Merged title row
@@ -298,7 +298,7 @@ slide = Podium.add_table(slide, [
 ], x: {0.5, :inches}, y: {1, :inches},
    width: {12, :inches}, height: {4.5, :inches})
 
-prs = Podium.put_slide(prs, slide)
+prs = Podium.add_slide(prs, slide)
 Podium.save(prs, "report_table.pptx")
 ```
 
