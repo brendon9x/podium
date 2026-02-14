@@ -250,7 +250,7 @@ defmodule Podium.Chart.XmlWriter do
 
   defp data_labels_xml(labels) when is_list(labels) do
     # Support both simple atom list and keyword opts
-    {show_atoms, position, number_format} = parse_data_labels(labels)
+    {show_atoms, position, number_format, font_size} = parse_data_labels(labels)
 
     show_val =
       if :value in show_atoms, do: ~s(<c:showVal val="1"/>), else: ~s(<c:showVal val="0"/>)
@@ -272,6 +272,7 @@ defmodule Podium.Chart.XmlWriter do
 
     pos_xml = dlbl_position_xml(position)
     num_fmt_xml = dlbl_num_fmt_xml(number_format)
+    font_xml = dlbl_font_xml(font_size)
 
     ~s(<c:dLbls>) <>
       num_fmt_xml <>
@@ -281,16 +282,25 @@ defmodule Podium.Chart.XmlWriter do
       show_ser <>
       show_pct <>
       ~s(<c:showLegendKey val="0"/>) <>
+      font_xml <>
       ~s(</c:dLbls>)
   end
 
   defp parse_data_labels(labels) do
     if Keyword.keyword?(labels) and Keyword.has_key?(labels, :show) do
       {Keyword.get(labels, :show, []), Keyword.get(labels, :position),
-       Keyword.get(labels, :number_format)}
+       Keyword.get(labels, :number_format), Keyword.get(labels, :font_size)}
     else
-      {labels, nil, nil}
+      {labels, nil, nil, nil}
     end
+  end
+
+  defp dlbl_font_xml(nil), do: ""
+
+  defp dlbl_font_xml(font_size) do
+    sz = font_size * 100
+
+    ~s(<c:txPr><a:bodyPr/><a:lstStyle/><a:p><a:pPr><a:defRPr sz="#{sz}"/></a:pPr><a:endParaRPr lang="en-US"/></a:p></c:txPr>)
   end
 
   defp dlbl_position_xml(nil), do: ""

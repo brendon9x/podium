@@ -70,7 +70,7 @@ s3 =
     height: {6, :inches},
     title: [text: "Quarterly Revenue vs Expenses", font_size: 18, bold: true, color: primary],
     legend: [position: :bottom, font_size: 10],
-    data_labels: [show: [:value], position: :outside_end, number_format: "$#,##0"],
+    data_labels: [show: [:value], position: :outside_end, number_format: "$#,##0", font_size: 9],
     category_axis: [title: "Quarter"],
     value_axis: [
       title: "Amount ($)",
@@ -118,18 +118,23 @@ s5 =
   |> Podium.add_table(
     [
       [
-        {"Department Performance -- Q4 2025", col_span: 5, fill: primary},
+        {[[{"Department Performance -- Q4 2025", color: white}]], col_span: 5, fill: primary},
         :merge,
         :merge,
         :merge,
         :merge
       ],
       [
-        {"Department", fill: accent1, borders: [bottom: [color: primary, width: {2, :pt}]]},
-        {"Headcount", fill: accent1, borders: [bottom: [color: primary, width: {2, :pt}]]},
-        {"Budget", fill: accent1, borders: [bottom: [color: primary, width: {2, :pt}]]},
-        {"Revenue", fill: accent1, borders: [bottom: [color: primary, width: {2, :pt}]]},
-        {"Satisfaction", fill: accent1, borders: [bottom: [color: primary, width: {2, :pt}]]}
+        {[[{"Department", color: white}]],
+         fill: accent1, borders: [bottom: [color: primary, width: {2, :pt}]]},
+        {[[{"Headcount", color: white}]],
+         fill: accent1, borders: [bottom: [color: primary, width: {2, :pt}]]},
+        {[[{"Budget", color: white}]],
+         fill: accent1, borders: [bottom: [color: primary, width: {2, :pt}]]},
+        {[[{"Revenue", color: white}]],
+         fill: accent1, borders: [bottom: [color: primary, width: {2, :pt}]]},
+        {[[{"Satisfaction", color: white}]],
+         fill: accent1, borders: [bottom: [color: primary, width: {2, :pt}]]}
       ],
       [
         "Engineering",
@@ -201,20 +206,19 @@ s7 =
   )
 
 # Add footer and save
-prs =
-  prs
-  |> Podium.add_slide(s1)
-  |> Podium.add_slide(s2)
-  |> Podium.add_slide(s3)
-  |> Podium.add_slide(s4)
-  |> Podium.add_slide(s5)
-  |> Podium.add_slide(s6)
-  |> Podium.add_slide(s7)
-  |> Podium.set_footer(
-    footer: "Acme Corp -- Confidential",
-    date: "February 2026",
-    slide_number: true
-  )
-  |> Podium.save("demos/output/building-a-report.pptx")
+prs
+|> Podium.add_slide(s1)
+|> Podium.add_slide(s2)
+|> Podium.add_slide(s3)
+|> Podium.add_slide(s4)
+|> Podium.add_slide(s5)
+|> Podium.add_slide(s6)
+|> Podium.add_slide(s7)
+|> Podium.set_footer(
+  footer: "Acme Corp -- Confidential",
+  date: "February 2026",
+  slide_number: true
+)
+|> Podium.save("demos/output/building-a-report.pptx")
 
 IO.puts("Generated demos/output/building-a-report.pptx")

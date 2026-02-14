@@ -24,8 +24,6 @@ three types: `:straight` (direct line), `:elbow` (right-angle routed), and
 `Podium.add_connector/7` takes the slide, connector type, start coordinates,
 end coordinates, and optional line formatting:
 
-![Flowchart with straight, elbow, and curved connectors](assets/advanced/connectors-and-freeforms/flowchart-connectors.png)
-
 ```elixir
 prs = Podium.new()
 
@@ -44,6 +42,8 @@ slide =
     line: [color: "000000", width: {1.5, :pt}])
 ```
 
+![Flowchart with straight, elbow, and curved connectors](assets/advanced/connectors-and-freeforms/flowchart-connectors.png)
+
 Podium automatically calculates flip attributes when the end point is to the
 left of or above the start point.
 
@@ -57,7 +57,7 @@ slide = Podium.add_connector(slide, :elbow,
 
 # Curved connector
 slide = Podium.add_connector(slide, :curved,
-  {8, :inches}, {2, :inches}, {11, :inches}, {5, :inches},
+  {7.5, :inches}, {5, :inches}, {10, :inches}, {2.5, :inches},
   line: [color: "5B9BD5", width: {2, :pt}])
 ```
 
@@ -75,8 +75,6 @@ to a slide with `Podium.add_freeform/3` (slide, freeform, opts).
 
 ### Drawing a Triangle
 
-![Freeform triangle and five-pointed star](assets/advanced/connectors-and-freeforms/freeform-triangle-star.png)
-
 ```elixir
 alias Podium.Freeform
 
@@ -88,6 +86,8 @@ triangle =
 
 slide = Podium.add_freeform(slide, triangle, fill: "4472C4", line: "002060")
 ```
+
+![Freeform triangle and five-pointed star](assets/advanced/connectors-and-freeforms/freeform-triangle-star.png)
 
 ### Path Operations
 
@@ -142,8 +142,6 @@ For non-square scaling, use `:x_scale` and `:y_scale` instead of `:scale`.
 
 Use `Freeform.move_to/3` to start a new contour within the same shape:
 
-![Multi-contour freeform with rectangular cutout](assets/advanced/connectors-and-freeforms/multi-contour-cutout.png)
-
 ```elixir
 alias Podium.Freeform
 
@@ -166,6 +164,8 @@ cutout =
 
 slide = Podium.add_freeform(slide, cutout, fill: "70AD47")
 ```
+
+![Multi-contour freeform with rectangular cutout](assets/advanced/connectors-and-freeforms/multi-contour-cutout.png)
 
 ### Freeform Options
 

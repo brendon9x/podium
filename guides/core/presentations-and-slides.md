@@ -93,22 +93,18 @@ prs = Podium.add_slide(prs, slide)
 
 Set a background color, gradient, pattern, or picture when creating a slide.
 
-![Solid dark background with light text](assets/core/presentations-and-slides/solid-background.png)
+Slide backgrounds accept solid colors, gradients, patterns, and pictures. On dark backgrounds, use rich text with a light color for readability:
 
 ```elixir
 # Solid color
 slide = Podium.Slide.new(:blank, background: "E8EDF2")
 ```
 
-![Gradient background with centered title](assets/core/presentations-and-slides/gradient-background.png)
-
 ```elixir
 # Gradient
 slide = Podium.Slide.new(:blank,
   background: {:gradient, [{0, "001133"}, {100_000, "004488"}], angle: 5_400_000})
 ```
-
-![Pattern background with diagonal lines](assets/core/presentations-and-slides/pattern-background.png)
 
 ```elixir
 # Pattern
@@ -119,6 +115,12 @@ slide = Podium.Slide.new(:blank,
 image_binary = File.read!("background.jpg")
 slide = Podium.Slide.new(:blank, background: {:picture, image_binary})
 ```
+
+![Solid dark background with light text](assets/core/presentations-and-slides/solid-background.png)
+
+![Gradient background with centered title](assets/core/presentations-and-slides/gradient-background.png)
+
+![Pattern background with diagonal lines](assets/core/presentations-and-slides/pattern-background.png)
 
 When no background is set, the slide inherits the background from the slide master.
 
@@ -191,14 +193,14 @@ prs = Podium.set_core_properties(prs, title: "Updated Title", revision: 2)
 `Podium.set_footer/2` adds footer text, a date string, and slide numbers to
 every slide in the presentation.
 
-![Title slide with footer, date, and slide number](assets/core/presentations-and-slides/title-slide-footer.png)
-
 ```elixir
 prs = Podium.set_footer(prs,
   footer: "Acme Corp Confidential",
   date: "February 2026",
   slide_number: true)
 ```
+
+![Title slide with footer, date, and slide number](assets/core/presentations-and-slides/title-slide-footer.png)
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|

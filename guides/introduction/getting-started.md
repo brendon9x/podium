@@ -70,8 +70,6 @@ For text with mixed formatting -- different fonts, colors, bold/italic on specif
 
 Each paragraph is a list of "runs" (text segments). A run can be a plain string or a `{text, options}` tuple. Paragraph-level options like alignment go in an outer tuple: `{[runs], paragraph_opts}`.
 
-![Rich text with bold title, mixed formatting, and bullets](assets/introduction/getting-started/rich-text-bullets.png)
-
 ```elixir
 prs = Podium.new()
 slide = Podium.Slide.new()
@@ -93,6 +91,8 @@ slide = Podium.add_text_box(slide, [
 prs = Podium.add_slide(prs, slide)
 Podium.save(prs, "step3.pptx")
 ```
+
+![Rich text with bold title, mixed formatting, and bullets](assets/introduction/getting-started/rich-text-bullets.png)
 
 Run-level options include: `:bold`, `:italic`, `:underline`, `:strikethrough`, `:superscript`, `:subscript`, `:font_size`, `:color` (hex RGB like `"FF0000"`), and `:font`.
 
@@ -117,8 +117,6 @@ slide = Podium.add_text_box(slide, [
 
 Charts are Podium's flagship feature. You build chart data with `Podium.Chart.ChartData`, then add it to a slide with `Podium.add_chart/4`. Charts embed an Excel workbook so recipients can edit the data.
 
-![Column clustered chart with axis config and data labels](assets/introduction/getting-started/column-chart.png)
-
 ```elixir
 alias Podium.Chart.ChartData
 
@@ -136,13 +134,15 @@ slide = Podium.add_chart(slide, :column_clustered, chart_data,
   width: {10, :inches}, height: {5.5, :inches},
   title: "Revenue vs Expenses",
   legend: :bottom,
-  data_labels: [show: [:value], position: :outside_end, number_format: "$#,##0"],
+  data_labels: [show: [:value], position: :outside_end, number_format: "$#,##0", font_size: 9],
   category_axis: [title: "Quarter"],
   value_axis: [title: "Amount ($)", number_format: "$#,##0", major_gridlines: true])
 
 prs = Podium.add_slide(prs, slide)
 Podium.save(prs, "step4.pptx")
 ```
+
+![Column clustered chart with axis config and data labels](assets/introduction/getting-started/column-chart.png)
 
 Podium supports 29 chart types including `:column_clustered`, `:bar_stacked`, `:line_markers`, `:pie`, `:area`, `:doughnut`, `:radar`, `:scatter`, and `:bubble`. The chart title, legend, data labels, and axis options are all configurable.
 
@@ -174,18 +174,20 @@ Podium.save(prs, "step5.pptx")
 
 For formatted cells, use a `{text, options}` tuple. You can set fill colors, borders, and vertical alignment per cell:
 
-![Table with header fills and formatted cells](assets/introduction/getting-started/formatted-table.png)
-
 ```elixir
 slide = Podium.add_table(slide, [
-  [{"Department", fill: "003366"}, {"Headcount", fill: "003366"},
-   {"Budget", fill: "003366"}, {"Score", fill: "003366"}],
+  [{[[{"Department", color: "FFFFFF"}]], fill: "003366"},
+   {[[{"Headcount", color: "FFFFFF"}]], fill: "003366"},
+   {[[{"Budget", color: "FFFFFF"}]], fill: "003366"},
+   {[[{"Score", color: "FFFFFF"}]], fill: "003366"}],
   ["Engineering", "230", "$4,200K",
    {[[{"92%", bold: true, color: "228B22"}]], anchor: :middle}],
   ["Marketing", "85", "$2,100K", "87%"]
 ], x: {1, :inches}, y: {1, :inches},
    width: {10, :inches}, height: {3, :inches})
 ```
+
+![Table with header fills and formatted cells](assets/introduction/getting-started/formatted-table.png)
 
 Cells also accept rich text in the same format as `add_text_box/3`, and you can merge cells with `:col_span`, `:row_span`, and the `:merge` placeholder.
 
@@ -220,8 +222,6 @@ Supported formats: PNG, JPEG, BMP, GIF, TIFF, EMF, WMF.
 
 Instead of manually positioning every element, you can use slide layouts with predefined placeholders. Create a slide with `Podium.Slide.new/1`, then fill its placeholders with `Podium.set_placeholder/3`.
 
-![Title slide with styled title and subtitle](assets/introduction/getting-started/title-slide.png)
-
 ```elixir
 prs = Podium.new()
 
@@ -236,15 +236,17 @@ slide =
 prs = Podium.add_slide(prs, slide)
 ```
 
-Placeholders accept plain strings or rich text, just like `add_text_box/3`:
+![Title slide with styled title and subtitle](assets/introduction/getting-started/title-slide.png)
 
-![Title and content layout with placeholder text](assets/introduction/getting-started/title-content-layout.png)
+Placeholders accept plain strings or rich text, just like `add_text_box/3`:
 
 ```elixir
 slide = Podium.set_placeholder(slide, :title, [
   [{"Annual Report", bold: true, font_size: 44, color: "003366"}]
 ])
 ```
+
+![Title and content layout with placeholder text](assets/introduction/getting-started/title-content-layout.png)
 
 Podium supports all 11 standard slide layouts:
 
@@ -320,7 +322,7 @@ s3 =
   |> Podium.add_chart(:column_clustered, chart_data,
     x: {1, :inches}, y: {0.5, :inches}, width: {10, :inches}, height: {6, :inches},
     title: "Revenue vs Expenses", legend: :bottom,
-    data_labels: [show: [:value], position: :outside_end, number_format: "$#,##0"],
+    data_labels: [show: [:value], position: :outside_end, number_format: "$#,##0", font_size: 9],
     category_axis: [title: "Quarter"],
     value_axis: [title: "Amount ($)", number_format: "$#,##0", major_gridlines: true])
 
@@ -331,8 +333,10 @@ s4 =
     x: {1, :inches}, y: {0.3, :inches}, width: {10, :inches}, height: {0.8, :inches},
     font_size: 28, alignment: :center)
   |> Podium.add_table([
-    [{"Department", fill: "003366"}, {"Headcount", fill: "003366"},
-     {"Budget", fill: "003366"}, {"Score", fill: "003366"}],
+    [{[[{"Department", color: "FFFFFF"}]], fill: "003366"},
+     {[[{"Headcount", color: "FFFFFF"}]], fill: "003366"},
+     {[[{"Budget", color: "FFFFFF"}]], fill: "003366"},
+     {[[{"Score", color: "FFFFFF"}]], fill: "003366"}],
     ["Engineering", "230", "$4,200K", "92%"],
     ["Marketing", "85", "$2,100K", "87%"],
     ["Sales", "120", "$3,500K", "84%"],

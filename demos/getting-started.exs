@@ -50,7 +50,7 @@ s3 =
     height: {6, :inches},
     title: "Revenue vs Expenses",
     legend: :bottom,
-    data_labels: [show: [:value], position: :outside_end, number_format: "$#,##0"],
+    data_labels: [show: [:value], position: :outside_end, number_format: "$#,##0", font_size: 9],
     category_axis: [title: "Quarter"],
     value_axis: [title: "Amount ($)", number_format: "$#,##0", major_gridlines: true]
   )
@@ -69,10 +69,10 @@ s4 =
   |> Podium.add_table(
     [
       [
-        {"Department", fill: "003366"},
-        {"Headcount", fill: "003366"},
-        {"Budget", fill: "003366"},
-        {"Score", fill: "003366"}
+        {[[{"Department", color: "FFFFFF"}]], fill: "003366"},
+        {[[{"Headcount", color: "FFFFFF"}]], fill: "003366"},
+        {[[{"Budget", color: "FFFFFF"}]], fill: "003366"},
+        {[[{"Score", color: "FFFFFF"}]], fill: "003366"}
       ],
       ["Engineering", "230", "$4,200K", "92%"],
       ["Marketing", "85", "$2,100K", "87%"],
@@ -95,13 +95,12 @@ s5 =
     [{"Target 95% customer satisfaction"}]
   ])
 
-prs =
-  prs
-  |> Podium.add_slide(s1)
-  |> Podium.add_slide(s2)
-  |> Podium.add_slide(s3)
-  |> Podium.add_slide(s4)
-  |> Podium.add_slide(s5)
-  |> Podium.save("demos/output/getting-started.pptx")
+prs
+|> Podium.add_slide(s1)
+|> Podium.add_slide(s2)
+|> Podium.add_slide(s3)
+|> Podium.add_slide(s4)
+|> Podium.add_slide(s5)
+|> Podium.save("demos/output/getting-started.pptx")
 
 IO.puts("Generated demos/output/getting-started.pptx")
