@@ -1,7 +1,7 @@
 defmodule Podium.MixProject do
   use Mix.Project
 
-  @source_url "https://github.com/USERNAME/podium"
+  @source_url "https://github.com/brendon9x/podium"
 
   def project do
     [
@@ -12,6 +12,7 @@ defmodule Podium.MixProject do
       elixirc_paths: elixirc_paths(Mix.env()),
       deps: deps(),
       docs: docs(),
+      package: package(),
       name: "Podium",
       description: "PowerPoint (.pptx) generation for Elixir with editable charts",
       source_url: @source_url
@@ -34,6 +35,13 @@ defmodule Podium.MixProject do
       {:elixlsx, "~> 0.6"},
       {:sweet_xml, "~> 0.7", only: :test},
       {:ex_doc, "~> 0.34", only: :dev, runtime: false}
+    ]
+  end
+
+  defp package do
+    [
+      licenses: ["MIT"],
+      links: %{"GitHub" => @source_url}
     ]
   end
 

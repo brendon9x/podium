@@ -113,7 +113,7 @@ guard args.count >= 3 else {
 
 let pdfPath = args[1]
 let outputDir = args[2]
-let dpi: CGFloat = 150.0
+let dpi: CGFloat = 96.0
 let scale = dpi / 72.0
 
 try? FileManager.default.createDirectory(
@@ -289,6 +289,16 @@ if [[ -n "$current_pptx" ]]; then
 fi
 
 rm -rf "$TEMP_DIR"
+
+# Optimize PNGs with pngquant if available (lossy palette quantization, ~60-80% savings)
+if command -v pngquant &>/dev/null; then
+  echo "Optimizing PNGs with pngquant..."
+  find "$ASSETS_DIR" -name "*.png" -exec pngquant --force --ext .png --quality=65-90 --skip-if-larger {} \;
+  echo ""
+else
+  echo "Tip: install pngquant (brew install pngquant) for smaller PNG output"
+  echo ""
+fi
 
 total=$(find "$ASSETS_DIR" -name "*.png" | wc -l | tr -d ' ')
 echo "Done. Exported $total PNG images to guides/assets/"
