@@ -257,9 +257,13 @@ data_labels: [:category, :percent]
 
 # Show values with positioning and number format
 data_labels: [show: [:value], position: :outside_end, number_format: "$#,##0"]
+
+# White labels for dark backgrounds
+data_labels: [show: [:value], color: "FFFFFF"]
 ```
 
-Available label content: `:value`, `:category`, `:series`, `:percent`.
+Available label content: `:value`, `:category`, `:series`, `:percent`. Use `:color`
+with a hex string to set the text color (useful for charts on dark backgrounds).
 
 | Position | Description |
 |----------|-------------|
@@ -297,6 +301,8 @@ slide = Podium.add_chart(slide, :column_clustered, data,
 | `:major_tick_mark` | `atom` | `nil` | `:out`, `:in`, `:cross`, or `:none` |
 | `:minor_tick_mark` | `atom` | `nil` | `:out`, `:in`, `:cross`, or `:none` |
 | `:crosses` | `atom` or `number` | `nil` | Where the value axis crosses: `:auto_zero`, `:min`, `:max`, or a number |
+| `:color` | `String.t()` | `nil` | Hex color for tick label text (e.g. `"FFFFFF"`) |
+| `:line_color` | `String.t()` | `nil` | Hex color for the axis line |
 | `:type` | `:date` | `nil` | Set to `:date` for date axis mode |
 
 Axis titles support the same formatting options as chart titles: `:text`, `:font_size`,
@@ -339,6 +345,10 @@ slide = Podium.add_chart(slide, :column_clustered, data,
 | `:visible` | `boolean` | `true` | Show or hide the axis |
 | `:major_tick_mark` | `atom` | `nil` | `:out`, `:in`, `:cross`, or `:none` |
 | `:minor_tick_mark` | `atom` | `nil` | `:out`, `:in`, `:cross`, or `:none` |
+| `:color` | `String.t()` | `nil` | Hex color for tick label text (e.g. `"FFFFFF"`) |
+| `:line_color` | `String.t()` | `nil` | Hex color for the axis line |
+| `:major_gridlines_color` | `String.t()` | `nil` | Hex color for major gridlines |
+| `:minor_gridlines_color` | `String.t()` | `nil` | Hex color for minor gridlines |
 
 ## Series Formatting
 

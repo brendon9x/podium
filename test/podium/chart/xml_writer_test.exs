@@ -442,6 +442,109 @@ defmodule Podium.Chart.XmlWriterTest do
     end
   end
 
+  describe "axis and data label color" do
+    test "category axis with color", %{chart_data: chart_data} do
+      chart = %Chart{
+        chart_type: :column_clustered,
+        chart_data: chart_data,
+        category_axis: [color: "FFFFFF"]
+      }
+
+      xml = XmlWriter.to_xml(chart)
+      assert xml =~ ~s(<c:catAx>)
+      assert xml =~ ~s(<a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill>)
+    end
+
+    test "value axis with color", %{chart_data: chart_data} do
+      chart = %Chart{
+        chart_type: :column_clustered,
+        chart_data: chart_data,
+        value_axis: [color: "CCCCCC"]
+      }
+
+      xml = XmlWriter.to_xml(chart)
+      assert xml =~ ~s(<c:valAx>)
+      assert xml =~ ~s(<a:solidFill><a:srgbClr val="CCCCCC"/></a:solidFill>)
+    end
+
+    test "data labels with color", %{chart_data: chart_data} do
+      chart = %Chart{
+        chart_type: :column_clustered,
+        chart_data: chart_data,
+        data_labels: [show: [:value], color: "FFFFFF"]
+      }
+
+      xml = XmlWriter.to_xml(chart)
+      assert xml =~ ~s(<c:dLbls>)
+      assert xml =~ ~s(<a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill>)
+    end
+
+    test "axis color combined with label_rotation", %{chart_data: chart_data} do
+      chart = %Chart{
+        chart_type: :column_clustered,
+        chart_data: chart_data,
+        category_axis: [label_rotation: 45, color: "FF0000"]
+      }
+
+      xml = XmlWriter.to_xml(chart)
+      # Both rotation and color should be present in the txPr
+      assert xml =~ ~s(rot="2700000")
+      assert xml =~ ~s(<a:solidFill><a:srgbClr val="FF0000"/></a:solidFill>)
+    end
+
+    test "category axis line_color", %{chart_data: chart_data} do
+      chart = %Chart{
+        chart_type: :column_clustered,
+        chart_data: chart_data,
+        category_axis: [line_color: "AAAAAA"]
+      }
+
+      xml = XmlWriter.to_xml(chart)
+
+      assert xml =~
+               ~s(<c:spPr><a:ln><a:solidFill><a:srgbClr val="AAAAAA"/></a:solidFill></a:ln></c:spPr>)
+    end
+
+    test "value axis line_color", %{chart_data: chart_data} do
+      chart = %Chart{
+        chart_type: :column_clustered,
+        chart_data: chart_data,
+        value_axis: [line_color: "BBBBBB"]
+      }
+
+      xml = XmlWriter.to_xml(chart)
+
+      assert xml =~
+               ~s(<c:spPr><a:ln><a:solidFill><a:srgbClr val="BBBBBB"/></a:solidFill></a:ln></c:spPr>)
+    end
+
+    test "major gridlines color", %{chart_data: chart_data} do
+      chart = %Chart{
+        chart_type: :column_clustered,
+        chart_data: chart_data,
+        value_axis: [major_gridlines: true, major_gridlines_color: "444444"]
+      }
+
+      xml = XmlWriter.to_xml(chart)
+
+      assert xml =~
+               ~s(<c:majorGridlines><c:spPr><a:ln><a:solidFill><a:srgbClr val="444444"/></a:solidFill></a:ln></c:spPr></c:majorGridlines>)
+    end
+
+    test "minor gridlines color", %{chart_data: chart_data} do
+      chart = %Chart{
+        chart_type: :column_clustered,
+        chart_data: chart_data,
+        value_axis: [minor_gridlines: true, minor_gridlines_color: "555555"]
+      }
+
+      xml = XmlWriter.to_xml(chart)
+
+      assert xml =~
+               ~s(<c:minorGridlines><c:spPr><a:ln><a:solidFill><a:srgbClr val="555555"/></a:solidFill></a:ln></c:spPr></c:minorGridlines>)
+    end
+  end
+
   describe "table cell anchor" do
     test "cell with vertical anchor" do
       slide = Podium.Slide.new()
