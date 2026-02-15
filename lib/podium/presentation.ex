@@ -39,7 +39,8 @@ defmodule Podium.Presentation do
     footer: nil,
     placeholder_positions: %{},
     notes_master_created: false,
-    notes_master_rid: nil
+    notes_master_rid: nil,
+    notes_count: 0
   ]
 
   @type t :: %__MODULE__{
@@ -53,7 +54,8 @@ defmodule Podium.Presentation do
           footer: keyword() | nil,
           placeholder_positions: map(),
           notes_master_created: boolean(),
-          notes_master_rid: String.t() | nil
+          notes_master_rid: String.t() | nil,
+          notes_count: non_neg_integer()
         }
 
   @doc """
@@ -744,7 +746,8 @@ defmodule Podium.Presentation do
   end
 
   defp build_notes_parts(slide, slide_rels, parts, prs) do
-    n = slide.index
+    n = prs.notes_count + 1
+    prs = %{prs | notes_count: n}
 
     # Lazily create notes master (once per presentation)
     {parts, prs} =
@@ -807,7 +810,7 @@ defmodule Podium.Presentation do
     notes_rels = Relationships.new()
 
     {notes_rels, _slide_rid} =
-      Relationships.add(notes_rels, Constants.rt(:slide), "../slides/slide#{n}.xml")
+      Relationships.add(notes_rels, Constants.rt(:slide), "../slides/slide#{slide.index}.xml")
 
     {notes_rels, _master_rid} =
       Relationships.add(
