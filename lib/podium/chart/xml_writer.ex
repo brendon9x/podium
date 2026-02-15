@@ -250,7 +250,7 @@ defmodule Podium.Chart.XmlWriter do
 
   defp data_labels_xml(labels) when is_list(labels) do
     # Support both simple atom list and keyword opts
-    {show_atoms, position, number_format, font_size} = parse_data_labels(labels)
+    {show_atoms, position, number_format, font_size, color} = parse_data_labels(labels)
 
     show_val =
       if :value in show_atoms, do: ~s(<c:showVal val="1"/>), else: ~s(<c:showVal val="0"/>)
@@ -272,7 +272,7 @@ defmodule Podium.Chart.XmlWriter do
 
     pos_xml = dlbl_position_xml(position)
     num_fmt_xml = dlbl_num_fmt_xml(number_format)
-    font_xml = dlbl_font_xml(font_size)
+    font_xml = dlbl_font_xml(font_size, color)
 
     ~s(<c:dLbls>) <>
       num_fmt_xml <>
@@ -289,18 +289,29 @@ defmodule Podium.Chart.XmlWriter do
   defp parse_data_labels(labels) do
     if Keyword.keyword?(labels) and Keyword.has_key?(labels, :show) do
       {Keyword.get(labels, :show, []), Keyword.get(labels, :position),
-       Keyword.get(labels, :number_format), Keyword.get(labels, :font_size)}
+       Keyword.get(labels, :number_format), Keyword.get(labels, :font_size),
+       Keyword.get(labels, :color)}
     else
-      {labels, nil, nil, nil}
+      {labels, nil, nil, nil, nil}
     end
   end
 
-  defp dlbl_font_xml(nil), do: ""
+  defp dlbl_font_xml(nil, nil), do: ""
 
-  defp dlbl_font_xml(font_size) do
-    sz = font_size * 100
+  defp dlbl_font_xml(font_size, color) do
+    sz_attr = if font_size, do: ~s( sz="#{font_size * 100}"), else: ""
 
-    ~s(<c:txPr><a:bodyPr/><a:lstStyle/><a:p><a:pPr><a:defRPr sz="#{sz}"/></a:pPr><a:endParaRPr lang="en-US"/></a:p></c:txPr>)
+    color_xml =
+      if color,
+        do: ~s(<a:solidFill><a:srgbClr val="#{color}"/></a:solidFill>),
+        else: ""
+
+    def_rpr =
+      if color_xml == "",
+        do: ~s(<a:defRPr#{sz_attr}/>),
+        else: ~s(<a:defRPr#{sz_attr}>#{color_xml}</a:defRPr>)
+
+    ~s(<c:txPr><a:bodyPr/><a:lstStyle/><a:p><a:pPr>#{def_rpr}</a:pPr><a:endParaRPr lang="en-US"/></a:p></c:txPr>)
   end
 
   defp dlbl_position_xml(nil), do: ""
@@ -770,6 +781,8 @@ defmodule Podium.Chart.XmlWriter do
     axis_title = Keyword.get(axis_opts, :title)
     crosses = Keyword.get(axis_opts, :crosses, :auto_zero)
     label_rotation = Keyword.get(axis_opts, :label_rotation)
+    color = Keyword.get(axis_opts, :color)
+    line_color = Keyword.get(axis_opts, :line_color)
     reverse = Keyword.get(axis_opts, :reverse, false)
     visible = Keyword.get(axis_opts, :visible, true)
     major_tick = Keyword.get(axis_opts, :major_tick_mark, :out)
@@ -787,13 +800,14 @@ defmodule Podium.Chart.XmlWriter do
       ~s(<c:majorTickMark val="#{tick_mark_value(major_tick)}"/>) <>
       ~s(<c:minorTickMark val="#{tick_mark_value(minor_tick)}"/>) <>
       ~s(<c:tickLblPos val="nextTo"/>) <>
+      line_sppr_xml(line_color) <>
       ~s(<c:crossAx val="#{cross_ax_id}"/>) <>
       crosses_xml(crosses) <>
       ~s(<c:auto val="1"/>) <>
       ~s(<c:lblAlgn val="ctr"/>) <>
       ~s(<c:lblOffset val="100"/>) <>
       ~s(<c:noMultiLvlLbl val="0"/>) <>
-      label_rotation_xml(label_rotation) <>
+      tick_label_format_xml(label_rotation, color) <>
       ~s(</c:catAx>)
   end
 
@@ -803,6 +817,8 @@ defmodule Podium.Chart.XmlWriter do
     axis_title = Keyword.get(axis_opts, :title)
     crosses = Keyword.get(axis_opts, :crosses, :auto_zero)
     label_rotation = Keyword.get(axis_opts, :label_rotation)
+    color = Keyword.get(axis_opts, :color)
+    line_color = Keyword.get(axis_opts, :line_color)
     reverse = Keyword.get(axis_opts, :reverse, false)
     visible = Keyword.get(axis_opts, :visible, true)
     major_tick = Keyword.get(axis_opts, :major_tick_mark, :out)
@@ -843,6 +859,7 @@ defmodule Podium.Chart.XmlWriter do
       ~s(<c:majorTickMark val="#{tick_mark_value(major_tick)}"/>) <>
       ~s(<c:minorTickMark val="#{tick_mark_value(minor_tick)}"/>) <>
       ~s(<c:tickLblPos val="nextTo"/>) <>
+      line_sppr_xml(line_color) <>
       ~s(<c:crossAx val="#{cross_ax_id}"/>) <>
       crosses_xml(crosses) <>
       base_xml <>
@@ -850,7 +867,7 @@ defmodule Podium.Chart.XmlWriter do
       major_time_xml <>
       minor_unit_xml <>
       minor_time_xml <>
-      label_rotation_xml(label_rotation) <>
+      tick_label_format_xml(label_rotation, color) <>
       ~s(</c:dateAx>)
   end
 
@@ -874,21 +891,23 @@ defmodule Podium.Chart.XmlWriter do
     axis_title = Keyword.get(axis_opts, :title)
     num_fmt = Keyword.get(axis_opts, :number_format)
     gridlines = Keyword.get(axis_opts, :major_gridlines, true)
+    gridlines_color = Keyword.get(axis_opts, :major_gridlines_color)
     minor_gridlines = Keyword.get(axis_opts, :minor_gridlines, false)
+    minor_gridlines_color = Keyword.get(axis_opts, :minor_gridlines_color)
     min_val = Keyword.get(axis_opts, :min)
     max_val = Keyword.get(axis_opts, :max)
     major_unit = Keyword.get(axis_opts, :major_unit)
     minor_unit = Keyword.get(axis_opts, :minor_unit)
     crosses = Keyword.get(axis_opts, :crosses, :auto_zero)
     label_rotation = Keyword.get(axis_opts, :label_rotation)
+    color = Keyword.get(axis_opts, :color)
+    line_color = Keyword.get(axis_opts, :line_color)
     reverse = Keyword.get(axis_opts, :reverse, false)
     visible = Keyword.get(axis_opts, :visible, true)
     major_tick = Keyword.get(axis_opts, :major_tick_mark, :out)
     minor_tick = Keyword.get(axis_opts, :minor_tick_mark, :none)
 
     scaling_xml = val_scaling_xml(min_val, max_val, reverse)
-    gridlines_xml = if gridlines, do: ~s(<c:majorGridlines/>), else: ""
-    minor_gridlines_xml = if minor_gridlines, do: ~s(<c:minorGridlines/>), else: ""
     num_fmt_xml = val_num_fmt_xml(num_fmt)
     major_unit_xml = if major_unit, do: ~s(<c:majorUnit val="#{major_unit}"/>), else: ""
     minor_unit_xml = if minor_unit, do: ~s(<c:minorUnit val="#{minor_unit}"/>), else: ""
@@ -905,19 +924,20 @@ defmodule Podium.Chart.XmlWriter do
       scaling_xml <>
       ~s(<c:delete val="#{delete_val}"/>) <>
       ~s(<c:axPos val="#{pos}"/>) <>
-      gridlines_xml <>
-      minor_gridlines_xml <>
+      gridlines_xml(gridlines, gridlines_color) <>
+      minor_gridlines_xml(minor_gridlines, minor_gridlines_color) <>
       axis_title_xml(axis_title) <>
       num_fmt_xml <>
       ~s(<c:majorTickMark val="#{tick_mark_value(major_tick)}"/>) <>
       ~s(<c:minorTickMark val="#{tick_mark_value(minor_tick)}"/>) <>
       ~s(<c:tickLblPos val="nextTo"/>) <>
+      line_sppr_xml(line_color) <>
       ~s(<c:crossAx val="#{cross_ax_id}"/>) <>
       crosses_xml(crosses) <>
       cross_between_xml <>
       major_unit_xml <>
       minor_unit_xml <>
-      label_rotation_xml(label_rotation) <>
+      tick_label_format_xml(label_rotation, color) <>
       ~s(</c:valAx>)
   end
 
@@ -969,14 +989,49 @@ defmodule Podium.Chart.XmlWriter do
       ~s(</c:title>)
   end
 
-  defp label_rotation_xml(nil), do: ""
+  defp line_sppr_xml(nil), do: ""
 
-  defp label_rotation_xml(degrees) do
-    # OOXML rotation is in 1/60000th of a degree
-    rot = degrees * 60_000
+  defp line_sppr_xml(color) do
+    ~s(<c:spPr><a:ln><a:solidFill><a:srgbClr val="#{color}"/></a:solidFill></a:ln></c:spPr>)
+  end
 
-    ~s(<c:txPr><a:bodyPr rot="#{rot}"/><a:lstStyle/>) <>
-      ~s(<a:p><a:pPr><a:defRPr/></a:pPr><a:endParaRPr lang="en-US"/></a:p></c:txPr>)
+  defp gridlines_xml(false, _color), do: ""
+  defp gridlines_xml(true, nil), do: ~s(<c:majorGridlines/>)
+
+  defp gridlines_xml(true, color) do
+    ~s(<c:majorGridlines>#{line_sppr_xml(color)}</c:majorGridlines>)
+  end
+
+  defp minor_gridlines_xml(false, _color), do: ""
+  defp minor_gridlines_xml(true, nil), do: ~s(<c:minorGridlines/>)
+
+  defp minor_gridlines_xml(true, color) do
+    ~s(<c:minorGridlines>#{line_sppr_xml(color)}</c:minorGridlines>)
+  end
+
+  defp tick_label_format_xml(nil, nil), do: ""
+
+  defp tick_label_format_xml(label_rotation, color) do
+    body_attrs =
+      if label_rotation do
+        rot = label_rotation * 60_000
+        ~s( rot="#{rot}")
+      else
+        ""
+      end
+
+    color_xml =
+      if color,
+        do: ~s(<a:solidFill><a:srgbClr val="#{color}"/></a:solidFill>),
+        else: ""
+
+    def_rpr =
+      if color_xml == "",
+        do: ~s(<a:defRPr/>),
+        else: ~s(<a:defRPr>#{color_xml}</a:defRPr>)
+
+    ~s(<c:txPr><a:bodyPr#{body_attrs}/><a:lstStyle/>) <>
+      ~s(<a:p><a:pPr>#{def_rpr}</a:pPr><a:endParaRPr lang="en-US"/></a:p></c:txPr>)
   end
 
   defp font_rpr_xml(opts) do
@@ -1238,6 +1293,8 @@ defmodule Podium.Chart.XmlWriter do
     axis_title = Keyword.get(axis_opts, :title)
     crosses = Keyword.get(axis_opts, :crosses, :auto_zero)
     label_rotation = Keyword.get(axis_opts, :label_rotation)
+    color = Keyword.get(axis_opts, :color)
+    line_color = Keyword.get(axis_opts, :line_color)
     reverse = Keyword.get(axis_opts, :reverse, false)
     visible = Keyword.get(axis_opts, :visible, true)
 
@@ -1256,13 +1313,14 @@ defmodule Podium.Chart.XmlWriter do
       ~s(<c:majorTickMark val="out"/>) <>
       ~s(<c:minorTickMark val="none"/>) <>
       ~s(<c:tickLblPos val="nextTo"/>) <>
+      line_sppr_xml(line_color) <>
       ~s(<c:crossAx val="#{cross_ax_id}"/>) <>
       crosses_xml(crosses) <>
       ~s(<c:auto val="1"/>) <>
       ~s(<c:lblAlgn val="ctr"/>) <>
       ~s(<c:lblOffset val="100"/>) <>
       ~s(<c:noMultiLvlLbl val="0"/>) <>
-      label_rotation_xml(label_rotation) <>
+      tick_label_format_xml(label_rotation, color) <>
       ~s(</c:catAx>)
   end
 
@@ -1271,21 +1329,23 @@ defmodule Podium.Chart.XmlWriter do
     axis_title = Keyword.get(axis_opts, :title)
     num_fmt = Keyword.get(axis_opts, :number_format)
     gridlines = Keyword.get(axis_opts, :major_gridlines, pos == "l")
+    gridlines_color = Keyword.get(axis_opts, :major_gridlines_color)
     minor_gridlines = Keyword.get(axis_opts, :minor_gridlines, false)
+    minor_gridlines_color = Keyword.get(axis_opts, :minor_gridlines_color)
     min_val = Keyword.get(axis_opts, :min)
     max_val = Keyword.get(axis_opts, :max)
     major_unit = Keyword.get(axis_opts, :major_unit)
     minor_unit = Keyword.get(axis_opts, :minor_unit)
     crosses = Keyword.get(axis_opts, :crosses, :auto_zero)
     label_rotation = Keyword.get(axis_opts, :label_rotation)
+    color = Keyword.get(axis_opts, :color)
+    line_color = Keyword.get(axis_opts, :line_color)
     reverse = Keyword.get(axis_opts, :reverse, false)
     visible = Keyword.get(axis_opts, :visible, true)
 
     _ = chart
 
     scaling_xml = val_scaling_xml(min_val, max_val, reverse)
-    gridlines_xml = if gridlines, do: ~s(<c:majorGridlines/>), else: ""
-    minor_gridlines_xml = if minor_gridlines, do: ~s(<c:minorGridlines/>), else: ""
     num_fmt_xml = val_num_fmt_xml(num_fmt)
     major_unit_xml = if major_unit, do: ~s(<c:majorUnit val="#{major_unit}"/>), else: ""
     minor_unit_xml = if minor_unit, do: ~s(<c:minorUnit val="#{minor_unit}"/>), else: ""
@@ -1304,18 +1364,19 @@ defmodule Podium.Chart.XmlWriter do
       scaling_xml <>
       ~s(<c:delete val="#{delete_val}"/>) <>
       ~s(<c:axPos val="#{pos}"/>) <>
-      gridlines_xml <>
-      minor_gridlines_xml <>
+      gridlines_xml(gridlines, gridlines_color) <>
+      minor_gridlines_xml(minor_gridlines, minor_gridlines_color) <>
       axis_title_xml(axis_title) <>
       num_fmt_xml <>
       ~s(<c:majorTickMark val="out"/>) <>
       ~s(<c:minorTickMark val="none"/>) <>
       ~s(<c:tickLblPos val="nextTo"/>) <>
+      line_sppr_xml(line_color) <>
       ~s(<c:crossAx val="#{cross_ax_id}"/>) <>
       crosses_out <>
       major_unit_xml <>
       minor_unit_xml <>
-      label_rotation_xml(label_rotation) <>
+      tick_label_format_xml(label_rotation, color) <>
       ~s(</c:valAx>)
   end
 

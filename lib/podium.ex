@@ -279,14 +279,17 @@ defmodule Podium do
     * `:data_labels` - list of atoms to show (`:value`, `:category`, `:series`, `:percent`)
       or keyword list with `:show` (list), `:position` (`:center`, `:inside_end`,
       `:inside_base`, `:outside_end`, `:top`, `:bottom`, `:left`, `:right`, `:best_fit`),
-      `:number_format` (Excel format string)
+      `:number_format` (Excel format string), `:color` (hex color for label text)
     * `:category_axis` - keyword list with `:title`, `:type` (`:date` for date axis),
       `:number_format`, `:major_gridlines`, `:minor_gridlines`, `:visible`, `:reverse`,
       `:crosses`, `:label_rotation`, `:major_tick_mark`, `:minor_tick_mark`,
-      `:base_time_unit`, `:major_time_unit`, `:minor_time_unit`, `:major_unit`, `:minor_unit`
+      `:base_time_unit`, `:major_time_unit`, `:minor_time_unit`, `:major_unit`, `:minor_unit`,
+      `:color` (hex color for tick label text), `:line_color` (hex color for axis line)
     * `:value_axis` - keyword list with `:title`, `:number_format`, `:major_gridlines`,
       `:minor_gridlines`, `:min`, `:max`, `:major_unit`, `:minor_unit`, `:visible`,
-      `:reverse`, `:crosses`, `:label_rotation`, `:major_tick_mark`, `:minor_tick_mark`
+      `:reverse`, `:crosses`, `:label_rotation`, `:major_tick_mark`, `:minor_tick_mark`,
+      `:color` (hex color for tick label text), `:line_color` (hex color for axis line),
+      `:major_gridlines_color`, `:minor_gridlines_color` (hex colors for gridlines)
   """
   @spec add_chart(
           Podium.Slide.t(),

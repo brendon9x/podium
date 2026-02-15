@@ -55,9 +55,9 @@ Comprehensive list of Podium's features. Podium uses [python-pptx](https://githu
 | Chart types | 29 types across 10 families: column (3), bar (3), line (6), pie (2), area (3), doughnut (2), radar (3), scatter (5), bubble (2) |
 | Titles | Plain string or keyword list with text, font_size, bold, italic, color, font |
 | Legends | Position atom or keyword list with position, font_size, bold, italic, color, font |
-| Data labels | Simple list or keyword list with show, position (9 options), number_format; per-point overrides via series `data_labels` map |
-| Category axis | title, gridlines, number_format, label_rotation, tick marks, reverse order, visibility |
-| Value axis | title, gridlines, number_format, min/max, major/minor unit, crosses, tick marks, reverse order, visibility |
+| Data labels | Simple list or keyword list with show, position (9 options), number_format, color; per-point overrides via series `data_labels` map |
+| Category axis | title, gridlines, number_format, label_rotation, tick marks, reverse order, visibility, tick label color, axis line color |
+| Value axis | title, gridlines, number_format, min/max, major/minor unit, crosses, tick marks, reverse order, visibility, tick label color, axis line color, major/minor gridlines color |
 | Date axis | `type: :date` with base/major/minor time units |
 | Series formatting | Solid color, pattern fill (54 presets), per-point colors, per-point line format, markers (10 symbols with size/fill/line) |
 | Editable charts | Embedded Excel workbook via elixlsx with externalData link |

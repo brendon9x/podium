@@ -522,4 +522,58 @@ defmodule Podium.Integration.ChartGalleryTest do
       assert parts["ppt/charts/chart2.xml"] =~ "Region B"
     end
   end
+
+  describe "chart on dark background with colored labels" do
+    test "axis and data label colors produce solidFill elements" do
+      chart_data =
+        ChartData.new()
+        |> ChartData.add_categories(["Q1", "Q2", "Q3", "Q4"])
+        |> ChartData.add_series("Revenue", [1500, 4600, 5156, 3167], color: "4FC3F7")
+
+      prs = Podium.new()
+      slide = Podium.Slide.new(:blank, background: "1A1A2E")
+
+      slide =
+        Podium.add_chart(slide, :column_clustered, chart_data,
+          x: {0.5, :inches},
+          y: {1, :inches},
+          width: {12, :inches},
+          height: {5.5, :inches},
+          category_axis: [color: "FFFFFF", line_color: "555555"],
+          value_axis: [
+            color: "FFFFFF",
+            line_color: "555555",
+            major_gridlines_color: "333333"
+          ],
+          data_labels: [show: [:value], color: "FFFFFF"]
+        )
+
+      prs = Podium.add_slide(prs, slide)
+
+      # Save to disk
+      output_path = Path.join(@output_dir, "chart_gallery_dark_background.pptx")
+      assert :ok = Podium.save(prs, output_path)
+      assert File.exists?(output_path)
+
+      # Save to memory and verify
+      {:ok, binary} = Podium.save_to_memory(prs)
+      parts = PptxHelpers.unzip_pptx_binary(binary)
+
+      chart_xml = parts["ppt/charts/chart1.xml"]
+
+      # Dark background on the slide
+      slide_xml = parts["ppt/slides/slide1.xml"]
+      assert slide_xml =~ "1A1A2E"
+
+      # Axis tick labels and data labels should all have white solidFill
+      # Count occurrences - at least 3 (cat axis, val axis, data labels)
+      fill_count =
+        chart_xml
+        |> String.split(~s(<a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill>))
+        |> length()
+        |> Kernel.-(1)
+
+      assert fill_count >= 3
+    end
+  end
 end
