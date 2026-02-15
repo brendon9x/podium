@@ -119,6 +119,49 @@ defmodule Podium.NotesTest do
       assert slide_rels =~ "../notesSlides/notesSlide1.xml"
     end
 
+    test "notes slides are numbered sequentially even when on non-consecutive slides" do
+      # Slides 1 and 2 have no notes, slides 3 and 5 do.
+      # Notes slides should be notesSlide1 and notesSlide2 (not notesSlide3 and notesSlide5).
+      slide_with_notes_a =
+        Podium.Slide.new()
+        |> Podium.set_notes("Notes for slide 3")
+
+      slide_with_notes_b =
+        Podium.Slide.new()
+        |> Podium.set_notes("Notes for slide 5")
+
+      prs =
+        Podium.new()
+        |> Podium.add_slide(Podium.Slide.new())
+        |> Podium.add_slide(Podium.Slide.new())
+        |> Podium.add_slide(slide_with_notes_a)
+        |> Podium.add_slide(Podium.Slide.new())
+        |> Podium.add_slide(slide_with_notes_b)
+
+      {:ok, binary} = Podium.save_to_memory(prs)
+      parts = PptxHelpers.unzip_pptx_binary(binary)
+
+      # Notes slides should be numbered 1 and 2 (sequential)
+      assert Map.has_key?(parts, "ppt/notesSlides/notesSlide1.xml")
+      assert Map.has_key?(parts, "ppt/notesSlides/notesSlide2.xml")
+      refute Map.has_key?(parts, "ppt/notesSlides/notesSlide3.xml")
+      refute Map.has_key?(parts, "ppt/notesSlides/notesSlide5.xml")
+
+      # notesSlide1 should reference slide3, notesSlide2 should reference slide5
+      notes1_rels = parts["ppt/notesSlides/_rels/notesSlide1.xml.rels"]
+      assert notes1_rels =~ "../slides/slide3.xml"
+
+      notes2_rels = parts["ppt/notesSlides/_rels/notesSlide2.xml.rels"]
+      assert notes2_rels =~ "../slides/slide5.xml"
+
+      # slide3 and slide5 should reference their respective notes slides
+      slide3_rels = parts["ppt/slides/_rels/slide3.xml.rels"]
+      assert slide3_rels =~ "../notesSlides/notesSlide1.xml"
+
+      slide5_rels = parts["ppt/slides/_rels/slide5.xml.rels"]
+      assert slide5_rels =~ "../notesSlides/notesSlide2.xml"
+    end
+
     test "content types include notesSlide and notesMaster" do
       slide =
         Podium.Slide.new()
