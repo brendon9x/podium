@@ -34,7 +34,7 @@ defmodule Podium.MixProject do
     [
       {:elixlsx, "~> 0.6"},
       {:sweet_xml, "~> 0.7", only: :test},
-      {:ex_doc, "~> 0.34", only: :dev, runtime: false}
+      {:ex_doc, "~> 0.40", only: :dev, runtime: false}
     ]
   end
 
@@ -48,10 +48,10 @@ defmodule Podium.MixProject do
   defp docs do
     [
       main: "overview",
-      source_ref: "v0.1.0",
+      source_ref: "v0.2.0",
       source_url: @source_url,
       extra_section: "GUIDES",
-      formatters: ["html"],
+      formatters: ["html", "markdown"],
       assets: %{"guides/assets" => "assets"},
       extras: extras(),
       groups_for_extras: groups_for_extras(),
