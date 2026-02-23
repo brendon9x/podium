@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.2.1
+
+### Fixed
+
+- Notes slides numbered by parent slide index instead of sequentially
+
+### Added
+
+- Markdown documentation guides for ex_doc
+
 ## 0.2.0
 
 ### Added
