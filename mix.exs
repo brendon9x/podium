@@ -33,6 +33,7 @@ defmodule Podium.MixProject do
   defp deps do
     [
       {:elixlsx, "~> 0.6"},
+      {:floki, "~> 0.37"},
       {:sweet_xml, "~> 0.7", only: :test},
       {:ex_doc, "~> 0.40", only: :dev, runtime: false}
     ]
@@ -87,6 +88,9 @@ defmodule Podium.MixProject do
       "guides/recipes/data-driven-slides.md",
       "guides/recipes/styling-patterns.md",
 
+      # Web Layer
+      "guides/web-layer/html-text.md",
+
       # Cheatsheets
       "guides/cheatsheets/quick-reference.cheatmd"
     ]
@@ -98,6 +102,7 @@ defmodule Podium.MixProject do
       "Core Features": ~r/guides\/core\//,
       "Advanced Features": ~r/guides\/advanced\//,
       Recipes: ~r/guides\/recipes\//,
+      "Web Layer": ~r/guides\/web-layer\//,
       Cheatsheets: ~r/guides\/cheatsheets\//
     ]
   end
@@ -113,7 +118,7 @@ defmodule Podium.MixProject do
         Podium.Drawing,
         Podium.Pattern
       ],
-      "Text and Tables": [Podium.Text, Podium.Table],
+      "Text and Tables": [Podium.Text, Podium.HTML, Podium.Table],
       Charts: [
         Podium.Chart,
         Podium.Chart.ChartData,
