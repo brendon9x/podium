@@ -13,40 +13,46 @@ defmodule Podium.Text do
 
   Accepts:
     - A plain string: `"Hello"`
+    - An HTML tagged tuple: `{:html, "<b>Bold</b>"}`
     - A list of paragraphs where each paragraph is:
       - A list of runs: `[{"bold text", bold: true}, "plain"]`
       - A `{runs, para_opts}` tuple: `{[{"Title", bold: true}], alignment: :center}`
   """
   @spec normalize(Podium.rich_text(), keyword()) :: [map()]
-  def normalize(text, opts \\ []) when is_binary(text) or is_list(text) do
+  def normalize(text, opts \\ [])
+
+  def normalize({:html, html}, opts) when is_binary(html) do
+    default_alignment = Keyword.get(opts, :alignment)
+    default_font_size = Keyword.get(opts, :font_size)
+
+    Podium.HTML.parse(html)
+    |> Enum.map(fn para ->
+      para
+      |> maybe_apply_default(:alignment, default_alignment)
+      |> maybe_apply_default_font_size(default_font_size)
+    end)
+  end
+
+  def normalize(text, opts) when is_binary(text) or is_list(text) do
     default_alignment = Keyword.get(opts, :alignment)
     default_font_size = Keyword.get(opts, :font_size)
 
     paragraphs =
       case text do
         text when is_binary(text) ->
-          if Podium.HTML.html?(text) do
-            Podium.HTML.parse(text)
-            |> Enum.map(fn para ->
-              para
-              |> maybe_apply_default(:alignment, default_alignment)
-              |> maybe_apply_default_font_size(default_font_size)
-            end)
-          else
-            run_opts = if default_font_size, do: [font_size: default_font_size], else: []
+          run_opts = if default_font_size, do: [font_size: default_font_size], else: []
 
-            [
-              %{
-                runs: [%{text: text, opts: run_opts}],
-                alignment: default_alignment,
-                line_spacing: nil,
-                space_before: nil,
-                space_after: nil,
-                bullet: nil,
-                level: 0
-              }
-            ]
-          end
+          [
+            %{
+              runs: [%{text: text, opts: run_opts}],
+              alignment: default_alignment,
+              line_spacing: nil,
+              space_before: nil,
+              space_after: nil,
+              bullet: nil,
+              level: 0
+            }
+          ]
 
         paragraphs when is_list(paragraphs) ->
           Enum.map(paragraphs, fn para -> normalize_paragraph(para, default_alignment) end)

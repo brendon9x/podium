@@ -3,38 +3,6 @@ defmodule Podium.HTMLTest do
 
   alias Podium.HTML
 
-  describe "html?/1" do
-    test "detects simple HTML tags" do
-      assert HTML.html?("<b>bold</b>")
-      assert HTML.html?("<p>paragraph</p>")
-      assert HTML.html?("<span>text</span>")
-      assert HTML.html?("<br/>")
-      assert HTML.html?("<br>")
-    end
-
-    test "detects tags with attributes" do
-      assert HTML.html?(~s(<span style="color: red">text</span>))
-      assert HTML.html?(~s(<p class="intro">text</p>))
-    end
-
-    test "rejects plain strings" do
-      refute HTML.html?("Hello world")
-      refute HTML.html?("No tags here")
-      refute HTML.html?("")
-    end
-
-    test "rejects angle brackets that aren't tags" do
-      refute HTML.html?("5 < 10 and 20 > 15")
-      refute HTML.html?("a < b")
-      refute HTML.html?("use <= operator")
-    end
-
-    test "detects self-closing tags" do
-      assert HTML.html?("<br/>")
-      assert HTML.html?("<br />")
-    end
-  end
-
   describe "parse/1 - inline formatting" do
     test "bold with <b>" do
       [para] = HTML.parse("<b>bold</b>")
