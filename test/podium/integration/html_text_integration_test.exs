@@ -10,7 +10,7 @@ defmodule Podium.Integration.HTMLTextIntegrationTest do
       slide =
         Podium.Slide.new()
         |> Podium.add_text_box(
-          "<p><b>Bold title</b></p><p>Some <i>italic</i> text</p>",
+          {:html, "<p><b>Bold title</b></p><p>Some <i>italic</i> text</p>"},
           x: {1, :inches},
           y: {1, :inches},
           width: {10, :inches},
@@ -39,7 +39,7 @@ defmodule Podium.Integration.HTMLTextIntegrationTest do
 
       slide =
         Podium.Slide.new()
-        |> Podium.add_text_box(html,
+        |> Podium.add_text_box({:html, html},
           x: {1, :inches},
           y: {1, :inches},
           width: {10, :inches},
@@ -63,7 +63,7 @@ defmodule Podium.Integration.HTMLTextIntegrationTest do
 
       slide =
         Podium.Slide.new()
-        |> Podium.add_text_box(html,
+        |> Podium.add_text_box({:html, html},
           x: {1, :inches},
           y: {1, :inches},
           width: {10, :inches},
@@ -86,7 +86,7 @@ defmodule Podium.Integration.HTMLTextIntegrationTest do
 
       slide =
         Podium.Slide.new()
-        |> Podium.add_text_box(html,
+        |> Podium.add_text_box({:html, html},
           x: {1, :inches},
           y: {1, :inches},
           width: {10, :inches},
@@ -107,7 +107,7 @@ defmodule Podium.Integration.HTMLTextIntegrationTest do
 
       slide =
         Podium.Slide.new()
-        |> Podium.add_text_box(html,
+        |> Podium.add_text_box({:html, html},
           x: {1, :inches},
           y: {1, :inches},
           width: {10, :inches},
@@ -130,8 +130,8 @@ defmodule Podium.Integration.HTMLTextIntegrationTest do
   describe "HTML in table cells" do
     test "creates valid pptx with HTML in table cells" do
       rows = [
-        ["Header", "<b>Bold Header</b>"],
-        ["Plain cell", "<i>Italic</i> and <b>bold</b>"]
+        ["Header", {:html, "<b>Bold Header</b>"}],
+        ["Plain cell", {:html, "<i>Italic</i> and <b>bold</b>"}]
       ]
 
       slide =
@@ -163,8 +163,11 @@ defmodule Podium.Integration.HTMLTextIntegrationTest do
     test "creates valid pptx with HTML in placeholder" do
       slide =
         Podium.Slide.new(:title_content)
-        |> Podium.set_placeholder(:title, "<b>HTML</b> Title")
-        |> Podium.set_placeholder(:content, "<ul><li>Point one</li><li>Point two</li></ul>")
+        |> Podium.set_placeholder(:title, {:html, "<b>HTML</b> Title"})
+        |> Podium.set_placeholder(
+          :content,
+          {:html, "<ul><li>Point one</li><li>Point two</li></ul>"}
+        )
 
       prs = Podium.new() |> Podium.add_slide(slide)
 
@@ -190,7 +193,7 @@ defmodule Podium.Integration.HTMLTextIntegrationTest do
           y: {2, :inches},
           width: {8, :inches},
           height: {3, :inches},
-          text: "<p><b>Important!</b></p><p>This is <i>styled</i> text in a shape.</p>",
+          text: {:html, "<p><b>Important!</b></p><p>This is <i>styled</i> text in a shape.</p>"},
           fill: "E8EDF2"
         )
 

@@ -6,7 +6,8 @@ prs = Podium.new()
 s1 =
   Podium.Slide.new()
   |> Podium.add_text_box(
-    ~s(<p style="text-align: center"><span style="font-size: 28pt; color: #003366"><b>HTML Text Input</b></span></p>),
+    {:html,
+     ~s(<p style="text-align: center"><span style="font-size: 28pt; color: #003366"><b>HTML Text Input</b></span></p>)},
     x: {0.5, :inches},
     y: {0.3, :inches},
     width: {12, :inches},
@@ -14,12 +15,12 @@ s1 =
     fill: {:gradient, [{0, "E8EDF2"}, {100_000, "FFFFFF"}], angle: 5_400_000}
   )
   |> Podium.add_text_box(
-    """
+    {:html, """
     <p><b>Bold text</b>, <i>italic text</i>, <u>underlined text</u></p>
     <p><s>Strikethrough</s>, E=mc<sup>2</sup>, H<sub>2</sub>O</p>
     <p><span style="color: #FF0000">Red</span>, <span style="color: #00AA00">Green</span>, <span style="color: #0000FF">Blue</span></p>
     <p><span style="font-family: Courier New; font-size: 14pt">Courier New at 14pt</span></p>
-    """,
+    """},
     x: {0.5, :inches},
     y: {1.5, :inches},
     width: {12, :inches},
@@ -30,7 +31,8 @@ s1 =
 s2 =
   Podium.Slide.new()
   |> Podium.add_text_box(
-    ~s(<p style="text-align: center"><span style="font-size: 28pt; color: #003366"><b>Lists</b></span></p>),
+    {:html,
+     ~s(<p style="text-align: center"><span style="font-size: 28pt; color: #003366"><b>Lists</b></span></p>)},
     x: {0.5, :inches},
     y: {0.3, :inches},
     width: {12, :inches},
@@ -38,7 +40,7 @@ s2 =
     fill: {:gradient, [{0, "E8EDF2"}, {100_000, "FFFFFF"}], angle: 5_400_000}
   )
   |> Podium.add_text_box(
-    """
+    {:html, """
     <ul>
       <li>Unordered list item one</li>
       <li>Unordered list item two</li>
@@ -48,20 +50,20 @@ s2 =
       </ul>
       <li>Back to top level</li>
     </ul>
-    """,
+    """},
     x: {0.5, :inches},
     y: {1.5, :inches},
     width: {5.5, :inches},
     height: {4.5, :inches}
   )
   |> Podium.add_text_box(
-    """
+    {:html, """
     <ol>
       <li>First step</li>
       <li>Second step</li>
       <li>Third step</li>
     </ol>
-    """,
+    """},
     x: {6.5, :inches},
     y: {1.5, :inches},
     width: {5.5, :inches},
@@ -72,7 +74,8 @@ s2 =
 s3 =
   Podium.Slide.new()
   |> Podium.add_text_box(
-    ~s(<p style="text-align: center"><span style="font-size: 28pt; color: #003366"><b>Nested Formatting</b></span></p>),
+    {:html,
+     ~s(<p style="text-align: center"><span style="font-size: 28pt; color: #003366"><b>Nested Formatting</b></span></p>)},
     x: {0.5, :inches},
     y: {0.3, :inches},
     width: {12, :inches},
@@ -80,12 +83,12 @@ s3 =
     fill: {:gradient, [{0, "E8EDF2"}, {100_000, "FFFFFF"}], angle: 5_400_000}
   )
   |> Podium.add_text_box(
-    """
+    {:html, """
     <p><b><i>Bold and italic combined</i></b></p>
     <p><b><u>Bold and underlined</u></b></p>
     <p><b><i><span style="color: #CC0000">Bold italic red</span></i></b></p>
     <p><span style="font-size: 24pt; font-family: Georgia; color: #003366">Large Georgia blue</span></p>
-    """,
+    """},
     x: {0.5, :inches},
     y: {1.5, :inches},
     width: {12, :inches},
@@ -96,7 +99,8 @@ s3 =
 s4 =
   Podium.Slide.new()
   |> Podium.add_text_box(
-    ~s(<p style="text-align: center"><span style="font-size: 28pt; color: #003366"><b>Same Output, Two APIs</b></span></p>),
+    {:html,
+     ~s(<p style="text-align: center"><span style="font-size: 28pt; color: #003366"><b>Same Output, Two APIs</b></span></p>)},
     x: {0.5, :inches},
     y: {0.3, :inches},
     width: {12, :inches},
@@ -105,20 +109,20 @@ s4 =
   )
   # Left side: using HTML
   |> Podium.add_text_box(
-    ~s(<p style="text-align: center"><b>Via HTML</b></p>),
+    {:html, ~s(<p style="text-align: center"><b>Via HTML</b></p>)},
     x: {0.5, :inches},
     y: {1.3, :inches},
     width: {5.5, :inches},
     height: {0.5, :inches}
   )
   |> Podium.add_text_box(
-    """
+    {:html, """
     <p><b>Q4 Summary</b></p>
     <ul>
       <li>Revenue grew <span style="color: #228B22"><b>35%</b></span></li>
       <li>Customer sat at <span style="color: #4472C4"><b>88%</b></span></li>
     </ul>
-    """,
+    """},
     x: {0.5, :inches},
     y: {1.8, :inches},
     width: {5.5, :inches},
@@ -128,7 +132,7 @@ s4 =
   )
   # Right side: using rich text API (same output)
   |> Podium.add_text_box(
-    ~s(<p style="text-align: center"><b>Via Rich Text API</b></p>),
+    {:html, ~s(<p style="text-align: center"><b>Via Rich Text API</b></p>)},
     x: {6.5, :inches},
     y: {1.3, :inches},
     width: {5.5, :inches},
@@ -152,7 +156,8 @@ s4 =
 s5 =
   Podium.Slide.new()
   |> Podium.add_text_box(
-    ~s(<p style="text-align: center"><span style="font-size: 28pt; color: #003366"><b>HTML in Tables</b></span></p>),
+    {:html,
+     ~s(<p style="text-align: center"><span style="font-size: 28pt; color: #003366"><b>HTML in Tables</b></span></p>)},
     x: {0.5, :inches},
     y: {0.3, :inches},
     width: {12, :inches},
@@ -161,9 +166,17 @@ s5 =
   )
   |> Podium.add_table(
     [
-      ["<b>Name</b>", "<b>Status</b>", "<b>Notes</b>"],
-      ["Alice", ~s(<span style="color: #228B22"><b>Active</b></span>), "Top performer"],
-      ["Bob", ~s(<span style="color: #CC0000"><b>On Leave</b></span>), "<i>Returns March</i>"]
+      [{:html, "<b>Name</b>"}, {:html, "<b>Status</b>"}, {:html, "<b>Notes</b>"}],
+      [
+        "Alice",
+        {:html, ~s(<span style="color: #228B22"><b>Active</b></span>)},
+        "Top performer"
+      ],
+      [
+        "Bob",
+        {:html, ~s(<span style="color: #CC0000"><b>On Leave</b></span>)},
+        {:html, "<i>Returns March</i>"}
+      ]
     ],
     x: {1, :inches},
     y: {1.5, :inches},

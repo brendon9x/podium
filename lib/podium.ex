@@ -27,15 +27,14 @@ defmodule Podium do
 
   ## Text Formatting Reference
 
-  Text content can be a plain string, an HTML string, or rich text (a list of paragraphs).
+  Text content can be a plain string, an `{:html, string}` tuple, or rich text (a list of paragraphs).
 
   ### HTML text input
 
-  Pass an HTML string anywhere text is accepted. Podium auto-detects HTML tags
-  and parses them into the same internal paragraph structure:
+  Wrap HTML strings in `{:html, "..."}` anywhere text is accepted:
 
       slide = Podium.add_text_box(slide,
-        ~s(<p><b>Bold</b> and <span style="color: #FF0000">red</span></p>),
+        {:html, ~s(<p><b>Bold</b> and <span style="color: #FF0000">red</span></p>)},
         x: {1, :inches}, y: {1, :inches}, width: {10, :inches}, height: {1, :inches})
 
   Supported elements: `<b>`, `<strong>`, `<i>`, `<em>`, `<u>`, `<s>`, `<del>`,
@@ -108,7 +107,7 @@ defmodule Podium do
   @type anchor :: :top | :middle | :bottom
   @type run :: String.t() | {String.t(), keyword()}
   @type paragraph :: [run()] | {[run()], keyword()}
-  @type rich_text :: String.t() | [paragraph()]
+  @type rich_text :: String.t() | {:html, String.t()} | [paragraph()]
   @type layout ::
           :title_slide
           | :title_content

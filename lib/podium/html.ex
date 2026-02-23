@@ -4,7 +4,13 @@ defmodule Podium.HTML do
 
   This module provides an HTML text input layer so users can pass HTML strings
   anywhere text is accepted (`add_text_box`, table cells, `set_placeholder`,
-  auto shapes). Plain strings without HTML tags continue to work unchanged.
+  auto shapes) using the `{:html, string}` tagged tuple.
+
+  ## Usage
+
+      Podium.add_text_box(slide,
+        {:html, ~s(<p><b>Bold</b> and <span style="color: #FF0000">red</span></p>)},
+        x: {1, :inches}, y: {1, :inches}, width: {10, :inches}, height: {1, :inches})
 
   ## Supported elements
 
@@ -31,28 +37,7 @@ defmodule Podium.HTML do
   - `text-align` — paragraph alignment (e.g., `text-align: center`)
   """
 
-  @html_tag_pattern ~r/<[a-zA-Z][^>]*>/
-
-  @doc """
-  Returns `true` if the string contains an HTML tag.
-
-  Uses a simple heuristic: checks for `<tagname...>` patterns.
-
-  ## Examples
-
-      iex> Podium.HTML.html?("<b>bold</b>")
-      true
-
-      iex> Podium.HTML.html?("plain text")
-      false
-
-      iex> Podium.HTML.html?("5 < 10 and 20 > 15")
-      false
-  """
-  @spec html?(String.t()) :: boolean()
-  def html?(string) when is_binary(string) do
-    Regex.match?(@html_tag_pattern, string)
-  end
+  @whitespace_pattern ~r/\s+/
 
   @doc """
   Parses an HTML string into canonical paragraph maps.
@@ -105,8 +90,8 @@ defmodule Podium.HTML do
     if collapsed == "" do
       state
     else
-      run = %{text: collapsed, opts: build_run_opts(inline_opts)}
-      %{state | current_runs: state.current_runs ++ [run]}
+      run = %{text: collapsed, opts: inline_opts}
+      %{state | current_runs: [run | state.current_runs]}
     end
   end
 
@@ -119,7 +104,7 @@ defmodule Podium.HTML do
       tag in ~w(p div) ->
         walk_block_element(tag, attrs, children, inline_opts, state)
 
-      tag in ~w(br) ->
+      tag == "br" ->
         flush_paragraph(state)
 
       tag in ~w(ul ol) ->
@@ -158,9 +143,9 @@ defmodule Podium.HTML do
   # Lists: <ul>, <ol>
   defp walk_list(tag, children, inline_opts, state) do
     list_type = if tag == "ol", do: :number, else: true
-    state = %{state | list_stack: state.list_stack ++ [list_type]}
+    state = %{state | list_stack: [list_type | state.list_stack]}
     state = walk_nodes(children, inline_opts, state)
-    %{state | list_stack: List.delete_at(state.list_stack, -1)}
+    %{state | list_stack: tl(state.list_stack)}
   end
 
   # List items: <li>
@@ -168,7 +153,7 @@ defmodule Podium.HTML do
     state = flush_paragraph(state)
 
     level = max(length(state.list_stack) - 1, 0)
-    bullet_type = List.last(state.list_stack) || true
+    bullet_type = List.first(state.list_stack, true)
 
     para_opts =
       default_para_opts()
@@ -183,7 +168,7 @@ defmodule Podium.HTML do
   # Inline elements
   defp walk_inline_element(tag, attrs, children, inline_opts, state) do
     new_opts = inline_opts_for_tag(tag, attrs)
-    merged = merge_inline_opts(inline_opts, new_opts)
+    merged = Keyword.merge(inline_opts, new_opts)
     walk_nodes(children, merged, state)
   end
 
@@ -205,40 +190,18 @@ defmodule Podium.HTML do
   end
 
   defp inline_opts_from_styles(styles) do
-    opts = []
-
-    opts =
-      case Map.get(styles, "color") do
-        nil -> opts
-        color -> opts ++ [color: normalize_color(color)]
-      end
-
-    opts =
-      case Map.get(styles, "font-size") do
-        nil -> opts
-        size -> opts ++ [font_size: parse_font_size(size)]
-      end
-
-    opts =
-      case Map.get(styles, "font-family") do
-        nil -> opts
-        font -> opts ++ [font: clean_font_name(font)]
-      end
-
-    opts
+    [
+      color: styles |> Map.get("color") |> normalize_color(),
+      font_size: styles |> Map.get("font-size") |> parse_font_size(),
+      font: styles |> Map.get("font-family") |> clean_font_name()
+    ]
+    |> Enum.reject(fn {_k, v} -> is_nil(v) end)
   end
 
   defp merge_inline_styles(inline_opts, styles) do
     style_opts = inline_opts_from_styles(styles)
-    merge_inline_opts(inline_opts, style_opts)
+    Keyword.merge(inline_opts, style_opts)
   end
-
-  defp merge_inline_opts(base, new) do
-    Keyword.merge(base, new)
-  end
-
-  defp build_run_opts([]), do: []
-  defp build_run_opts(opts), do: opts
 
   # -- Style parsing --
 
@@ -273,14 +236,16 @@ defmodule Podium.HTML do
     end
   end
 
+  defp normalize_color(nil), do: nil
+
   defp normalize_color(color) do
     color = String.trim(color)
 
     cond do
-      String.starts_with?(color, "#") && String.length(color) == 7 ->
+      String.starts_with?(color, "#") && byte_size(color) == 7 ->
         String.slice(color, 1..-1//1)
 
-      String.starts_with?(color, "#") && String.length(color) == 4 ->
+      String.starts_with?(color, "#") && byte_size(color) == 4 ->
         # Expand shorthand #RGB to RRGGBB
         <<_hash, r, g, b>> = color
         <<r, r, g, g, b, b>>
@@ -289,6 +254,8 @@ defmodule Podium.HTML do
         color
     end
   end
+
+  defp parse_font_size(nil), do: nil
 
   defp parse_font_size(size) do
     size = String.trim(size)
@@ -299,7 +266,10 @@ defmodule Podium.HTML do
 
       String.ends_with?(size, "px") ->
         # Approximate px to pt (1px ≈ 0.75pt)
-        size |> String.trim_trailing("px") |> String.trim() |> parse_number() |> Kernel.*(0.75)
+        case size |> String.trim_trailing("px") |> String.trim() |> parse_number() do
+          nil -> nil
+          n -> n * 0.75
+        end
 
       true ->
         parse_number(size)
@@ -312,6 +282,8 @@ defmodule Podium.HTML do
       :error -> nil
     end
   end
+
+  defp clean_font_name(nil), do: nil
 
   defp clean_font_name(font) do
     font
@@ -329,8 +301,11 @@ defmodule Podium.HTML do
   end
 
   defp flush_paragraph(state) do
-    # Trim leading/trailing whitespace from the paragraph's runs
-    runs = trim_runs(state.current_runs)
+    # Reverse accumulated runs (prepended during walk), then trim whitespace
+    runs =
+      state.current_runs
+      |> Enum.reverse()
+      |> trim_runs()
 
     if runs == [] do
       %{state | current_runs: [], current_para_opts: default_para_opts()}
@@ -369,21 +344,28 @@ defmodule Podium.HTML do
   defp trim_run_end([]), do: []
 
   defp trim_run_end(runs) do
-    {rest, [last]} = Enum.split(runs, -1)
-    trimmed = String.trim_trailing(last.text)
+    runs
+    |> Enum.reverse()
+    |> trim_from_head_trailing()
+    |> Enum.reverse()
+  end
+
+  defp trim_from_head_trailing([%{text: text} = run | rest]) do
+    trimmed = String.trim_trailing(text)
 
     if trimmed == "" do
-      trim_run_end(rest)
+      trim_from_head_trailing(rest)
     else
-      rest ++ [%{last | text: trimmed}]
+      [%{run | text: trimmed} | rest]
     end
   end
+
+  defp trim_from_head_trailing([]), do: []
 
   # -- Whitespace --
 
   defp collapse_whitespace(text) do
-    text
-    |> String.replace(~r/\s+/, " ")
+    String.replace(text, @whitespace_pattern, " ")
   end
 
   # -- Defaults --
