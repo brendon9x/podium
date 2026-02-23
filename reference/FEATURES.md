@@ -23,6 +23,7 @@ Comprehensive list of Podium's features. Podium uses [python-pptx](https://githu
 | Paragraph formatting | alignment (left/center/right/justify), line_spacing, space_before, space_after, bullets (boolean/`:number`/custom char), level (0-based indent) |
 | Text auto-size | `:none`, `:text_to_fit_shape`, `:shape_to_fit_text` on text boxes and auto shapes |
 | Word wrap | `word_wrap: false` for `wrap="none"`, default `wrap="square"` |
+| HTML text input | Auto-detected HTML strings parsed via Floki; `<b>`, `<i>`, `<u>`, `<s>`, `<sup>`, `<sub>`, `<span style>`, `<p>`, `<br>`, `<ul>`/`<ol>`/`<li>` with nesting; works in text boxes, table cells, placeholders, and auto shapes |
 
 ## Shapes and Styling
 
