@@ -102,6 +102,24 @@ slide = Podium.add_text_box(slide, [
 
 Run options: `bold`, `italic`, `underline`, `strikethrough`, `superscript`, `subscript`, `font_size`, `color` (hex RGB), `font`.
 
+### HTML text
+
+Pass HTML strings anywhere text is accepted. Podium auto-detects HTML tags and parses them into the same internal format:
+
+```elixir
+# HTML — compact, familiar syntax
+slide = Podium.add_text_box(slide,
+  ~s(<p>Revenue grew <span style="color: #228B22"><b>35%</b></span></p>),
+  x: {1, :inches}, y: {1, :inches}, width: {10, :inches}, height: {1, :inches})
+
+# Equivalent rich text API
+slide = Podium.add_text_box(slide, [
+  [{"Revenue grew "}, {"35%", bold: true, color: "228B22"}]
+], x: {1, :inches}, y: {1, :inches}, width: {10, :inches}, height: {1, :inches})
+```
+
+Supported: `<b>`, `<i>`, `<u>`, `<s>`, `<sup>`, `<sub>`, `<p>`, `<br>`, `<ul>`, `<ol>`, `<li>`, `<span style="...">`. Style properties: `color`, `font-size`, `font-family`, `text-align`.
+
 ### Paragraph spacing and bullets
 
 Paragraph-level options go in the tuple form `{runs, opts}`:

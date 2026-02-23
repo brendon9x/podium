@@ -41,6 +41,41 @@ defmodule Podium.TextTest do
     end
   end
 
+  describe "normalize/2 with HTML strings" do
+    test "HTML string is auto-detected and parsed" do
+      result = Text.normalize("<b>Bold</b> text")
+      assert [%{runs: [%{text: "Bold", opts: [bold: true]}, %{text: " text", opts: []}]}] = result
+    end
+
+    test "HTML with default alignment applied" do
+      result = Text.normalize("<p>Hello</p>", alignment: :center)
+      assert [%{alignment: :center}] = result
+    end
+
+    test "HTML with explicit alignment overrides default" do
+      result = Text.normalize(~s(<p style="text-align: right">Hello</p>), alignment: :center)
+      assert [%{alignment: :right}] = result
+    end
+
+    test "HTML with default font_size applied to runs without explicit size" do
+      result = Text.normalize("<b>Bold</b>", font_size: 24)
+      assert [%{runs: [%{text: "Bold", opts: opts}]}] = result
+      assert opts[:font_size] == 24
+      assert opts[:bold] == true
+    end
+
+    test "HTML run with explicit font_size not overridden by default" do
+      result = Text.normalize(~s(<span style="font-size: 18pt">Sized</span>), font_size: 24)
+      assert [%{runs: [%{text: "Sized", opts: opts}]}] = result
+      assert opts[:font_size] == 18
+    end
+
+    test "plain string without HTML tags uses existing path" do
+      result = Text.normalize("No tags here")
+      assert [%{runs: [%{text: "No tags here", opts: []}]}] = result
+    end
+  end
+
   describe "paragraphs_xml/1" do
     test "generates simple paragraph" do
       paragraphs = Text.normalize("Hello")

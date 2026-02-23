@@ -25,19 +25,28 @@ defmodule Podium.Text do
     paragraphs =
       case text do
         text when is_binary(text) ->
-          run_opts = if default_font_size, do: [font_size: default_font_size], else: []
+          if Podium.HTML.html?(text) do
+            Podium.HTML.parse(text)
+            |> Enum.map(fn para ->
+              para
+              |> maybe_apply_default(:alignment, default_alignment)
+              |> maybe_apply_default_font_size(default_font_size)
+            end)
+          else
+            run_opts = if default_font_size, do: [font_size: default_font_size], else: []
 
-          [
-            %{
-              runs: [%{text: text, opts: run_opts}],
-              alignment: default_alignment,
-              line_spacing: nil,
-              space_before: nil,
-              space_after: nil,
-              bullet: nil,
-              level: 0
-            }
-          ]
+            [
+              %{
+                runs: [%{text: text, opts: run_opts}],
+                alignment: default_alignment,
+                line_spacing: nil,
+                space_before: nil,
+                space_after: nil,
+                bullet: nil,
+                level: 0
+              }
+            ]
+          end
 
         paragraphs when is_list(paragraphs) ->
           Enum.map(paragraphs, fn para -> normalize_paragraph(para, default_alignment) end)
@@ -352,5 +361,28 @@ defmodule Podium.Text do
       end)
     end)
     |> Enum.uniq()
+  end
+
+  defp maybe_apply_default(para, :alignment, default) do
+    if para.alignment == nil and default != nil do
+      %{para | alignment: default}
+    else
+      para
+    end
+  end
+
+  defp maybe_apply_default_font_size(para, nil), do: para
+
+  defp maybe_apply_default_font_size(para, default_font_size) do
+    runs =
+      Enum.map(para.runs, fn run ->
+        if Keyword.has_key?(run.opts, :font_size) do
+          run
+        else
+          %{run | opts: [font_size: default_font_size] ++ run.opts}
+        end
+      end)
+
+    %{para | runs: runs}
   end
 end

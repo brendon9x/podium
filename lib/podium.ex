@@ -27,7 +27,21 @@ defmodule Podium do
 
   ## Text Formatting Reference
 
-  Text content can be a plain string or rich text (a list of paragraphs).
+  Text content can be a plain string, an HTML string, or rich text (a list of paragraphs).
+
+  ### HTML text input
+
+  Pass an HTML string anywhere text is accepted. Podium auto-detects HTML tags
+  and parses them into the same internal paragraph structure:
+
+      slide = Podium.add_text_box(slide,
+        ~s(<p><b>Bold</b> and <span style="color: #FF0000">red</span></p>),
+        x: {1, :inches}, y: {1, :inches}, width: {10, :inches}, height: {1, :inches})
+
+  Supported elements: `<b>`, `<strong>`, `<i>`, `<em>`, `<u>`, `<s>`, `<del>`,
+  `<sup>`, `<sub>`, `<span>`, `<p>`, `<br>`, `<ul>`, `<ol>`, `<li>`.
+  Supported CSS properties on `style`: `color`, `font-size`, `font-family`, `text-align`.
+  See `Podium.HTML` for full details.
 
   ### Run options
 
