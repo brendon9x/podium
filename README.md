@@ -49,7 +49,7 @@ Add `podium` to your dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:podium, "~> 0.1.0"}
+    {:podium, "~> 0.2"}
   ]
 end
 ```
