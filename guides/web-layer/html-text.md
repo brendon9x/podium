@@ -1,9 +1,8 @@
 # HTML Text Input
 
-Podium auto-detects HTML strings anywhere text is accepted — `add_text_box`,
-table cells, `set_placeholder`, and auto shapes. Pass an HTML string instead of
-a plain string or rich text list, and Podium parses it into the same internal
-paragraph structure.
+Wrap HTML strings in `{:html, "..."}` anywhere text is accepted — `add_text_box`,
+table cells, `set_placeholder`, and auto shapes. Podium parses the HTML into the
+same internal paragraph structure.
 
 > #### Try it yourself {: .tip}
 >
@@ -13,13 +12,13 @@ paragraph structure.
 
 ```elixir
 slide = Podium.add_text_box(slide,
-  "<p><b>Bold</b>, <i>italic</i>, and <u>underlined</u></p>",
+  {:html, "<p><b>Bold</b>, <i>italic</i>, and <u>underlined</u></p>"},
   x: {1, :inches}, y: {1, :inches},
   width: {10, :inches}, height: {1, :inches})
 ```
 
-Plain strings without any HTML tags still work exactly as before — no change
-to existing code.
+Plain strings without the `{:html, ...}` wrapper still work exactly as before —
+no change to existing code.
 
 ## Supported HTML Elements
 
@@ -51,7 +50,7 @@ Use `<span style="...">` to set color, font size, and font family on a run:
 
 ```elixir
 slide = Podium.add_text_box(slide,
-  ~s(<span style="color: #FF0000; font-size: 24pt; font-family: Arial">Styled text</span>),
+  {:html, ~s(<span style="color: #FF0000; font-size: 24pt; font-family: Arial">Styled text</span>)},
   x: {1, :inches}, y: {1, :inches},
   width: {10, :inches}, height: {1, :inches})
 ```
@@ -74,10 +73,11 @@ slide = Podium.add_text_box(slide,
 Each `<p>` becomes a separate paragraph. Set alignment with `text-align`:
 
 ```elixir
-slide = Podium.add_text_box(slide, """
+slide = Podium.add_text_box(slide,
+  {:html, """
   <p style="text-align: center"><b>Centered Title</b></p>
   <p style="text-align: left">Left-aligned body text</p>
-  """,
+  """},
   x: {1, :inches}, y: {1, :inches},
   width: {10, :inches}, height: {2, :inches})
 ```
@@ -91,7 +91,8 @@ Unordered lists (`<ul>`) produce bullet points. Ordered lists (`<ol>`) produce
 numbered items. Nesting is supported.
 
 ```elixir
-slide = Podium.add_text_box(slide, """
+slide = Podium.add_text_box(slide,
+  {:html, """
   <ul>
     <li>Revenue up 35%</li>
     <li>Customer satisfaction at all-time high</li>
@@ -99,33 +100,33 @@ slide = Podium.add_text_box(slide, """
       <li>NPS score improved across regions</li>
     </ul>
   </ul>
-  """,
+  """},
   x: {1, :inches}, y: {1, :inches},
   width: {10, :inches}, height: {3, :inches})
 ```
 
 ## HTML in Tables
 
-Table cells accept HTML strings the same way text boxes do:
+Table cells accept `{:html, "..."}` tuples the same way text boxes do:
 
 ```elixir
 slide = Podium.add_table(slide, [
-  ["<b>Name</b>", "<b>Status</b>"],
-  ["Alice", ~s(<span style="color: #228B22"><b>Active</b></span>)],
-  ["Bob", ~s(<span style="color: #CC0000"><b>On Leave</b></span>)]
+  [{:html, "<b>Name</b>"}, {:html, "<b>Status</b>"}],
+  ["Alice", {:html, ~s(<span style="color: #228B22"><b>Active</b></span>)}],
+  ["Bob", {:html, ~s(<span style="color: #CC0000"><b>On Leave</b></span>)}]
 ], x: {1, :inches}, y: {1, :inches},
    width: {10, :inches}, height: {3, :inches})
 ```
 
 ## HTML in Placeholders
 
-Placeholders also accept HTML:
+Placeholders also accept `{:html, "..."}`:
 
 ```elixir
 slide =
   Podium.Slide.new(:title_content)
-  |> Podium.set_placeholder(:title, "<b>HTML</b> Title")
-  |> Podium.set_placeholder(:content, "<ul><li>Point one</li><li>Point two</li></ul>")
+  |> Podium.set_placeholder(:title, {:html, "<b>HTML</b> Title"})
+  |> Podium.set_placeholder(:content, {:html, "<ul><li>Point one</li><li>Point two</li></ul>"})
 ```
 
 ## Rich Text API vs HTML
@@ -136,7 +137,7 @@ workflow better:
 ```elixir
 # HTML — compact, familiar to web developers
 Podium.add_text_box(slide,
-  ~s(<p>Revenue grew <span style="color: #228B22"><b>35%</b></span></p>),
+  {:html, ~s(<p>Revenue grew <span style="color: #228B22"><b>35%</b></span></p>)},
   x: {1, :inches}, y: {1, :inches},
   width: {10, :inches}, height: {1, :inches})
 
@@ -152,23 +153,6 @@ Podium.add_text_box(slide, [
 > HTML text is great when content comes from a web app or CMS. The rich text
 > API is better when you need fine-grained control over paragraph spacing,
 > line spacing, or custom bullet characters.
-
-## Detection Heuristic
-
-Podium detects HTML by checking for the presence of an HTML tag (e.g., `<b>`,
-`<span>`, `<p>`). Strings like `"5 < 10"` do not trigger HTML parsing because
-`<` followed by a space or digit is not a valid tag opener.
-
-If you have a plain string that happens to contain a valid HTML tag pattern and
-you want to prevent parsing, use the rich text list format instead:
-
-```elixir
-# This would be parsed as HTML:
-Podium.add_text_box(slide, "Use <b> for bold", ...)
-
-# Use rich text to prevent HTML parsing:
-Podium.add_text_box(slide, [["Use <b> for bold"]], ...)
-```
 
 ---
 
