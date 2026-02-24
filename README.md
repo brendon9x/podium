@@ -235,11 +235,15 @@ Available layouts and their placeholders:
 All position and size values accept `{number, unit}` tuples or raw EMU integers:
 
 ```elixir
-{1, :inches}   # 914,400 EMU
-{2.54, :cm}    # 914,400 EMU
-{72, :pt}      # 914,400 EMU
-914_400         # raw EMU
+{1, :inches}      # 914,400 EMU
+{2.54, :cm}       # 914,400 EMU
+{72, :pt}         # 914,400 EMU
+914_400            # raw EMU
+{50, :percent}    # 50% of slide width (for x/width) or height (for y/height)
 ```
+
+Percent values are resolved against the slide dimensions when you call `add_text_box`,
+`add_image`, `add_chart`, etc. You can mix units freely — e.g. `x: {10, :percent}, height: {2, :inches}`.
 
 ## Demos
 

@@ -94,7 +94,7 @@ defmodule Podium do
   """
 
   @type emu :: non_neg_integer()
-  @type dimension :: emu() | {number(), :inches | :cm | :pt}
+  @type dimension :: emu() | {number(), :inches | :cm | :pt | :percent}
   @type hex_color :: String.t()
   @type fill ::
           hex_color()

@@ -128,4 +128,225 @@ defmodule Podium.SlideTest do
       refute slide_xml =~ "blipFill"
     end
   end
+
+  describe "percent positioning" do
+    test "add_text_box resolves x percent to EMU" do
+      slide =
+        Podium.Slide.new()
+        |> Podium.Slide.add_text_box("Hello",
+          x: {50, :percent},
+          y: {1, :inches},
+          width: {4, :inches},
+          height: {1, :inches}
+        )
+
+      [shape] = slide.shapes
+      assert shape.x == 6_096_000
+    end
+
+    test "add_text_box resolves y percent to EMU" do
+      slide =
+        Podium.Slide.new()
+        |> Podium.Slide.add_text_box("Hello",
+          x: {1, :inches},
+          y: {50, :percent},
+          width: {4, :inches},
+          height: {1, :inches}
+        )
+
+      [shape] = slide.shapes
+      assert shape.y == 3_429_000
+    end
+
+    test "add_text_box resolves width and height percent" do
+      slide =
+        Podium.Slide.new()
+        |> Podium.Slide.add_text_box("Hello",
+          x: {0, :inches},
+          y: {0, :inches},
+          width: {80, :percent},
+          height: {50, :percent}
+        )
+
+      [shape] = slide.shapes
+      assert shape.width == round(80 / 100 * 12_192_000)
+      assert shape.height == round(50 / 100 * 6_858_000)
+    end
+
+    test "mixed percent and non-percent units" do
+      slide =
+        Podium.Slide.new()
+        |> Podium.Slide.add_text_box("Hello",
+          x: {50, :percent},
+          y: {1, :inches},
+          width: {4, :inches},
+          height: {50, :percent}
+        )
+
+      [shape] = slide.shapes
+      assert shape.x == 6_096_000
+      assert shape.y == 914_400
+      assert shape.width == Podium.Units.to_emu({4, :inches})
+      assert shape.height == 3_429_000
+    end
+
+    test "non-percent values pass through unchanged" do
+      slide =
+        Podium.Slide.new()
+        |> Podium.Slide.add_text_box("Hello",
+          x: {2, :inches},
+          y: {1, :inches},
+          width: {4, :inches},
+          height: {1, :inches}
+        )
+
+      [shape] = slide.shapes
+      assert shape.x == 1_828_800
+      assert shape.y == 914_400
+    end
+
+    test "custom slide dimensions affect percent resolution" do
+      custom_width = Podium.Units.to_emu({10, :inches})
+      custom_height = Podium.Units.to_emu({7.5, :inches})
+
+      slide =
+        Podium.Slide.new(:blank, slide_width: {10, :inches}, slide_height: {7.5, :inches})
+        |> Podium.Slide.add_text_box("Hello",
+          x: {50, :percent},
+          y: {50, :percent},
+          width: {4, :inches},
+          height: {1, :inches}
+        )
+
+      [shape] = slide.shapes
+      assert shape.x == round(custom_width / 2)
+      assert shape.y == round(custom_height / 2)
+    end
+
+    test "add_auto_shape resolves percent position" do
+      slide =
+        Podium.Slide.new()
+        |> Podium.Slide.add_auto_shape(:rectangle,
+          x: {25, :percent},
+          y: {25, :percent},
+          width: {50, :percent},
+          height: {50, :percent}
+        )
+
+      [shape] = slide.shapes
+      assert shape.x == round(25 / 100 * 12_192_000)
+      assert shape.y == round(25 / 100 * 6_858_000)
+    end
+
+    test "add_connector resolves percent coordinates" do
+      slide =
+        Podium.Slide.new()
+        |> Podium.Slide.add_connector(
+          :straight,
+          {10, :percent},
+          {20, :percent},
+          {90, :percent},
+          {80, :percent},
+          []
+        )
+
+      [conn] = slide.connectors
+      assert conn.x == round(10 / 100 * 12_192_000)
+      assert conn.y == round(20 / 100 * 6_858_000)
+    end
+
+    test "add_image resolves percent position" do
+      slide =
+        Podium.Slide.new()
+        |> Podium.Slide.add_image(@png_binary,
+          x: {10, :percent},
+          y: {10, :percent}
+        )
+
+      [image] = slide.images
+      assert image.x == round(10 / 100 * 12_192_000)
+      assert image.y == round(10 / 100 * 6_858_000)
+    end
+
+    test "add_chart resolves percent position" do
+      chart_data =
+        Podium.Chart.ChartData.new()
+        |> Podium.Chart.ChartData.add_categories(["A"])
+        |> Podium.Chart.ChartData.add_series("S", [1])
+
+      slide =
+        Podium.Slide.new()
+        |> Podium.Slide.add_chart(:column_clustered, chart_data,
+          x: {10, :percent},
+          y: {20, :percent},
+          width: {80, :percent},
+          height: {60, :percent}
+        )
+
+      [chart] = slide.charts
+      assert chart.x == round(10 / 100 * 12_192_000)
+      assert chart.y == round(20 / 100 * 6_858_000)
+      assert chart.width == round(80 / 100 * 12_192_000)
+      assert chart.height == round(60 / 100 * 6_858_000)
+    end
+
+    test "add_table resolves percent position" do
+      slide =
+        Podium.Slide.new()
+        |> Podium.Slide.add_table(
+          [["A", "B"], ["1", "2"]],
+          x: {10, :percent},
+          y: {20, :percent},
+          width: {80, :percent},
+          height: {60, :percent}
+        )
+
+      [table] = slide.tables
+      assert table.x == round(10 / 100 * 12_192_000)
+      assert table.y == round(20 / 100 * 6_858_000)
+    end
+
+    test "presentation stamps dimensions onto slide" do
+      slide =
+        Podium.Slide.new()
+        |> Podium.Slide.add_text_box("Test",
+          x: {50, :percent},
+          y: {50, :percent},
+          width: {4, :inches},
+          height: {1, :inches}
+        )
+
+      prs =
+        Podium.new(slide_width: {10, :inches}, slide_height: {7.5, :inches})
+        |> Podium.add_slide(slide)
+
+      [slide] = prs.slides
+      assert slide.slide_width == Podium.Units.to_emu({10, :inches})
+      assert slide.slide_height == Podium.Units.to_emu({7.5, :inches})
+    end
+
+    test "percent-positioned elements produce correct XML EMU values" do
+      slide =
+        Podium.Slide.new()
+        |> Podium.Slide.add_text_box("Hello",
+          x: {50, :percent},
+          y: {50, :percent},
+          width: {100, :percent},
+          height: {100, :percent}
+        )
+
+      prs =
+        Podium.new()
+        |> Podium.add_slide(slide)
+
+      {:ok, binary} = Podium.save_to_memory(prs)
+      parts = PptxHelpers.unzip_pptx_binary(binary)
+      slide_xml = parts["ppt/slides/slide1.xml"]
+
+      assert slide_xml =~ ~s(x="6096000")
+      assert slide_xml =~ ~s(y="3429000")
+      assert slide_xml =~ ~s(cx="12192000")
+      assert slide_xml =~ ~s(cy="6858000")
+    end
+  end
 end

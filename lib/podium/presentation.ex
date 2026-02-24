@@ -116,6 +116,7 @@ defmodule Podium.Presentation do
   """
   @spec add_slide(t(), Podium.Slide.t()) :: t()
   def add_slide(%__MODULE__{} = prs, %Slide{} = slide) do
+    slide = %{slide | slide_width: prs.slide_width, slide_height: prs.slide_height}
     %{prs | slides: prs.slides ++ [slide]}
   end
 
