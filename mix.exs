@@ -91,6 +91,8 @@ defmodule Podium.MixProject do
       # Web Layer
       "guides/web-layer/html-text.md",
       "guides/web-layer/percent-positioning.md",
+      "guides/web-layer/css-styling.md",
+      "guides/web-layer/grid-layout.md",
 
       # Cheatsheets
       "guides/cheatsheets/quick-reference.cheatmd"
@@ -120,6 +122,7 @@ defmodule Podium.MixProject do
         Podium.Pattern
       ],
       "Text and Tables": [Podium.Text, Podium.HTML, Podium.Table],
+      "Web Layer": [Podium.CSS, Podium.Layout],
       Charts: [
         Podium.Chart,
         Podium.Chart.ChartData,
