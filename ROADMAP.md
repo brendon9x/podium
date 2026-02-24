@@ -134,28 +134,11 @@ Podium.Layout.configure(
 - Row height defaults to equal division of remaining vertical space.
 - Explicit row heights can be set via percentage.
 
-**Offset support:** `col-offset-2` shifts a column right by 2 units, matching Bootstrap semantics exactly.
+**Offset support:** `offset-2` shifts a column right by 2 units, matching Bootstrap 5 semantics exactly.
 
-### 2.4 Chart Data as Pipe-Delimited Table
+### 2.4 Chart Data as Pipe-Delimited Table — Dropped
 
-**The problem:** Building `ChartData` structs requires multiple function calls. For an LLM generating a chart from described data, this is unnecessary friction.
-
-**The solution:** Accept a pipe-delimited string as chart data input, where rows are series and columns are categories:
-
-```elixir
-Podium.add_chart(slide, :bar, """
-             | Q1   | Q2   | Q3   | Q4
-  Revenue    | 1500 | 4600 | 5156 | 3167
-  Expenses   | 1000 | 2300 | 2500 | 3000
-""",
-  x: {5, :percent}, y: {20, :percent},
-  width: {90, :percent}, height: {70, :percent},
-  colors: ["4472C4", "ED7D31"],
-  legend: :bottom
-)
-```
-
-This format is trivially parseable and trivially generatable by an LLM from any tabular data description.
+Decided against. The `ChartData` builder is already clean (3 calls for categories + series), and a string format would lose type information and per-series options (colors, XY/bubble data). For the DSL, macros can emit builder calls directly.
 
 ---
 
@@ -190,16 +173,9 @@ presentation do
 
     row do
       col "col-8" do
-        chart :column_clustered do
-          data """
-                 | Q1   | Q2   | Q3   | Q4
-          Revenue | 1500 | 4600 | 5156 | 3167
-          Costs   | 1000 | 2300 | 2500 | 3000
-          """
-          legend :bottom
-          data_labels [:value]
-          colors ["4472C4", "ED7D31"]
-        end
+        chart :column_clustered, chart_data,
+          legend: :bottom,
+          data_labels: [:value]
       end
 
       col "col-4" do
@@ -227,7 +203,7 @@ Each block macro accumulates children into a data structure, then calls the equi
 - `row do` → `Podium.Layout.row/2` computing vertical position
 - `col "col-N" do` → `Podium.Layout.col/2` computing x/width from column span
 - `text` → `Podium.add_text_box/3` with HTML parsing
-- `chart do` → `Podium.add_chart/4` with table data parsing
+- `chart` → `Podium.add_chart/4` with `ChartData` struct
 - `image` → `Podium.add_image/3`
 - `title`, `subtitle`, `body` → `Podium.set_placeholder/3`
 - `notes` → speaker notes
@@ -294,7 +270,6 @@ Every place where there is a choice between inventing a new Podium convention an
 - Bootstrap 12-column grid class names
 - Hex color values
 - CSS font properties (`font-size: 18pt`, `font-weight: bold`)
-- Pipe-delimited tabular data
 - Markdown headings (usable inside HTML blocks)
 
 ### The minimal system prompt
@@ -304,7 +279,7 @@ If the design is right, an LLM should be able to generate correct Podium DSL fro
 > *Generate Elixir Podium DSL to create a PowerPoint presentation.*
 > *Text content uses HTML: `<b>`, `<i>`, `<u>`, `<s>`, `<sup>`, `<sub>`, `<span style="color: #hex; font-size: Npt">`, `<ul>/<ol>/<li>`, `<p style="text-align: center">`.*
 > *Layout uses Bootstrap 12-column grid classes (`col-N`, `col-offset-N`) inside `row do / col "col-N" do` blocks.*
-> *Chart data is a pipe-delimited table with series as rows and categories as columns.*
+> *Charts use `ChartData.new() |> add_categories([...]) |> add_series(name, values, opts)`.*
 > *Colors are hex strings without `#`. Positions can be CSS absolute style percentages.*
 
 That is under 100 words of instruction for the entire DSL, because the rest is already in the model's weights.
@@ -349,21 +324,17 @@ Implemented. The `style:` parser now supports non-positional CSS properties, map
 
 The `style:` string is now a single entry point for the most common element properties. Explicit keyword opts still take precedence over style values.
 
-### Phase 3 — Chart Table Input (Layer 2)
+### Phase 3 — Chart Table Input (Layer 2) — Dropped
 
-Add pipe-delimited string parsing to `ChartData`. Implement as `Podium.Chart.ChartData.from_table/2`.
+Decided against. The `ChartData` builder API is already clean, and a pipe-delimited string format would lose type information and per-series options (colors, XY/bubble data, series-level config). For the DSL, the macro layer can emit `ChartData` builder calls directly — no string intermediate needed.
 
-Deliverable: chart data can be expressed as a formatted string.
+### Phase 4 — Bootstrap Grid (Layer 2) ✅
 
-### Phase 4 — Bootstrap Grid (Layer 2)
-
-Implement `Podium.Layout` with row/column computation. Configurable margins, gutters, and column count. Offset support.
-
-Deliverable: multi-column layouts without manual coordinate calculation.
+Implemented. `Podium.Layout` provides a 12-column grid system using Bootstrap vocabulary. `grid/2` computes the content area, `row/2` claims vertical space, and `cols/2` parses `"col-N"` / `"col-N offset-M"` specs into `[x:, y:, width:, height:]` keyword lists. Configurable margins, gutters, and column count. Output passes directly to existing `add_*` functions.
 
 ### Phase 5 — Macro DSL (Layer 3)
 
-Build `Podium.DSL` on top of Phases 1–4. Implement `presentation`, `slide`, `row`, `col`, `text`, `chart`, `image`, `title`, `subtitle`, `notes`. Add `use Podium` convenience import.
+Build `Podium.DSL` on top of Phases 1, 2, and 4. Implement `presentation`, `slide`, `row`, `col`, `text`, `chart`, `image`, `title`, `subtitle`, `notes`. Add `use Podium` convenience import.
 
 Deliverable: full declarative DSL.
 

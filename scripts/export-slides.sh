@@ -53,6 +53,12 @@ SLIDES=(
   "html-text|2|web-layer/html-text|lists"
   "html-text|5|web-layer/html-text|html-in-tables"
 
+  "grid-layout|1|web-layer/grid-layout|title-content"
+  "grid-layout|2|web-layer/grid-layout|two-column"
+  "grid-layout|3|web-layer/grid-layout|three-columns"
+  "grid-layout|4|web-layer/grid-layout|offset-centering"
+  "grid-layout|5|web-layer/grid-layout|custom-config"
+
   "getting-started|1|introduction/getting-started|title-slide"
   "getting-started|2|introduction/getting-started|rich-text-bullets"
   "getting-started|3|introduction/getting-started|column-chart"
