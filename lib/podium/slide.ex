@@ -486,10 +486,18 @@ defmodule Podium.Slide do
 
   defp resolve_position_opts(opts, slide_width, slide_height) do
     opts
+    |> maybe_apply_style()
     |> resolve_dim(:x, slide_width)
     |> resolve_dim(:y, slide_height)
     |> resolve_dim(:width, slide_width)
     |> resolve_dim(:height, slide_height)
+  end
+
+  defp maybe_apply_style(opts) do
+    case Keyword.pop(opts, :style) do
+      {nil, opts} -> opts
+      {style, opts} -> Keyword.merge(Podium.CSS.parse_position_style(style), opts)
+    end
   end
 
   defp resolve_dim(opts, key, reference) do

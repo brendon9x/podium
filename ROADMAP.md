@@ -100,7 +100,7 @@ Implemented. Wrap HTML in `{:html, "..."}` anywhere text is accepted. Parsed via
 
 Implemented. `{value, :percent}` works as a unit in all `add_*` functions. Percent values resolve against slide dimensions at build time — x/width against slide width, y/height against slide height. Mixing units freely (e.g. `x: {10, :percent}, height: {2, :inches}`) works.
 
-CSS-style string positioning (`style: "left: 10%; top: 5%; width: 80%; height: 15%"`) is a potential future addition that would mirror CSS absolute positioning for LLM-friendliness.
+CSS-style string positioning (`style: "left: 10%; top: 5%; width: 80%; height: 15%"`) is implemented — see `Podium.CSS` and the `style:` option on all positioning functions.
 
 ### 2.3 Bootstrap-Style Grid
 
@@ -324,9 +324,13 @@ That is under 100 words of instruction for the entire DSL, because the rest is a
 
 Implemented. `{:html, string}` tuples are accepted anywhere text is accepted — `add_text_box`, table cells, `set_placeholder`, and auto shapes. Parsed via Floki into native run/paragraph format. Supports `<b>`, `<i>`, `<u>`, `<s>`, `<sup>`, `<sub>`, `<span style>`, `<p>`, `<br>`, `<ul>`/`<ol>`/`<li>` with nesting.
 
-### Phase 2 — Percentage Positioning (Layer 2) ✅
+### Phase 2a — Percentage Positioning (Layer 2) ✅
 
-Implemented. `{value, :percent}` works in all `add_*` functions for x/y/width/height. Percent values resolve against slide dimensions (width for x/width, height for y/height) at build time — domain modules and XML rendering are unaffected. CSS-style string positioning (`style: "left: 10%; ..."`) remains a future option.
+Implemented. `{value, :percent}` works in all `add_*` functions for x/y/width/height. Percent values resolve against slide dimensions (width for x/width, height for y/height) at build time — domain modules and XML rendering are unaffected.
+
+### Phase 2b — CSS Style Strings (Layer 2) ✅
+
+Implemented. `style: "left: 10%; top: 5%; width: 80%; height: 15%"` accepted on all positioning functions as an alternative to `{value, :unit}` tuples. Supports `%`, `in`, `cm`, `pt`, and raw EMU values. Explicit opts take precedence over style values. See `Podium.CSS`.
 
 ### Phase 3 — Chart Table Input (Layer 2)
 
