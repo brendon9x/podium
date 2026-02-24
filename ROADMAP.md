@@ -45,8 +45,10 @@ All three layers are optional and independently useful. A web developer can use 
 - Placeholders across 11 slide layouts
 - Shape fills (solid, gradient, pattern) and line styling
 - Speaker notes, footers, document metadata
-- `{number, unit}` tuples for dimensions (`:inches`, `:cm`, `:pt`, raw EMU)
+- `{number, unit}` tuples for dimensions (`:inches`, `:cm`, `:pt`, `:percent`, raw EMU)
 - `save/2` to file and `save_to_memory/1` for streaming
+- HTML text input via `{:html, string}` tuples — parsed with Floki into native run/paragraph format
+- Percentage positioning via `{value, :percent}` — resolved against slide dimensions at build time
 
 ### What to preserve
 
@@ -61,13 +63,11 @@ This layer should remain stable and complete. It is the foundation that makes th
 
 ## Layer 2: Web Helpers
 
-This is the highest-leverage layer to build first. Each helper is independent — they can be adopted incrementally without committing to the full DSL.
+Each helper is independent — they can be adopted incrementally without committing to the full DSL.
 
-### 2.1 HTML Text Input
+### 2.1 HTML Text Input ✅
 
-**The problem:** The current run/paragraph format is powerful but verbose. Building multi-format text requires assembling nested lists with keyword options.
-
-**The solution:** Accept an HTML string anywhere text is currently accepted. If `add_text_box` receives a binary that looks like HTML, route it through the parser before the spec layer. Plain strings continue to work as before.
+Implemented. Wrap HTML in `{:html, "..."}` anywhere text is accepted. Parsed via Floki into the native run/paragraph format. Plain strings continue to work as before.
 
 **HTML subset to support:**
 
@@ -96,27 +96,11 @@ This is the highest-leverage layer to build first. Each helper is independent �
 
 **Why not Markdown?** Markdown has no inline color or font size syntax without extensions, and extension syntax is not in LLM training data. The HTML subset covers everything Markdown does plus the formatting options that matter for presentations.
 
-### 2.2 Percentage and CSS Units
+### 2.2 Percentage Positioning ✅
 
-**The problem:** Web developers do not think in inches, centimetres, or EMU. They think in percentages of a container.
+Implemented. `{value, :percent}` works as a unit in all `add_*` functions. Percent values resolve against slide dimensions at build time — x/width against slide width, y/height against slide height. Mixing units freely (e.g. `x: {10, :percent}, height: {2, :inches}`) works.
 
-**The solution:** Add `:percent` as a valid unit in the `{number, unit}` tuple system. Since slide dimensions are known at `Podium.new()` time (or default to 16:9), percentage conversion is trivial.
-
-```elixir
-# These all produce the same EMU value on a standard 16:9 slide
-{10, :inches}
-{25.4, :cm}
-{50, :percent}   # 50% of slide width
-```
-
-Additionally support CSS-style string positioning as an alternative to keyword options:
-
-```elixir
-Podium.add_text_box(slide, html,
-  style: "left: 10%; top: 5%; width: 80%; height: 15%")
-```
-
-This form mirrors CSS absolute positioning exactly. An LLM that knows CSS generates it correctly with no Podium-specific prompting.
+CSS-style string positioning (`style: "left: 10%; top: 5%; width: 80%; height: 15%"`) is a potential future addition that would mirror CSS absolute positioning for LLM-friendliness.
 
 ### 2.3 Bootstrap-Style Grid
 
@@ -336,17 +320,13 @@ That is under 100 words of instruction for the entire DSL, because the rest is a
 
 ## Implementation Sequence
 
-### Phase 1 — HTML Text Parsing (Layer 2)
+### Phase 1 — HTML Text Parsing (Layer 2) ✅
 
-Highest leverage, no dependencies, isolated. Adds `Floki` as a dependency. Implement as `Podium.HTML.parse/1` returning the existing run/paragraph format, then wire it into `add_text_box`, `add_table` cell inputs, and `set_placeholder`.
+Implemented. `{:html, string}` tuples are accepted anywhere text is accepted — `add_text_box`, table cells, `set_placeholder`, and auto shapes. Parsed via Floki into native run/paragraph format. Supports `<b>`, `<i>`, `<u>`, `<s>`, `<sup>`, `<sub>`, `<span style>`, `<p>`, `<br>`, `<ul>`/`<ol>`/`<li>` with nesting.
 
-Deliverable: any text input in the existing API can now be an HTML string.
+### Phase 2 — Percentage Positioning (Layer 2) ✅
 
-### Phase 2 — Percentage Units and CSS Style Strings (Layer 2)
-
-Add `:percent` to the unit system. Add `style:` keyword option to positioning functions that accepts a CSS absolute position string. No new dependencies.
-
-Deliverable: positions can be expressed as percentages or CSS strings throughout the existing API.
+Implemented. `{value, :percent}` works in all `add_*` functions for x/y/width/height. Percent values resolve against slide dimensions (width for x/width, height for y/height) at build time — domain modules and XML rendering are unaffected. CSS-style string positioning (`style: "left: 10%; ..."`) remains a future option.
 
 ### Phase 3 — Chart Table Input (Layer 2)
 

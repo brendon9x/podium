@@ -23,8 +23,8 @@ defmodule Podium.Table do
 
   @type t :: %__MODULE__{
           id: pos_integer() | nil,
-          x: non_neg_integer() | nil,
-          y: non_neg_integer() | nil,
+          x: integer() | nil,
+          y: integer() | nil,
           width: non_neg_integer() | nil,
           height: non_neg_integer() | nil,
           rows: [[term()]],

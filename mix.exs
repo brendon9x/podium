@@ -90,6 +90,7 @@ defmodule Podium.MixProject do
 
       # Web Layer
       "guides/web-layer/html-text.md",
+      "guides/web-layer/percent-positioning.md",
 
       # Cheatsheets
       "guides/cheatsheets/quick-reference.cheatmd"

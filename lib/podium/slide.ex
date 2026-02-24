@@ -22,7 +22,7 @@ defmodule Podium.Slide do
   alias Podium.Chart
   alias Podium.Chart.ComboChart
   alias Podium.OPC.Constants
-  alias Podium.{Connector, Drawing, Image, Shape, Table, Video}
+  alias Podium.{Connector, Drawing, Image, Shape, Table, Units, Video}
 
   @blank_layout_index 7
 
@@ -43,7 +43,9 @@ defmodule Podium.Slide do
     placeholders: [],
     picture_placeholders: [],
     fill_images: [],
-    next_shape_id: 2
+    next_shape_id: 2,
+    slide_width: Units.default_slide_width(),
+    slide_height: Units.default_slide_height()
   ]
 
   @type t :: %__MODULE__{
@@ -63,7 +65,9 @@ defmodule Podium.Slide do
           placeholders: [Podium.Placeholder.t()],
           picture_placeholders: [tuple()],
           fill_images: [{pos_integer(), binary(), String.t()}],
-          next_shape_id: pos_integer()
+          next_shape_id: pos_integer(),
+          slide_width: non_neg_integer(),
+          slide_height: non_neg_integer()
         }
 
   @doc """
@@ -76,6 +80,12 @@ defmodule Podium.Slide do
     * `:background` - background fill (hex color, gradient tuple, pattern tuple,
       or `{:picture, binary}`)
     * `:notes` - speaker notes text
+    * `:slide_width` - slide width for percent resolution (default 12,192,000 EMU / 16:9).
+      When using percent positioning, this should match the presentation's `slide_width`
+      so that elements resolve against the correct dimensions.
+    * `:slide_height` - slide height for percent resolution (default 6,858,000 EMU / 16:9).
+      When using percent positioning, this should match the presentation's `slide_height`
+      so that elements resolve against the correct dimensions.
 
   ## Available layouts
     * `:title_slide` (1), `:title_content` (2), `:section_header` (3),
@@ -100,13 +110,18 @@ defmodule Podium.Slide do
           {other, nil}
       end
 
+    slide_width = Units.to_emu(Keyword.get(opts, :slide_width, Units.default_slide_width()))
+    slide_height = Units.to_emu(Keyword.get(opts, :slide_height, Units.default_slide_height()))
+
     %__MODULE__{
       ref: make_ref(),
       index: nil,
       layout_index: layout_index,
       background: background,
       background_image: background_image,
-      notes_text: Keyword.get(opts, :notes)
+      notes_text: Keyword.get(opts, :notes),
+      slide_width: slide_width,
+      slide_height: slide_height
     }
   end
 
@@ -128,6 +143,7 @@ defmodule Podium.Slide do
   """
   @spec add_text_box(t(), Podium.rich_text(), keyword()) :: t()
   def add_text_box(%__MODULE__{} = slide, text, opts) do
+    opts = resolve_position_opts(opts, slide.slide_width, slide.slide_height)
     shape = Shape.text_box(slide.next_shape_id, text, opts)
 
     %{slide | shapes: slide.shapes ++ [shape], next_shape_id: slide.next_shape_id + 1}
@@ -138,6 +154,7 @@ defmodule Podium.Slide do
   """
   @spec add_auto_shape(t(), atom(), keyword()) :: t()
   def add_auto_shape(%__MODULE__{} = slide, preset, opts) do
+    opts = resolve_position_opts(opts, slide.slide_width, slide.slide_height)
     shape = Shape.auto_shape(slide.next_shape_id, preset, opts)
 
     %{slide | shapes: slide.shapes ++ [shape], next_shape_id: slide.next_shape_id + 1}
@@ -157,6 +174,11 @@ defmodule Podium.Slide do
         ) ::
           t()
   def add_connector(%__MODULE__{} = slide, connector_type, begin_x, begin_y, end_x, end_y, opts) do
+    begin_x = resolve_if_percent(begin_x, slide.slide_width)
+    begin_y = resolve_if_percent(begin_y, slide.slide_height)
+    end_x = resolve_if_percent(end_x, slide.slide_width)
+    end_y = resolve_if_percent(end_y, slide.slide_height)
+
     conn =
       Connector.new(slide.next_shape_id, connector_type, begin_x, begin_y, end_x, end_y, opts)
 
@@ -172,6 +194,7 @@ defmodule Podium.Slide do
   """
   @spec add_picture_fill_text_box(t(), Podium.rich_text(), binary(), keyword()) :: t()
   def add_picture_fill_text_box(%__MODULE__{} = slide, text, image_binary, opts) do
+    opts = resolve_position_opts(opts, slide.slide_width, slide.slide_height)
     extension = detect_fill_extension(image_binary)
     fill_mode = Keyword.get(opts, :fill_mode, :stretch)
 
@@ -198,6 +221,7 @@ defmodule Podium.Slide do
   """
   @spec add_chart(t(), atom(), struct(), keyword()) :: t()
   def add_chart(%__MODULE__{} = slide, chart_type, chart_data, opts) do
+    opts = resolve_position_opts(opts, slide.slide_width, slide.slide_height)
     chart = Chart.new(chart_type, chart_data, opts)
 
     %{
@@ -212,6 +236,7 @@ defmodule Podium.Slide do
   """
   @spec add_combo_chart(t(), Podium.Chart.ChartData.t(), [{atom(), keyword()}], keyword()) :: t()
   def add_combo_chart(%__MODULE__{} = slide, chart_data, plot_specs, opts) do
+    opts = resolve_position_opts(opts, slide.slide_width, slide.slide_height)
     combo = ComboChart.new(chart_data, plot_specs)
     chart = Chart.new_combo(combo, opts)
 
@@ -227,6 +252,7 @@ defmodule Podium.Slide do
   """
   @spec add_image(t(), binary(), keyword()) :: t()
   def add_image(%__MODULE__{} = slide, binary, opts) when is_binary(binary) do
+    opts = resolve_position_opts(opts, slide.slide_width, slide.slide_height)
     image = Image.new(binary, opts)
 
     %{
@@ -241,6 +267,7 @@ defmodule Podium.Slide do
   """
   @spec add_video(t(), binary(), keyword()) :: t()
   def add_video(%__MODULE__{} = slide, binary, opts) when is_binary(binary) do
+    opts = resolve_position_opts(opts, slide.slide_width, slide.slide_height)
     video = Video.new(binary, opts)
 
     %{
@@ -270,6 +297,8 @@ defmodule Podium.Slide do
   """
   @spec add_freeform(t(), Podium.Freeform.t(), keyword()) :: t()
   def add_freeform(%__MODULE__{} = slide, %Podium.Freeform{} = fb, opts \\ []) do
+    # Percent resolution is intentionally skipped — freeform shapes use their own
+    # coordinate system with scale factors defined by the Freeform builder.
     shape = Shape.freeform(slide.next_shape_id, fb, opts)
     %{slide | shapes: slide.shapes ++ [shape], next_shape_id: slide.next_shape_id + 1}
   end
@@ -279,6 +308,7 @@ defmodule Podium.Slide do
   """
   @spec add_table(t(), [[term()]], keyword()) :: t()
   def add_table(%__MODULE__{} = slide, rows, opts) do
+    opts = resolve_position_opts(opts, slide.slide_width, slide.slide_height)
     table = Table.new(slide.next_shape_id, rows, opts)
     %{slide | tables: slide.tables ++ [table], next_shape_id: slide.next_shape_id + 1}
   end
@@ -453,4 +483,22 @@ defmodule Podium.Slide do
   def layout_atom(n) when is_integer(n) do
     raise ArgumentError, "unknown layout index #{n}; expected 1..11"
   end
+
+  defp resolve_position_opts(opts, slide_width, slide_height) do
+    opts
+    |> resolve_dim(:x, slide_width)
+    |> resolve_dim(:y, slide_height)
+    |> resolve_dim(:width, slide_width)
+    |> resolve_dim(:height, slide_height)
+  end
+
+  defp resolve_dim(opts, key, reference) do
+    case Keyword.get(opts, key) do
+      {_, :percent} = pct -> Keyword.put(opts, key, Units.resolve_percent(pct, reference))
+      _ -> opts
+    end
+  end
+
+  defp resolve_if_percent({_, :percent} = pct, ref), do: Units.resolve_percent(pct, ref)
+  defp resolve_if_percent(other, _ref), do: other
 end
