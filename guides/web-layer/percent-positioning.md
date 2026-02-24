@@ -27,6 +27,8 @@ slide =
 This places a text box at 25% from the left, 25% from the top, spanning 50% of the
 slide in both directions — regardless of whether the slide is 16:9, 4:3, or a custom size.
 
+![Four quadrants laid out with percent positioning](assets/web-layer/percent-positioning/four-quadrants.png)
+
 ## How It Works
 
 Percent values are resolved against the slide's dimensions:
@@ -50,6 +52,8 @@ slide = Podium.add_text_box(slide, "Mixed units",
   height: {2, :inches}       # fixed height
 )
 ```
+
+![Mixing percent and inch units on the same slide](assets/web-layer/percent-positioning/mixed-units.png)
 
 ## All Element Types
 

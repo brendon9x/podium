@@ -65,6 +65,9 @@ SLIDES=(
   "placeholders|4|core/placeholders|two-content-layout"
   "placeholders|5|core/placeholders|chart-placeholder"
 
+  "percent-layout|2|web-layer/percent-positioning|four-quadrants"
+  "percent-layout|4|web-layer/percent-positioning|mixed-units"
+
   "presentations-and-slides|1|core/presentations-and-slides|title-slide-footer"
   "presentations-and-slides|2|core/presentations-and-slides|solid-background"
   "presentations-and-slides|3|core/presentations-and-slides|gradient-background"
