@@ -19,6 +19,11 @@ git submodule update --init
 
 Use it to understand how python-pptx structures its XML output, what edge cases it handles, and what tests it runs. When implementing a new feature, start by reading the corresponding python-pptx code and tests.
 
+## Git Workflow
+
+- Never commit directly to main — always create a feature branch first
+- Use feature branches for all work, then open a PR
+
 ## Running Tests
 
 - Run the full test suite: `mix test`
