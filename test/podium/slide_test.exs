@@ -418,6 +418,22 @@ defmodule Podium.SlideTest do
       assert shape.y == -342_900
     end
 
+    test "add_picture_fill_text_box resolves style: option" do
+      slide =
+        Podium.Slide.new()
+        |> Podium.Slide.add_picture_fill_text_box(
+          "Fill text",
+          @png_binary,
+          style: "left: 10%; top: 20%; width: 80%; height: 60%"
+        )
+
+      [shape] = slide.shapes
+      assert shape.x == 1_219_200
+      assert shape.y == 1_371_600
+      assert shape.width == 9_753_600
+      assert shape.height == 4_114_800
+    end
+
     test "add_freeform does not resolve percent (uses its own coordinate system)" do
       freeform =
         Podium.Freeform.new({1, :inches}, {1, :inches})
@@ -457,6 +473,257 @@ defmodule Podium.SlideTest do
       assert slide_xml =~ ~s(y="3429000")
       assert slide_xml =~ ~s(cx="12192000")
       assert slide_xml =~ ~s(cy="6858000")
+    end
+  end
+
+  describe "style option" do
+    test "add_text_box with style: produces correct EMU positions" do
+      slide =
+        Podium.Slide.new()
+        |> Podium.Slide.add_text_box("Hello",
+          style: "left: 10%; top: 5%; width: 80%; height: 15%"
+        )
+
+      [shape] = slide.shapes
+      assert shape.x == 1_219_200
+      assert shape.y == 342_900
+      assert shape.width == 9_753_600
+      assert shape.height == 1_028_700
+    end
+
+    test "add_image with style:" do
+      slide =
+        Podium.Slide.new()
+        |> Podium.Slide.add_image(@png_binary,
+          style: "left: 10%; top: 10%; width: 30%; height: 40%"
+        )
+
+      [image] = slide.images
+      assert image.x == 1_219_200
+      assert image.y == 685_800
+      assert image.width == 3_657_600
+      assert image.height == 2_743_200
+    end
+
+    test "add_chart with style:" do
+      chart_data =
+        Podium.Chart.ChartData.new()
+        |> Podium.Chart.ChartData.add_categories(["A"])
+        |> Podium.Chart.ChartData.add_series("S", [1])
+
+      slide =
+        Podium.Slide.new()
+        |> Podium.Slide.add_chart(:column_clustered, chart_data,
+          style: "left: 5%; top: 15%; width: 90%; height: 70%"
+        )
+
+      [chart] = slide.charts
+      assert chart.x == 609_600
+      assert chart.y == 1_028_700
+      assert chart.width == 10_972_800
+      assert chart.height == 4_800_600
+    end
+
+    test "explicit opts take precedence over style:" do
+      slide =
+        Podium.Slide.new()
+        |> Podium.Slide.add_text_box("Hello",
+          style: "left: 10%; top: 5%; width: 80%; height: 15%",
+          x: {50, :percent},
+          height: {2, :inches}
+        )
+
+      [shape] = slide.shapes
+      # x and height from explicit opts
+      assert shape.x == 6_096_000
+      assert shape.height == Podium.Units.to_emu({2, :inches})
+      # y and width from style
+      assert shape.y == 342_900
+      assert shape.width == 9_753_600
+    end
+
+    test "style: with inch units" do
+      slide =
+        Podium.Slide.new()
+        |> Podium.Slide.add_text_box("Hello",
+          style: "left: 1in; top: 2in; width: 4in; height: 1in"
+        )
+
+      [shape] = slide.shapes
+      assert shape.x == 914_400
+      assert shape.y == 1_828_800
+      assert shape.width == 3_657_600
+      assert shape.height == 914_400
+    end
+
+    test "style: produces correct XML values in saved pptx" do
+      slide =
+        Podium.Slide.new()
+        |> Podium.Slide.add_text_box("Hello",
+          style: "left: 50%; top: 50%; width: 100%; height: 100%"
+        )
+
+      prs =
+        Podium.new()
+        |> Podium.add_slide(slide)
+
+      {:ok, binary} = Podium.save_to_memory(prs)
+      parts = PptxHelpers.unzip_pptx_binary(binary)
+      slide_xml = parts["ppt/slides/slide1.xml"]
+
+      assert slide_xml =~ ~s(x="6096000")
+      assert slide_xml =~ ~s(y="3429000")
+      assert slide_xml =~ ~s(cx="12192000")
+      assert slide_xml =~ ~s(cy="6858000")
+    end
+
+    test "add_table with style:" do
+      slide =
+        Podium.Slide.new()
+        |> Podium.Slide.add_table(
+          [["A", "B"], ["1", "2"]],
+          style: "left: 10%; top: 20%; width: 80%; height: 60%"
+        )
+
+      [table] = slide.tables
+      assert table.x == 1_219_200
+      assert table.y == 1_371_600
+    end
+
+    test "add_auto_shape with style:" do
+      slide =
+        Podium.Slide.new()
+        |> Podium.Slide.add_auto_shape(:rectangle,
+          style: "left: 25%; top: 25%; width: 50%; height: 50%"
+        )
+
+      [shape] = slide.shapes
+      assert shape.x == 3_048_000
+      assert shape.y == 1_714_500
+    end
+
+    test "add_video with style:" do
+      mp4_binary = <<"fakemp4data", 0x00, 0x01, 0x02>>
+
+      slide =
+        Podium.Slide.new()
+        |> Podium.Slide.add_video(mp4_binary,
+          style: "left: 10%; top: 20%; width: 80%; height: 60%",
+          mime_type: "video/mp4"
+        )
+
+      [video] = slide.videos
+      assert video.x == 1_219_200
+      assert video.y == 1_371_600
+      assert video.width == 9_753_600
+      assert video.height == 4_114_800
+    end
+
+    test "add_combo_chart with style:" do
+      chart_data =
+        Podium.Chart.ChartData.new()
+        |> Podium.Chart.ChartData.add_categories(["A", "B"])
+        |> Podium.Chart.ChartData.add_series("S1", [1, 2])
+        |> Podium.Chart.ChartData.add_series("S2", [3, 4])
+
+      slide =
+        Podium.Slide.new()
+        |> Podium.Slide.add_combo_chart(
+          chart_data,
+          [{:column_clustered, series: [0]}, {:line_markers, series: [1]}],
+          style: "left: 5%; top: 15%; width: 90%; height: 70%"
+        )
+
+      [chart] = slide.charts
+      assert chart.x == 609_600
+      assert chart.y == 1_028_700
+      assert chart.width == 10_972_800
+      assert chart.height == 4_800_600
+    end
+
+    test "style: coexists with non-position opts" do
+      slide =
+        Podium.Slide.new()
+        |> Podium.Slide.add_text_box("Hello",
+          style: "left: 10%; top: 5%; width: 80%; height: 15%",
+          fill: "FF0000",
+          anchor: :middle
+        )
+
+      [shape] = slide.shapes
+      assert shape.x == 1_219_200
+      assert shape.y == 342_900
+      assert shape.fill == "FF0000"
+      assert shape.anchor == :middle
+    end
+
+    test "style: with text-align and vertical-align sets alignment and anchor" do
+      slide =
+        Podium.Slide.new()
+        |> Podium.Slide.add_text_box("Hello",
+          style:
+            "left: 10%; top: 5%; width: 80%; height: 15%; text-align: center; vertical-align: middle"
+        )
+
+      [shape] = slide.shapes
+      assert shape.anchor == :middle
+
+      # alignment is set on the paragraph level, check XML output
+      prs =
+        Podium.new()
+        |> Podium.add_slide(slide)
+
+      {:ok, binary} = Podium.save_to_memory(prs)
+      parts = PptxHelpers.unzip_pptx_binary(binary)
+      slide_xml = parts["ppt/slides/slide1.xml"]
+
+      assert slide_xml =~ ~s(anchor="ctr")
+      assert slide_xml =~ ~s(algn="ctr")
+    end
+
+    test "style: with background sets fill" do
+      slide =
+        Podium.Slide.new()
+        |> Podium.Slide.add_text_box("Hello",
+          style: "left: 10%; top: 5%; width: 80%; height: 15%; background: #FF0000"
+        )
+
+      [shape] = slide.shapes
+      assert shape.fill == "FF0000"
+    end
+
+    test "style: with padding sets margins" do
+      slide =
+        Podium.Slide.new()
+        |> Podium.Slide.add_text_box("Hello",
+          style: "left: 10%; top: 5%; width: 80%; height: 15%; padding: 12pt"
+        )
+
+      [shape] = slide.shapes
+      assert shape.margin_left == Podium.Units.to_emu({12, :pt})
+      assert shape.margin_right == Podium.Units.to_emu({12, :pt})
+      assert shape.margin_top == Podium.Units.to_emu({12, :pt})
+      assert shape.margin_bottom == Podium.Units.to_emu({12, :pt})
+    end
+
+    test "explicit :alignment overrides text-align from style:" do
+      slide =
+        Podium.Slide.new()
+        |> Podium.Slide.add_text_box("Hello",
+          style: "left: 10%; top: 5%; width: 80%; height: 15%; text-align: center",
+          alignment: :right
+        )
+
+      prs =
+        Podium.new()
+        |> Podium.add_slide(slide)
+
+      {:ok, binary} = Podium.save_to_memory(prs)
+      parts = PptxHelpers.unzip_pptx_binary(binary)
+      slide_xml = parts["ppt/slides/slide1.xml"]
+
+      assert slide_xml =~ ~s(algn="r")
+      refute slide_xml =~ ~s(algn="ctr")
     end
   end
 end
