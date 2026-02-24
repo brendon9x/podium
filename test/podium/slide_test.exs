@@ -169,8 +169,8 @@ defmodule Podium.SlideTest do
         )
 
       [shape] = slide.shapes
-      assert shape.width == round(80 / 100 * 12_192_000)
-      assert shape.height == round(50 / 100 * 6_858_000)
+      assert shape.width == 9_753_600
+      assert shape.height == 3_429_000
     end
 
     test "mixed percent and non-percent units" do
@@ -234,8 +234,8 @@ defmodule Podium.SlideTest do
         )
 
       [shape] = slide.shapes
-      assert shape.x == round(25 / 100 * 12_192_000)
-      assert shape.y == round(25 / 100 * 6_858_000)
+      assert shape.x == 3_048_000
+      assert shape.y == 1_714_500
     end
 
     test "add_connector resolves percent coordinates" do
@@ -251,8 +251,8 @@ defmodule Podium.SlideTest do
         )
 
       [conn] = slide.connectors
-      assert conn.x == round(10 / 100 * 12_192_000)
-      assert conn.y == round(20 / 100 * 6_858_000)
+      assert conn.x == 1_219_200
+      assert conn.y == 1_371_600
     end
 
     test "add_image resolves percent position" do
@@ -264,8 +264,8 @@ defmodule Podium.SlideTest do
         )
 
       [image] = slide.images
-      assert image.x == round(10 / 100 * 12_192_000)
-      assert image.y == round(10 / 100 * 6_858_000)
+      assert image.x == 1_219_200
+      assert image.y == 685_800
     end
 
     test "add_chart resolves percent position" do
@@ -284,10 +284,10 @@ defmodule Podium.SlideTest do
         )
 
       [chart] = slide.charts
-      assert chart.x == round(10 / 100 * 12_192_000)
-      assert chart.y == round(20 / 100 * 6_858_000)
-      assert chart.width == round(80 / 100 * 12_192_000)
-      assert chart.height == round(60 / 100 * 6_858_000)
+      assert chart.x == 1_219_200
+      assert chart.y == 1_371_600
+      assert chart.width == 9_753_600
+      assert chart.height == 4_114_800
     end
 
     test "add_table resolves percent position" do
@@ -302,8 +302,8 @@ defmodule Podium.SlideTest do
         )
 
       [table] = slide.tables
-      assert table.x == round(10 / 100 * 12_192_000)
-      assert table.y == round(20 / 100 * 6_858_000)
+      assert table.x == 1_219_200
+      assert table.y == 1_371_600
     end
 
     test "presentation stamps dimensions onto slide" do
@@ -339,10 +339,10 @@ defmodule Podium.SlideTest do
         )
 
       [video] = slide.videos
-      assert video.x == round(10 / 100 * 12_192_000)
-      assert video.y == round(20 / 100 * 6_858_000)
-      assert video.width == round(80 / 100 * 12_192_000)
-      assert video.height == round(60 / 100 * 6_858_000)
+      assert video.x == 1_219_200
+      assert video.y == 1_371_600
+      assert video.width == 9_753_600
+      assert video.height == 4_114_800
     end
 
     test "add_combo_chart resolves percent position" do
@@ -364,10 +364,10 @@ defmodule Podium.SlideTest do
         )
 
       [chart] = slide.charts
-      assert chart.x == round(5 / 100 * 12_192_000)
-      assert chart.y == round(15 / 100 * 6_858_000)
-      assert chart.width == round(90 / 100 * 12_192_000)
-      assert chart.height == round(70 / 100 * 6_858_000)
+      assert chart.x == 609_600
+      assert chart.y == 1_028_700
+      assert chart.width == 10_972_800
+      assert chart.height == 4_800_600
     end
 
     test "add_picture_fill_text_box resolves percent position" do
@@ -383,10 +383,10 @@ defmodule Podium.SlideTest do
         )
 
       [shape] = slide.shapes
-      assert shape.x == round(10 / 100 * 12_192_000)
-      assert shape.y == round(20 / 100 * 6_858_000)
-      assert shape.width == round(80 / 100 * 12_192_000)
-      assert shape.height == round(60 / 100 * 6_858_000)
+      assert shape.x == 1_219_200
+      assert shape.y == 1_371_600
+      assert shape.width == 9_753_600
+      assert shape.height == 4_114_800
     end
 
     test "percent > 100 extends beyond slide" do
@@ -400,8 +400,7 @@ defmodule Podium.SlideTest do
         )
 
       [shape] = slide.shapes
-      assert shape.x == round(120 / 100 * 12_192_000)
-      assert shape.x > 12_192_000
+      assert shape.x == 14_630_400
     end
 
     test "negative percent positions off-slide" do
@@ -415,10 +414,25 @@ defmodule Podium.SlideTest do
         )
 
       [shape] = slide.shapes
-      assert shape.x == round(-10 / 100 * 12_192_000)
-      assert shape.x < 0
-      assert shape.y == round(-5 / 100 * 6_858_000)
-      assert shape.y < 0
+      assert shape.x == -1_219_200
+      assert shape.y == -342_900
+    end
+
+    test "add_freeform does not resolve percent (uses its own coordinate system)" do
+      freeform =
+        Podium.Freeform.new({1, :inches}, {1, :inches})
+        |> Podium.Freeform.line_to({3, :inches}, {1, :inches})
+        |> Podium.Freeform.line_to({2, :inches}, {3, :inches})
+        |> Podium.Freeform.close()
+
+      slide =
+        Podium.Slide.new()
+        |> Podium.Slide.add_freeform(freeform, origin_x: {1, :inches}, origin_y: {1, :inches})
+
+      [shape] = slide.shapes
+      # Freeform position is computed from origin + bounding box, not percent-resolved
+      assert shape.x > 0
+      assert shape.y > 0
     end
 
     test "percent-positioned elements produce correct XML EMU values" do

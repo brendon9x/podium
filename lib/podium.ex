@@ -93,7 +93,7 @@ defmodule Podium do
       `:sys_dash_dot`, `:sys_dash_dot_dot`
   """
 
-  @type emu :: non_neg_integer()
+  @type emu :: integer()
   @type dimension :: emu() | {number(), :inches | :cm | :pt | :percent}
   @type hex_color :: String.t()
   @type fill ::
