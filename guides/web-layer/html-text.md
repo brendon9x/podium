@@ -20,6 +20,8 @@ slide = Podium.add_text_box(slide,
 Plain strings without the `{:html, ...}` wrapper still work exactly as before —
 no change to existing code.
 
+![Basic HTML formatting: bold, italic, underline, colors, and fonts](assets/web-layer/html-text/basic-formatting.png)
+
 ## Supported HTML Elements
 
 ### Inline elements
@@ -105,6 +107,8 @@ slide = Podium.add_text_box(slide,
   width: {10, :inches}, height: {3, :inches})
 ```
 
+![Bullet and numbered lists rendered from HTML](assets/web-layer/html-text/lists.png)
+
 ## HTML in Tables
 
 Table cells accept `{:html, "..."}` tuples the same way text boxes do:
@@ -117,6 +121,8 @@ slide = Podium.add_table(slide, [
 ], x: {1, :inches}, y: {1, :inches},
    width: {10, :inches}, height: {3, :inches})
 ```
+
+![Table with HTML-formatted cells for bold headers and colored status text](assets/web-layer/html-text/html-in-tables.png)
 
 ## HTML in Placeholders
 
