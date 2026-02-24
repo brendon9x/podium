@@ -207,7 +207,19 @@ defmodule Podium.CSSTest do
     end
 
     test "padding-bottom" do
-      assert CSS.parse_style("padding-bottom: 5%") == [margin_bottom: {5, :percent}]
+      assert CSS.parse_style("padding-bottom: 12pt") == [margin_bottom: {12, :pt}]
+    end
+
+    test "raises on percent values" do
+      assert_raise ArgumentError, ~r/percent values are not supported for padding/, fn ->
+        CSS.parse_style("padding-left: 5%")
+      end
+    end
+
+    test "raises on percent in padding shorthand" do
+      assert_raise ArgumentError, ~r/percent values are not supported for padding/, fn ->
+        CSS.parse_style("padding: 10%")
+      end
     end
   end
 
@@ -242,12 +254,6 @@ defmodule Podium.CSSTest do
                margin_top: {12, :pt},
                margin_bottom: {12, :pt}
              ]
-    end
-  end
-
-  describe "parse_position_style/1 — backwards compatibility" do
-    test "delegates to parse_style" do
-      assert CSS.parse_position_style("left: 10%") == CSS.parse_style("left: 10%")
     end
   end
 end

@@ -28,6 +28,8 @@ defmodule Podium.CSS do
   | `padding-top`     | `:margin_top`   | dimension                                 |
   | `padding-bottom`  | `:margin_bottom`| dimension                                 |
 
+  Padding properties do not support `%` values — use `pt`, `in`, or `cm` instead.
+
   ## Supported Units
 
   | CSS Value    | Maps to             |
@@ -41,11 +43,14 @@ defmodule Podium.CSS do
   Unrecognised properties are silently ignored.
   """
 
-  @dimension_properties %{
+  @position_properties %{
     "left" => :x,
     "top" => :y,
     "width" => :width,
-    "height" => :height,
+    "height" => :height
+  }
+
+  @padding_properties %{
     "padding-left" => :margin_left,
     "padding-right" => :margin_right,
     "padding-top" => :margin_top,
@@ -89,10 +94,6 @@ defmodule Podium.CSS do
     |> Enum.flat_map(&parse_declaration/1)
   end
 
-  @doc false
-  @spec parse_position_style(String.t()) :: keyword()
-  def parse_position_style(style), do: parse_style(style)
-
   defp parse_declaration(declaration) do
     case String.split(declaration, ":", parts: 2) do
       [property, value] ->
@@ -106,34 +107,34 @@ defmodule Podium.CSS do
   end
 
   defp dispatch_property(property, value) do
-    case Map.fetch(@dimension_properties, property) do
-      {:ok, key} ->
-        [{key, parse_value(value)}]
-
-      :error ->
-        cond do
-          property == "text-align" ->
-            parse_enum(value, @text_align_values, "text-align")
-
-          property == "vertical-align" ->
-            parse_enum(value, @vertical_align_values, "vertical-align")
-
-          property == "background" ->
-            parse_color(value)
-
-          property == "padding" ->
-            parse_padding_shorthand(value)
-
-          true ->
-            []
-        end
+    case Map.fetch(@position_properties, property) do
+      {:ok, key} -> [{key, parse_value(value)}]
+      :error -> dispatch_non_position(property, value)
     end
   end
 
-  defp parse_enum(value, valid_values, property_name) do
+  defp dispatch_non_position("text-align", value),
+    do: parse_enum(value, @text_align_values, :alignment, "text-align")
+
+  defp dispatch_non_position("vertical-align", value),
+    do: parse_enum(value, @vertical_align_values, :anchor, "vertical-align")
+
+  defp dispatch_non_position("background", value),
+    do: parse_color(value)
+
+  defp dispatch_non_position("padding", value),
+    do: parse_padding_shorthand(value)
+
+  defp dispatch_non_position(property, value) do
+    case Map.fetch(@padding_properties, property) do
+      {:ok, key} -> [{key, parse_padding_value(value)}]
+      :error -> []
+    end
+  end
+
+  defp parse_enum(value, valid_values, key, property_name) do
     case Map.fetch(valid_values, value) do
       {:ok, atom} ->
-        key = if property_name == "text-align", do: :alignment, else: :anchor
         [{key, atom}]
 
       :error ->
@@ -147,30 +148,37 @@ defmodule Podium.CSS do
   defp parse_color(value) do
     hex = String.trim_leading(value, "#")
 
-    unless Regex.match?(~r/^[0-9a-fA-F]{6}$/, hex) do
+    if Regex.match?(~r/^[0-9a-fA-F]{6}$/, hex) do
+      [{:fill, String.upcase(hex)}]
+    else
       raise ArgumentError,
             "invalid background color: #{inspect(value)}. Expected 6-digit hex color (e.g. #FF0000 or FF0000)"
     end
-
-    [{:fill, String.upcase(hex)}]
   end
 
   defp parse_padding_shorthand(value) do
-    parts = String.split(value)
+    case String.split(value) do
+      [single] ->
+        dim = parse_padding_value(single)
+        [margin_left: dim, margin_right: dim, margin_top: dim, margin_bottom: dim]
 
-    if length(parts) != 1 do
-      raise ArgumentError,
-            "multi-value padding shorthand is not supported. Use individual padding-left, padding-right, padding-top, padding-bottom properties"
+      _multiple ->
+        raise ArgumentError,
+              "multi-value padding shorthand is not supported. Use individual padding-left, padding-right, padding-top, padding-bottom properties"
     end
+  end
 
-    dim = parse_value(hd(parts))
+  defp parse_padding_value(value) do
+    dim = parse_value(value)
 
-    [
-      margin_left: dim,
-      margin_right: dim,
-      margin_top: dim,
-      margin_bottom: dim
-    ]
+    case dim do
+      {_, :percent} ->
+        raise ArgumentError,
+              "percent values are not supported for padding properties. Use pt, in, or cm instead"
+
+      _ ->
+        dim
+    end
   end
 
   defp parse_value(value) do

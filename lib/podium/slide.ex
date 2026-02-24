@@ -143,7 +143,7 @@ defmodule Podium.Slide do
   """
   @spec add_text_box(t(), Podium.rich_text(), keyword()) :: t()
   def add_text_box(%__MODULE__{} = slide, text, opts) do
-    opts = resolve_position_opts(opts, slide.slide_width, slide.slide_height)
+    opts = resolve_opts(opts, slide.slide_width, slide.slide_height)
     shape = Shape.text_box(slide.next_shape_id, text, opts)
 
     %{slide | shapes: slide.shapes ++ [shape], next_shape_id: slide.next_shape_id + 1}
@@ -154,7 +154,7 @@ defmodule Podium.Slide do
   """
   @spec add_auto_shape(t(), atom(), keyword()) :: t()
   def add_auto_shape(%__MODULE__{} = slide, preset, opts) do
-    opts = resolve_position_opts(opts, slide.slide_width, slide.slide_height)
+    opts = resolve_opts(opts, slide.slide_width, slide.slide_height)
     shape = Shape.auto_shape(slide.next_shape_id, preset, opts)
 
     %{slide | shapes: slide.shapes ++ [shape], next_shape_id: slide.next_shape_id + 1}
@@ -194,7 +194,7 @@ defmodule Podium.Slide do
   """
   @spec add_picture_fill_text_box(t(), Podium.rich_text(), binary(), keyword()) :: t()
   def add_picture_fill_text_box(%__MODULE__{} = slide, text, image_binary, opts) do
-    opts = resolve_position_opts(opts, slide.slide_width, slide.slide_height)
+    opts = resolve_opts(opts, slide.slide_width, slide.slide_height)
     extension = detect_fill_extension(image_binary)
     fill_mode = Keyword.get(opts, :fill_mode, :stretch)
 
@@ -221,7 +221,7 @@ defmodule Podium.Slide do
   """
   @spec add_chart(t(), atom(), struct(), keyword()) :: t()
   def add_chart(%__MODULE__{} = slide, chart_type, chart_data, opts) do
-    opts = resolve_position_opts(opts, slide.slide_width, slide.slide_height)
+    opts = resolve_opts(opts, slide.slide_width, slide.slide_height)
     chart = Chart.new(chart_type, chart_data, opts)
 
     %{
@@ -236,7 +236,7 @@ defmodule Podium.Slide do
   """
   @spec add_combo_chart(t(), Podium.Chart.ChartData.t(), [{atom(), keyword()}], keyword()) :: t()
   def add_combo_chart(%__MODULE__{} = slide, chart_data, plot_specs, opts) do
-    opts = resolve_position_opts(opts, slide.slide_width, slide.slide_height)
+    opts = resolve_opts(opts, slide.slide_width, slide.slide_height)
     combo = ComboChart.new(chart_data, plot_specs)
     chart = Chart.new_combo(combo, opts)
 
@@ -252,7 +252,7 @@ defmodule Podium.Slide do
   """
   @spec add_image(t(), binary(), keyword()) :: t()
   def add_image(%__MODULE__{} = slide, binary, opts) when is_binary(binary) do
-    opts = resolve_position_opts(opts, slide.slide_width, slide.slide_height)
+    opts = resolve_opts(opts, slide.slide_width, slide.slide_height)
     image = Image.new(binary, opts)
 
     %{
@@ -267,7 +267,7 @@ defmodule Podium.Slide do
   """
   @spec add_video(t(), binary(), keyword()) :: t()
   def add_video(%__MODULE__{} = slide, binary, opts) when is_binary(binary) do
-    opts = resolve_position_opts(opts, slide.slide_width, slide.slide_height)
+    opts = resolve_opts(opts, slide.slide_width, slide.slide_height)
     video = Video.new(binary, opts)
 
     %{
@@ -308,7 +308,7 @@ defmodule Podium.Slide do
   """
   @spec add_table(t(), [[term()]], keyword()) :: t()
   def add_table(%__MODULE__{} = slide, rows, opts) do
-    opts = resolve_position_opts(opts, slide.slide_width, slide.slide_height)
+    opts = resolve_opts(opts, slide.slide_width, slide.slide_height)
     table = Table.new(slide.next_shape_id, rows, opts)
     %{slide | tables: slide.tables ++ [table], next_shape_id: slide.next_shape_id + 1}
   end
@@ -484,7 +484,7 @@ defmodule Podium.Slide do
     raise ArgumentError, "unknown layout index #{n}; expected 1..11"
   end
 
-  defp resolve_position_opts(opts, slide_width, slide_height) do
+  defp resolve_opts(opts, slide_width, slide_height) do
     opts
     |> maybe_apply_style()
     |> resolve_dim(:x, slide_width)
