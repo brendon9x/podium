@@ -117,6 +117,19 @@ When a slide is added to a presentation, the presentation's dimensions are stamp
 onto the slide so that subsequent operations (via `put_slide`) use the correct
 reference dimensions.
 
+> #### Percent values resolve at `add_*` time {: .warning}
+>
+> Percent positions are converted to EMU when you call `add_text_box`, `add_image`,
+> etc. — not when the slide is added to the presentation. If you're using custom
+> dimensions, pass them to `Slide.new/2` so the slide knows the correct reference
+> size before you add percent-positioned elements:
+>
+> ```elixir
+> slide =
+>   Podium.Slide.new(:blank, slide_width: {10, :inches}, slide_height: {7.5, :inches})
+>   |> Podium.add_text_box("Correct", x: {50, :percent}, ...)
+> ```
+
 ## Limitations
 
 - **Table column widths and row heights** — The `:col_widths` and `:row_heights`

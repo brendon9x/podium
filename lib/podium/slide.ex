@@ -25,8 +25,6 @@ defmodule Podium.Slide do
   alias Podium.{Connector, Drawing, Image, Shape, Table, Units, Video}
 
   @blank_layout_index 7
-  @default_slide_width 12_192_000
-  @default_slide_height 6_858_000
 
   defstruct [
     :index,
@@ -46,8 +44,8 @@ defmodule Podium.Slide do
     picture_placeholders: [],
     fill_images: [],
     next_shape_id: 2,
-    slide_width: @default_slide_width,
-    slide_height: @default_slide_height
+    slide_width: Units.default_slide_width(),
+    slide_height: Units.default_slide_height()
   ]
 
   @type t :: %__MODULE__{
@@ -82,8 +80,12 @@ defmodule Podium.Slide do
     * `:background` - background fill (hex color, gradient tuple, pattern tuple,
       or `{:picture, binary}`)
     * `:notes` - speaker notes text
-    * `:slide_width` - slide width for percent resolution (default 12,192,000 EMU / 16:9)
-    * `:slide_height` - slide height for percent resolution (default 6,858,000 EMU / 16:9)
+    * `:slide_width` - slide width for percent resolution (default 12,192,000 EMU / 16:9).
+      When using percent positioning, this should match the presentation's `slide_width`
+      so that elements resolve against the correct dimensions.
+    * `:slide_height` - slide height for percent resolution (default 6,858,000 EMU / 16:9).
+      When using percent positioning, this should match the presentation's `slide_height`
+      so that elements resolve against the correct dimensions.
 
   ## Available layouts
     * `:title_slide` (1), `:title_content` (2), `:section_header` (3),
@@ -108,8 +110,8 @@ defmodule Podium.Slide do
           {other, nil}
       end
 
-    slide_width = Units.to_emu(Keyword.get(opts, :slide_width, @default_slide_width))
-    slide_height = Units.to_emu(Keyword.get(opts, :slide_height, @default_slide_height))
+    slide_width = Units.to_emu(Keyword.get(opts, :slide_width, Units.default_slide_width()))
+    slide_height = Units.to_emu(Keyword.get(opts, :slide_height, Units.default_slide_height()))
 
     %__MODULE__{
       ref: make_ref(),
@@ -172,10 +174,10 @@ defmodule Podium.Slide do
         ) ::
           t()
   def add_connector(%__MODULE__{} = slide, connector_type, begin_x, begin_y, end_x, end_y, opts) do
-    begin_x = maybe_resolve_percent(begin_x, slide.slide_width)
-    begin_y = maybe_resolve_percent(begin_y, slide.slide_height)
-    end_x = maybe_resolve_percent(end_x, slide.slide_width)
-    end_y = maybe_resolve_percent(end_y, slide.slide_height)
+    begin_x = resolve_if_percent(begin_x, slide.slide_width)
+    begin_y = resolve_if_percent(begin_y, slide.slide_height)
+    end_x = resolve_if_percent(end_x, slide.slide_width)
+    end_y = resolve_if_percent(end_y, slide.slide_height)
 
     conn =
       Connector.new(slide.next_shape_id, connector_type, begin_x, begin_y, end_x, end_y, opts)
@@ -295,6 +297,8 @@ defmodule Podium.Slide do
   """
   @spec add_freeform(t(), Podium.Freeform.t(), keyword()) :: t()
   def add_freeform(%__MODULE__{} = slide, %Podium.Freeform{} = fb, opts \\ []) do
+    # Percent resolution is intentionally skipped — freeform shapes use their own
+    # coordinate system with scale factors defined by the Freeform builder.
     shape = Shape.freeform(slide.next_shape_id, fb, opts)
     %{slide | shapes: slide.shapes ++ [shape], next_shape_id: slide.next_shape_id + 1}
   end
@@ -495,6 +499,6 @@ defmodule Podium.Slide do
     end
   end
 
-  defp maybe_resolve_percent({_, :percent} = pct, ref), do: Units.resolve_percent(pct, ref)
-  defp maybe_resolve_percent(other, _ref), do: other
+  defp resolve_if_percent({_, :percent} = pct, ref), do: Units.resolve_percent(pct, ref)
+  defp resolve_if_percent(other, _ref), do: other
 end

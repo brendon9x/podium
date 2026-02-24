@@ -41,8 +41,7 @@ defmodule Podium.UnitsTest do
     end
 
     test "fractional percent rounds correctly" do
-      assert Units.resolve_percent({33.33, :percent}, 12_192_000) ==
-               round(33.33 / 100 * 12_192_000)
+      assert Units.resolve_percent({33.33, :percent}, 12_192_000) == 4_063_594
     end
   end
 end

@@ -325,6 +325,102 @@ defmodule Podium.SlideTest do
       assert slide.slide_height == Podium.Units.to_emu({7.5, :inches})
     end
 
+    test "add_video resolves percent position" do
+      mp4_binary = <<"fakemp4data", 0x00, 0x01, 0x02>>
+
+      slide =
+        Podium.Slide.new()
+        |> Podium.Slide.add_video(mp4_binary,
+          x: {10, :percent},
+          y: {20, :percent},
+          width: {80, :percent},
+          height: {60, :percent},
+          mime_type: "video/mp4"
+        )
+
+      [video] = slide.videos
+      assert video.x == round(10 / 100 * 12_192_000)
+      assert video.y == round(20 / 100 * 6_858_000)
+      assert video.width == round(80 / 100 * 12_192_000)
+      assert video.height == round(60 / 100 * 6_858_000)
+    end
+
+    test "add_combo_chart resolves percent position" do
+      chart_data =
+        Podium.Chart.ChartData.new()
+        |> Podium.Chart.ChartData.add_categories(["A", "B"])
+        |> Podium.Chart.ChartData.add_series("S1", [1, 2])
+        |> Podium.Chart.ChartData.add_series("S2", [3, 4])
+
+      slide =
+        Podium.Slide.new()
+        |> Podium.Slide.add_combo_chart(
+          chart_data,
+          [{:column_clustered, series: [0]}, {:line_markers, series: [1]}],
+          x: {5, :percent},
+          y: {15, :percent},
+          width: {90, :percent},
+          height: {70, :percent}
+        )
+
+      [chart] = slide.charts
+      assert chart.x == round(5 / 100 * 12_192_000)
+      assert chart.y == round(15 / 100 * 6_858_000)
+      assert chart.width == round(90 / 100 * 12_192_000)
+      assert chart.height == round(70 / 100 * 6_858_000)
+    end
+
+    test "add_picture_fill_text_box resolves percent position" do
+      slide =
+        Podium.Slide.new()
+        |> Podium.Slide.add_picture_fill_text_box(
+          "Fill text",
+          @png_binary,
+          x: {10, :percent},
+          y: {20, :percent},
+          width: {80, :percent},
+          height: {60, :percent}
+        )
+
+      [shape] = slide.shapes
+      assert shape.x == round(10 / 100 * 12_192_000)
+      assert shape.y == round(20 / 100 * 6_858_000)
+      assert shape.width == round(80 / 100 * 12_192_000)
+      assert shape.height == round(60 / 100 * 6_858_000)
+    end
+
+    test "percent > 100 extends beyond slide" do
+      slide =
+        Podium.Slide.new()
+        |> Podium.Slide.add_text_box("Overflow",
+          x: {120, :percent},
+          y: {0, :inches},
+          width: {4, :inches},
+          height: {1, :inches}
+        )
+
+      [shape] = slide.shapes
+      assert shape.x == round(120 / 100 * 12_192_000)
+      assert shape.x > 12_192_000
+    end
+
+    test "negative percent positions off-slide" do
+      slide =
+        Podium.Slide.new()
+        |> Podium.Slide.add_text_box("Off-slide",
+          x: {-10, :percent},
+          y: {-5, :percent},
+          width: {4, :inches},
+          height: {1, :inches}
+        )
+
+      [shape] = slide.shapes
+      assert shape.x == round(-10 / 100 * 12_192_000)
+      assert shape.x < 0
+      assert shape.y == round(-5 / 100 * 6_858_000)
+      assert shape.y < 0
+    end
+
     test "percent-positioned elements produce correct XML EMU values" do
       slide =
         Podium.Slide.new()

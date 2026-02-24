@@ -56,6 +56,18 @@ defmodule Podium.Units do
   def to_emu(emu) when is_integer(emu), do: emu
 
   @doc """
+  Default slide width in EMU (12,192,000 — standard 16:9).
+  """
+  @spec default_slide_width() :: pos_integer()
+  def default_slide_width, do: 12_192_000
+
+  @doc """
+  Default slide height in EMU (6,858,000 — standard 16:9).
+  """
+  @spec default_slide_height() :: pos_integer()
+  def default_slide_height, do: 6_858_000
+
+  @doc """
   Resolves a percent dimension against a reference EMU value.
 
   ## Examples
@@ -66,7 +78,7 @@ defmodule Podium.Units do
       iex> Podium.Units.resolve_percent({100, :percent}, 6_858_000)
       6858000
   """
-  @spec resolve_percent({number(), :percent}, non_neg_integer()) :: non_neg_integer()
+  @spec resolve_percent({number(), :percent}, non_neg_integer()) :: integer()
   def resolve_percent({value, :percent}, reference_emu) do
     round(value / 100 * reference_emu)
   end

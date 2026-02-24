@@ -24,8 +24,6 @@ defmodule Podium.Presentation do
 
   alias Podium.OPC.{Constants, ContentTypes, Package, Relationships}
 
-  @default_slide_width 12_192_000
-  @default_slide_height 6_858_000
   @template_width 9_144_000
 
   defstruct [
@@ -33,8 +31,8 @@ defmodule Podium.Presentation do
     :content_types,
     slides: [],
     pres_rels: nil,
-    slide_width: @default_slide_width,
-    slide_height: @default_slide_height,
+    slide_width: Units.default_slide_width(),
+    slide_height: Units.default_slide_height(),
     core_properties: nil,
     footer: nil,
     placeholder_positions: %{},
@@ -75,8 +73,8 @@ defmodule Podium.Presentation do
         {"rId6", Constants.rt(:table_styles), "tableStyles.xml"}
       ])
 
-    slide_width = Units.to_emu(Keyword.get(opts, :slide_width, @default_slide_width))
-    slide_height = Units.to_emu(Keyword.get(opts, :slide_height, @default_slide_height))
+    slide_width = Units.to_emu(Keyword.get(opts, :slide_width, Units.default_slide_width()))
+    slide_height = Units.to_emu(Keyword.get(opts, :slide_height, Units.default_slide_height()))
 
     core_prop_keys = [
       :title,
