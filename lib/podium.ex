@@ -207,9 +207,9 @@ defmodule Podium do
     * `:height` - box height
 
   ## Options (optional)
-    * `:style` - CSS position string (e.g. `"left: 10%; top: 5%; width: 80%; height: 15%"`).
-      See `Podium.CSS` for supported properties and units. Explicit `:x`/`:y`/`:width`/`:height`
-      opts take precedence over values parsed from `:style`.
+    * `:style` - CSS style string (e.g. `"left: 10%; top: 5%; width: 80%; height: 15%"`).
+      See `Podium.CSS` for supported properties and units. Explicit keyword opts
+      take precedence over values parsed from `:style`.
     * `:fill` - fill color or fill tuple (see module doc)
     * `:line` - line color or line opts (see module doc)
     * `:rotation` - rotation in degrees
@@ -235,7 +235,7 @@ defmodule Podium do
     * `:x`, `:y`, `:width`, `:height` - position and size
 
   ## Options (optional)
-    * `:style` - CSS position string (see `Podium.CSS`)
+    * `:style` - CSS style string (see `Podium.CSS`)
     * `:text` - text content for the shape (string or rich text)
     * `:fill` - fill (omit to use theme default)
     * `:line` - line color or line opts
@@ -288,7 +288,7 @@ defmodule Podium do
     * `:x`, `:y`, `:width`, `:height` - position and size
 
   ## Options (optional)
-    * `:style` - CSS position string (see `Podium.CSS`)
+    * `:style` - CSS style string (see `Podium.CSS`)
     * `:title` - chart title as string, or keyword list with `:text`, `:font_size`,
       `:bold`, `:italic`, `:color`, `:font`
     * `:legend` - legend position atom (`:left`, `:right`, `:top`, `:bottom`) or `false`
@@ -335,7 +335,7 @@ defmodule Podium do
     * `:x`, `:y`, `:width`, `:height` - position and size
 
   ## Options (optional)
-    * `:style` - CSS position string (see `Podium.CSS`)
+    * `:style` - CSS style string (see `Podium.CSS`)
     * `:title` - chart title (string or keyword list)
     * `:legend` - legend position or keyword list
     * `:data_labels` - data label configuration
@@ -364,7 +364,7 @@ defmodule Podium do
     * `:y` - vertical position
 
   ## Options (optional)
-    * `:style` - CSS position string (see `Podium.CSS`)
+    * `:style` - CSS style string (see `Podium.CSS`)
     * `:width` - image width (auto-calculated from native size if only `:height` given or neither given)
     * `:height` - image height (auto-calculated from native size if only `:width` given or neither given)
     * `:crop` - keyword list with `:left`, `:top`, `:right`, `:bottom` (values in 1/1000ths of a percent)
@@ -385,7 +385,7 @@ defmodule Podium do
     * `:x`, `:y`, `:width`, `:height` - position and size
 
   ## Options (optional)
-    * `:style` - CSS position string (see `Podium.CSS`)
+    * `:style` - CSS style string (see `Podium.CSS`)
     * `:fill_mode` - `:stretch` (default) or `:tile`
     * All other text box options (`:rotation`, `:margin_*`, `:anchor`, etc.)
   """
@@ -422,7 +422,7 @@ defmodule Podium do
     * `:x`, `:y`, `:width`, `:height` - position and size
 
   ## Options (optional)
-    * `:style` - CSS position string (see `Podium.CSS`)
+    * `:style` - CSS style string (see `Podium.CSS`)
     * `:mime_type` - MIME type string (default `"video/unknown"`)
     * `:poster_frame` - poster frame image binary (default: 1x1 transparent PNG)
   """
@@ -445,7 +445,7 @@ defmodule Podium do
     * `:x`, `:y`, `:width`, `:height` - position and size
 
   ## Options (optional)
-    * `:style` - CSS position string (see `Podium.CSS`)
+    * `:style` - CSS style string (see `Podium.CSS`)
     * `:col_widths` - list of column widths (auto-calculated if omitted)
     * `:row_heights` - list of row heights (auto-calculated if omitted)
     * `:table_style` - keyword list of style booleans:

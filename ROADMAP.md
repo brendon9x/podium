@@ -332,9 +332,9 @@ Implemented. `{value, :percent}` works in all `add_*` functions for x/y/width/he
 
 Implemented. `style: "left: 10%; top: 5%; width: 80%; height: 15%"` accepted on all positioning functions as an alternative to `{value, :unit}` tuples. Supports `%`, `in`, `cm`, `pt`, and raw EMU values. Explicit opts take precedence over style values. See `Podium.CSS`.
 
-### Phase 2c — Extended CSS Style Properties (Layer 2)
+### Phase 2c — Extended CSS Style Properties (Layer 2) ✅
 
-Extend the `style:` parser to support non-positional CSS properties, mapping familiar CSS to existing Podium keyword opts:
+Implemented. The `style:` parser now supports non-positional CSS properties, mapping familiar CSS to existing Podium keyword opts:
 
 | CSS Property | Podium Option | Example |
 |-------------|---------------|---------|
@@ -342,8 +342,12 @@ Extend the `style:` parser to support non-positional CSS properties, mapping fam
 | `vertical-align` | `:anchor` | `vertical-align: middle` → `anchor: :middle` |
 | `background` | `:fill` | `background: #FF0000` → `fill: "FF0000"` |
 | `padding` | `:margin_*` | `padding: 12pt` → margin opts |
+| `padding-left` | `:margin_left` | `padding-left: 0.5in` → `margin_left: {0.5, :inches}` |
+| `padding-right` | `:margin_right` | individual side padding |
+| `padding-top` | `:margin_top` | individual side padding |
+| `padding-bottom` | `:margin_bottom` | individual side padding |
 
-This keeps the `style:` string as a single entry point for the most common element properties, reducing the mix of CSS strings and Elixir keywords.
+The `style:` string is now a single entry point for the most common element properties. Explicit keyword opts still take precedence over style values.
 
 ### Phase 3 — Chart Table Input (Layer 2)
 

@@ -41,8 +41,9 @@ SLIDES=(
   "combo-charts|2|advanced/combo-charts|stacked-column-line"
   "combo-charts|3|advanced/combo-charts|area-line-secondary-axis"
 
-  "css-positioning|1|web-layer/css-positioning|basic-percent"
-  "css-positioning|3|web-layer/css-positioning|mixed-units"
+  "css-styling|1|web-layer/css-styling|basic-percent"
+  "css-styling|3|web-layer/css-styling|mixed-units"
+  "css-styling|6|web-layer/css-styling|non-positional-properties"
 
   "connectors-and-freeforms|1|advanced/connectors-and-freeforms|flowchart-connectors"
   "connectors-and-freeforms|2|advanced/connectors-and-freeforms|freeform-triangle-star"

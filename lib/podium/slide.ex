@@ -496,7 +496,7 @@ defmodule Podium.Slide do
   defp maybe_apply_style(opts) do
     case Keyword.pop(opts, :style) do
       {nil, opts} -> opts
-      {style, opts} -> Keyword.merge(Podium.CSS.parse_position_style(style), opts)
+      {style, opts} -> Keyword.merge(Podium.CSS.parse_style(style), opts)
     end
   end
 

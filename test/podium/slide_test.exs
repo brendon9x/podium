@@ -656,5 +656,74 @@ defmodule Podium.SlideTest do
       assert shape.fill == "FF0000"
       assert shape.anchor == :middle
     end
+
+    test "style: with text-align and vertical-align sets alignment and anchor" do
+      slide =
+        Podium.Slide.new()
+        |> Podium.Slide.add_text_box("Hello",
+          style:
+            "left: 10%; top: 5%; width: 80%; height: 15%; text-align: center; vertical-align: middle"
+        )
+
+      [shape] = slide.shapes
+      assert shape.anchor == :middle
+
+      # alignment is set on the paragraph level, check XML output
+      prs =
+        Podium.new()
+        |> Podium.add_slide(slide)
+
+      {:ok, binary} = Podium.save_to_memory(prs)
+      parts = PptxHelpers.unzip_pptx_binary(binary)
+      slide_xml = parts["ppt/slides/slide1.xml"]
+
+      assert slide_xml =~ ~s(anchor="ctr")
+      assert slide_xml =~ ~s(algn="ctr")
+    end
+
+    test "style: with background sets fill" do
+      slide =
+        Podium.Slide.new()
+        |> Podium.Slide.add_text_box("Hello",
+          style: "left: 10%; top: 5%; width: 80%; height: 15%; background: #FF0000"
+        )
+
+      [shape] = slide.shapes
+      assert shape.fill == "FF0000"
+    end
+
+    test "style: with padding sets margins" do
+      slide =
+        Podium.Slide.new()
+        |> Podium.Slide.add_text_box("Hello",
+          style: "left: 10%; top: 5%; width: 80%; height: 15%; padding: 12pt"
+        )
+
+      [shape] = slide.shapes
+      assert shape.margin_left == Podium.Units.to_emu({12, :pt})
+      assert shape.margin_right == Podium.Units.to_emu({12, :pt})
+      assert shape.margin_top == Podium.Units.to_emu({12, :pt})
+      assert shape.margin_bottom == Podium.Units.to_emu({12, :pt})
+    end
+
+    test "explicit :alignment overrides text-align from style:" do
+      slide =
+        Podium.Slide.new()
+        |> Podium.Slide.add_text_box("Hello",
+          style: "left: 10%; top: 5%; width: 80%; height: 15%; text-align: center",
+          alignment: :right
+        )
+
+      prs =
+        Podium.new()
+        |> Podium.add_slide(slide)
+
+      {:ok, binary} = Podium.save_to_memory(prs)
+      parts = PptxHelpers.unzip_pptx_binary(binary)
+      slide_xml = parts["ppt/slides/slide1.xml"]
+
+      assert slide_xml =~ ~s(algn="r")
+      refute slide_xml =~ ~s(algn="ctr")
+    end
   end
 end

@@ -8,14 +8,14 @@ prs = Podium.new()
 s1 =
   Podium.Slide.new()
   |> Podium.add_text_box(
-    [[{"CSS Positioning", bold: true, font_size: 36, color: "FFFFFF"}]],
+    [[{"CSS Styling", bold: true, font_size: 36, color: "FFFFFF"}]],
     style: "left: 0%; top: 40%; width: 100%; height: 20%",
     fill: "003366",
     alignment: :center,
     anchor: :middle
   )
   |> Podium.add_text_box(
-    "Using style: strings for familiar CSS absolute positioning",
+    "Using style: strings for familiar CSS positioning and styling",
     style: "left: 10%; top: 65%; width: 80%; height: 10%",
     alignment: :center,
     font_size: 18
@@ -140,12 +140,50 @@ s5 =
     legend: :bottom
   )
 
+# Slide 6: Non-positional CSS properties — text-align, vertical-align, background, padding
+s6 =
+  Podium.Slide.new()
+  |> Podium.add_text_box(
+    [[{"Non-Positional CSS Properties", bold: true, font_size: 28, color: "003366"}]],
+    style: "left: 5%; top: 2%; width: 90%; height: 10%; text-align: center"
+  )
+  # text-align + vertical-align
+  |> Podium.add_text_box(
+    "text-align: center; vertical-align: middle",
+    style:
+      "left: 5%; top: 15%; width: 43%; height: 20%; text-align: center; vertical-align: middle",
+    fill: "4472C4",
+    font_size: 14
+  )
+  # background via style:
+  |> Podium.add_text_box(
+    [[{"background: #ED7D31", color: "FFFFFF"}]],
+    style:
+      "left: 52%; top: 15%; width: 43%; height: 20%; background: #ED7D31; text-align: center; vertical-align: middle",
+    font_size: 14
+  )
+  # padding via style:
+  |> Podium.add_text_box(
+    "This text box has padding: 18pt applied via style:",
+    style:
+      "left: 5%; top: 40%; width: 90%; height: 20%; padding: 18pt; text-align: left; vertical-align: top; background: #E2EFDA",
+    font_size: 14
+  )
+  # individual padding-left
+  |> Podium.add_text_box(
+    "padding-left: 1in (indented from the left edge)",
+    style:
+      "left: 5%; top: 65%; width: 90%; height: 15%; padding-left: 1in; vertical-align: middle; background: #DAEEF3",
+    font_size: 14
+  )
+
 prs
 |> Podium.add_slide(s1)
 |> Podium.add_slide(s2)
 |> Podium.add_slide(s3)
 |> Podium.add_slide(s4)
 |> Podium.add_slide(s5)
-|> Podium.save("demos/output/css-positioning.pptx")
+|> Podium.add_slide(s6)
+|> Podium.save("demos/output/css-styling.pptx")
 
-IO.puts("Generated demos/output/css-positioning.pptx")
+IO.puts("Generated demos/output/css-styling.pptx")

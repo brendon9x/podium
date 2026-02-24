@@ -1,24 +1,21 @@
-# CSS Positioning
+# CSS Styling
 
-Use CSS-style strings to position and size elements on a slide, as an alternative to
-`{value, :unit}` tuples. This brings familiar CSS absolute positioning syntax to
-PowerPoint generation.
+Use CSS-style strings to position, size, and style elements on a slide, as an alternative to
+Elixir keyword opts. This brings familiar CSS syntax to PowerPoint generation.
 
 > #### Try it yourself {: .tip}
 >
-> Run `mix run demos/css-positioning.exs` to generate a presentation with all the examples from this guide.
+> Run `mix run demos/css-styling.exs` to generate a presentation with all the examples from this guide.
 
 ## Basic Usage
 
-Pass a `style:` string anywhere you'd normally pass `:x`, `:y`, `:width`, `:height` options:
+Pass a `style:` string anywhere you'd normally pass position/size options:
 
 ```elixir
 slide =
   Podium.Slide.new()
   |> Podium.add_text_box("Centered content",
-    style: "left: 10%; top: 5%; width: 80%; height: 15%",
-    alignment: :center,
-    anchor: :middle
+    style: "left: 10%; top: 5%; width: 80%; height: 15%; text-align: center; vertical-align: middle"
   )
 ```
 
@@ -37,11 +34,11 @@ slide =
   )
 ```
 
-![Basic percent positioning with style:](assets/web-layer/css-positioning/basic-percent.png)
+![Basic percent positioning with style:](assets/web-layer/css-styling/basic-percent.png)
 
 ## Property Mapping
 
-CSS properties map to Podium position options:
+### Position and Size
 
 | CSS Property | Podium Option | Description |
 |-------------|---------------|-------------|
@@ -49,6 +46,29 @@ CSS properties map to Podium position options:
 | `top`       | `:y`          | Vertical position from top edge |
 | `width`     | `:width`      | Element width |
 | `height`    | `:height`     | Element height |
+
+### Text and Alignment
+
+| CSS Property      | Podium Option | Values |
+|------------------|---------------|--------|
+| `text-align`     | `:alignment`  | `left`, `center`, `right`, `justify` |
+| `vertical-align` | `:anchor`     | `top`, `middle`, `bottom` |
+
+### Background
+
+| CSS Property  | Podium Option | Values |
+|--------------|---------------|--------|
+| `background` | `:fill`       | Hex color: `#FF0000` or `FF0000` |
+
+### Padding (Text Margins)
+
+| CSS Property     | Podium Option    | Notes |
+|-----------------|------------------|-------|
+| `padding`       | all `:margin_*`  | Single value only — sets all four sides |
+| `padding-left`  | `:margin_left`   | |
+| `padding-right` | `:margin_right`  | |
+| `padding-top`   | `:margin_top`    | |
+| `padding-bottom`| `:margin_bottom` | |
 
 ## Supported Units
 
@@ -70,19 +90,39 @@ slide = Podium.add_text_box(slide, "Mixed units",
 )
 ```
 
-![Mixed units in a style: string](assets/web-layer/css-positioning/mixed-units.png)
+![Mixed units in a style: string](assets/web-layer/css-styling/mixed-units.png)
+
+## Non-Positional Properties
+
+The `style:` string can include alignment, background, and padding alongside positioning:
+
+```elixir
+# All-in-one style string
+slide = Podium.add_text_box(slide, "Styled content",
+  style: "left: 10%; top: 5%; width: 80%; height: 15%; text-align: center; vertical-align: middle; background: #003366; padding: 12pt"
+)
+
+# Equivalent keyword opts
+slide = Podium.add_text_box(slide, "Styled content",
+  x: {10, :percent}, y: {5, :percent}, width: {80, :percent}, height: {15, :percent},
+  alignment: :center, anchor: :middle, fill: "003366",
+  margin_left: {12, :pt}, margin_right: {12, :pt}, margin_top: {12, :pt}, margin_bottom: {12, :pt}
+)
+```
+
+![Non-positional CSS properties — alignment, background, padding](assets/web-layer/css-styling/non-positional-properties.png)
 
 ## Mixing `style:` with Explicit Options
 
-When both `style:` and explicit position opts are provided, explicit opts take precedence.
+When both `style:` and explicit opts are provided, explicit opts take precedence.
 This lets you use `style:` for defaults and override specific values:
 
 ```elixir
-# style: provides all four positions, but x and height are overridden
+# style: provides positioning + alignment, but alignment is overridden
 slide = Podium.add_text_box(slide, "Override example",
-  style: "left: 10%; top: 5%; width: 80%; height: 15%",
+  style: "left: 10%; top: 5%; width: 80%; height: 15%; text-align: center",
   x: {50, :percent},     # overrides left: 10%
-  height: {2, :inches}   # overrides height: 15%
+  alignment: :right       # overrides text-align: center
 )
 ```
 
@@ -126,19 +166,20 @@ Both approaches produce identical output. Choose whichever reads better for your
 ```elixir
 # CSS style — compact, familiar to web developers
 Podium.add_text_box(slide, text,
-  style: "left: 10%; top: 5%; width: 80%; height: 15%")
+  style: "left: 10%; top: 5%; width: 80%; height: 15%; text-align: center")
 
 # Tuple opts — explicit, mixable with other units
 Podium.add_text_box(slide, text,
   x: {10, :percent}, y: {5, :percent},
-  width: {80, :percent}, height: {15, :percent})
+  width: {80, :percent}, height: {15, :percent},
+  alignment: :center)
 ```
 
-The `style:` option is parsed by `Podium.CSS.parse_position_style/1` and merged into
+The `style:` option is parsed by `Podium.CSS.parse_style/1` and merged into
 the opts before resolution — the rest of the pipeline is identical.
 
 ---
 
-CSS positioning is part of the Web Layer — it brings familiar web conventions to
+CSS styling is part of the Web Layer — it brings familiar web conventions to
 PowerPoint generation. See also [Percent Positioning](percent-positioning.md) for the
 underlying `{value, :percent}` system and [HTML Text](html-text.md) for HTML formatting.
