@@ -45,6 +45,10 @@ SLIDES=(
   "connectors-and-freeforms|2|advanced/connectors-and-freeforms|freeform-triangle-star"
   "connectors-and-freeforms|3|advanced/connectors-and-freeforms|multi-contour-cutout"
 
+  "html-text|1|web-layer/html-text|basic-formatting"
+  "html-text|2|web-layer/html-text|lists"
+  "html-text|5|web-layer/html-text|html-in-tables"
+
   "getting-started|1|introduction/getting-started|title-slide"
   "getting-started|2|introduction/getting-started|rich-text-bullets"
   "getting-started|3|introduction/getting-started|column-chart"
@@ -64,6 +68,9 @@ SLIDES=(
   "placeholders|3|core/placeholders|content-caption-layout"
   "placeholders|4|core/placeholders|two-content-layout"
   "placeholders|5|core/placeholders|chart-placeholder"
+
+  "percent-layout|2|web-layer/percent-positioning|four-quadrants"
+  "percent-layout|4|web-layer/percent-positioning|mixed-units"
 
   "presentations-and-slides|1|core/presentations-and-slides|title-slide-footer"
   "presentations-and-slides|2|core/presentations-and-slides|solid-background"

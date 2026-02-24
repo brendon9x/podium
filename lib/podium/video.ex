@@ -28,8 +28,8 @@ defmodule Podium.Video do
           extension: String.t(),
           sha1: String.t(),
           mime_type: String.t(),
-          x: non_neg_integer(),
-          y: non_neg_integer(),
+          x: integer(),
+          y: integer(),
           width: non_neg_integer(),
           height: non_neg_integer(),
           poster_frame: map()
