@@ -332,6 +332,19 @@ Implemented. `{value, :percent}` works in all `add_*` functions for x/y/width/he
 
 Implemented. `style: "left: 10%; top: 5%; width: 80%; height: 15%"` accepted on all positioning functions as an alternative to `{value, :unit}` tuples. Supports `%`, `in`, `cm`, `pt`, and raw EMU values. Explicit opts take precedence over style values. See `Podium.CSS`.
 
+### Phase 2c — Extended CSS Style Properties (Layer 2)
+
+Extend the `style:` parser to support non-positional CSS properties, mapping familiar CSS to existing Podium keyword opts:
+
+| CSS Property | Podium Option | Example |
+|-------------|---------------|---------|
+| `text-align` | `:alignment` | `text-align: center` → `alignment: :center` |
+| `vertical-align` | `:anchor` | `vertical-align: middle` → `anchor: :middle` |
+| `background` | `:fill` | `background: #FF0000` → `fill: "FF0000"` |
+| `padding` | `:margin_*` | `padding: 12pt` → margin opts |
+
+This keeps the `style:` string as a single entry point for the most common element properties, reducing the mix of CSS strings and Elixir keywords.
+
 ### Phase 3 — Chart Table Input (Layer 2)
 
 Add pipe-delimited string parsing to `ChartData`. Implement as `Podium.Chart.ChartData.from_table/2`.
