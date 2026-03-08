@@ -21,8 +21,8 @@ These audiences are not in conflict. Each layer compiles cleanly to the one belo
 │  Declarative, LLM-native, zero positioning code │
 ├─────────────────────────────────────────────────┤
 │  Layer 2: Web Helpers                           │
-│  HTML text parsing, CSS units, Bootstrap grid   │
-│  Percentage positioning, chart table input      │
+│  HTML text parsing, CSS units, Tailwind grid    │
+│  Percentage positioning, inline style strings   │
 ├─────────────────────────────────────────────────┤
 │  Layer 1: Spec API (existing)                   │
 │  Full OOXML fidelity, EMU units, run/paragraph  │
@@ -102,39 +102,24 @@ Implemented. `{value, :percent}` works as a unit in all `add_*` functions. Perce
 
 CSS-style string positioning (`style: "left: 10%; top: 5%; width: 80%; height: 15%"`) is implemented — see `Podium.CSS` and the `style:` option on all positioning functions.
 
-### 2.3 Bootstrap-Style Grid
+### 2.3 Tailwind Inline Grid ✅
 
 **The problem:** Absolute positioning requires knowing coordinates. A web developer building a two-column slide does not want to calculate that the right column starts at 52% of the slide width.
 
-**The solution:** A 12-column grid system using Bootstrap vocabulary. LLMs have seen Bootstrap in an enormous fraction of their training data — the column class names are effectively memorised.
+**The solution:** Tailwind CSS Grid classes on `style:` strings. Grid config goes on the slide, placement goes inline on elements — no intermediate variables, no state threading.
 
 ```elixir
-Podium.Layout.row(slide) do
-  col "col-7" do
-    Podium.add_chart(slide, :line, data, ...)
-  end
-  col "col-5" do
-    Podium.add_text_box(slide, html, ...)
-  end
-end
+slide = Podium.Slide.new(style: "grid grid-cols-12 grid-rows-[15%_auto] p-[5%] gap-[2%]")
+|> Podium.add_text_box("Title", style: "row-1 col-span-12", fill: "003366")
+|> Podium.add_chart(:line, data, style: "row-2 col-span-8", title: "Sales")
+|> Podium.add_text_box(html, style: "row-2 col-span-4", fill: "E2EFDA")
 ```
 
-**Configuration:**
+**Slide-level classes:** `grid`, `grid-cols-N`, `grid-rows-[H1_H2_...]`, `p-[N%]`, `px-[N%]`, `py-[N%]`, `gap-[N%]`, `gap-x-[N%]`, `gap-y-[N%]`.
 
-```elixir
-Podium.Layout.configure(
-  columns: 12,          # default
-  margin: {5, :percent}, # slide edge margin
-  gutter: {2, :percent}  # gap between columns
-)
-```
+**Element-level classes:** `row-N` (required), `col-span-N`, `col-start-N`.
 
-**Row system:**
-- Rows stack vertically.
-- Row height defaults to equal division of remaining vertical space.
-- Explicit row heights can be set via percentage.
-
-**Offset support:** `offset-2` shifts a column right by 2 units, matching Bootstrap 5 semantics exactly.
+**Row heights** are resolved at `Slide.new` time. Element positions resolve immediately at `add_*` time with per-row column cursor advancement.
 
 ### 2.4 Chart Data as Pipe-Delimited Table — Dropped
 
@@ -200,8 +185,8 @@ Each block macro accumulates children into a data structure, then calls the equi
 
 - `presentation do` → `Podium.new/1` + `Podium.add_slide/2` for each slide
 - `slide do` → `Podium.Slide.new/1`
-- `row do` → `Podium.Layout.row/2` computing vertical position
-- `col "col-N" do` → `Podium.Layout.col/2` computing x/width from column span
+- `row do` → row definition with height
+- `col "col-N" do` → element placement with grid classes
 - `text` → `Podium.add_text_box/3` with HTML parsing
 - `chart` → `Podium.add_chart/4` with `ChartData` struct
 - `image` → `Podium.add_image/3`
@@ -267,7 +252,7 @@ Every place where there is a choice between inventing a new Podium convention an
 
 - HTML inline formatting tags
 - CSS inline style strings with percentage values
-- Bootstrap 12-column grid class names
+- Tailwind CSS Grid classes (grid-cols, col-span, row-N)
 - Hex color values
 - CSS font properties (`font-size: 18pt`, `font-weight: bold`)
 - Markdown headings (usable inside HTML blocks)
@@ -278,7 +263,7 @@ If the design is right, an LLM should be able to generate correct Podium DSL fro
 
 > *Generate Elixir Podium DSL to create a PowerPoint presentation.*
 > *Text content uses HTML: `<b>`, `<i>`, `<u>`, `<s>`, `<sup>`, `<sub>`, `<span style="color: #hex; font-size: Npt">`, `<ul>/<ol>/<li>`, `<p style="text-align: center">`.*
-> *Layout uses Bootstrap 12-column grid classes (`col-N`, `col-offset-N`) inside `row do / col "col-N" do` blocks.*
+> *Layout uses Tailwind CSS Grid classes on `style:` strings — `grid grid-cols-12 grid-rows-[...]` on slides, `row-N col-span-N` on elements.*
 > *Charts use `ChartData.new() |> add_categories([...]) |> add_series(name, values, opts)`.*
 > *Colors are hex strings without `#`. Positions can be CSS absolute style percentages.*
 
@@ -328,15 +313,15 @@ The `style:` string is now a single entry point for the most common element prop
 
 Decided against. The `ChartData` builder API is already clean, and a pipe-delimited string format would lose type information and per-series options (colors, XY/bubble data, series-level config). For the DSL, the macro layer can emit `ChartData` builder calls directly — no string intermediate needed.
 
-### Phase 4 — Bootstrap Grid (Layer 2) ✅
+### Phase 4 — Tailwind Inline Grid (Layer 2) ✅
 
-Implemented. `Podium.Layout` provides a 12-column grid system using Bootstrap vocabulary. `grid/2` computes the content area, `row/2` claims vertical space, and `cols/2` parses `"col-N"` / `"col-N offset-M"` specs into `[x:, y:, width:, height:]` keyword lists. Configurable margins, gutters, and column count. Output passes directly to existing `add_*` functions.
+Implemented. `Podium.Grid` parses Tailwind CSS Grid classes from `style:` strings. Grid config goes on the slide (`"grid grid-cols-12 grid-rows-[15%_auto] p-[5%] gap-[2%]"`), placement goes inline on elements (`"row-1 col-span-8"`). Positions resolve immediately at `add_*` time — no intermediate variables, no state threading.
 
-### Phase 5 — Macro DSL (Layer 3)
+Replaces the previous `Podium.Layout` Bootstrap-style grid which required a two-stage compute-then-pass pattern. The inline approach is more ergonomic and closer to how CSS Grid works in HTML.
 
-Build `Podium.DSL` on top of Phases 1, 2, and 4. Implement `presentation`, `slide`, `row`, `col`, `text`, `chart`, `image`, `title`, `subtitle`, `notes`. Add `use Podium` convenience import.
+### Phase 5 — Macro DSL (Layer 3) — Reassessing
 
-Deliverable: full declarative DSL.
+The inline Tailwind grid solves most of the ergonomics that the macro DSL was designed to address. The DSL may still have value for the `presentation/slide` wrapper, but `row/col` blocks are no longer needed since placement is inline on elements.
 
 ### Phase 6 — Named Templates (Layer 3)
 

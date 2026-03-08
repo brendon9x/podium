@@ -10,7 +10,7 @@ Comprehensive list of Podium's features. Podium uses [python-pptx](https://githu
 | Save | To file or to memory (binary) |
 | Slide dimensions | 16:9 default, configurable width/height in any unit |
 | Percent positioning | `{value, :percent}` for x/y/width/height — resolved against slide dimensions at build time |
-| Grid layout | Bootstrap-style 12-column grid via `Podium.Layout` — `grid/2`, `row/2`, `cols/2` with `"col-N"` / `"col-N offset-M"` specs; configurable margins, gutters, column count |
+| Grid layout | Tailwind CSS Grid via `Podium.Grid` — grid config on slide (`grid grid-cols-12 grid-rows-[...] p-[N%] gap-[N%]`), placement inline on elements (`row-N col-span-N col-start-N`); positions resolve immediately at `add_*` time |
 | Slide layouts | All 11: blank, title_slide, title_content, section_header, two_content, comparison, title_only, content_caption, picture_caption, title_vertical_text, vertical_title_text; also `:layout_index` for arbitrary index |
 | Slide background | Solid, gradient, pattern, picture fill via `:background` option on `add_slide/2` |
 | Speaker notes | `set_notes/2` with auto-created notes slide and notes master; visible in Presenter View |

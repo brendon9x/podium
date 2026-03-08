@@ -122,7 +122,7 @@ defmodule Podium.MixProject do
         Podium.Pattern
       ],
       "Text and Tables": [Podium.Text, Podium.HTML, Podium.Table],
-      "Web Layer": [Podium.CSS, Podium.Layout],
+      "Web Layer": [Podium.CSS, Podium.Grid],
       Charts: [
         Podium.Chart,
         Podium.Chart.ChartData,

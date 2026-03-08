@@ -21,6 +21,7 @@ defmodule Podium.Slide do
 
   alias Podium.Chart
   alias Podium.Chart.ComboChart
+  alias Podium.Grid
   alias Podium.OPC.Constants
   alias Podium.{Connector, Drawing, Image, Shape, Table, Units, Video}
 
@@ -43,6 +44,7 @@ defmodule Podium.Slide do
     placeholders: [],
     picture_placeholders: [],
     fill_images: [],
+    grid: nil,
     next_shape_id: 2,
     slide_width: Units.default_slide_width(),
     slide_height: Units.default_slide_height()
@@ -65,6 +67,7 @@ defmodule Podium.Slide do
           placeholders: [Podium.Placeholder.t()],
           picture_placeholders: [tuple()],
           fill_images: [{pos_integer(), binary(), String.t()}],
+          grid: Grid.t() | nil,
           next_shape_id: pos_integer(),
           slide_width: non_neg_integer(),
           slide_height: non_neg_integer()
@@ -80,6 +83,7 @@ defmodule Podium.Slide do
     * `:background` - background fill (hex color, gradient tuple, pattern tuple,
       or `{:picture, binary}`)
     * `:notes` - speaker notes text
+    * `:style` - Tailwind grid style string (e.g. `"grid grid-cols-12 grid-rows-[15%_auto] p-[5%] gap-[2%]"`)
     * `:slide_width` - slide width for percent resolution (default 12,192,000 EMU / 16:9).
       When using percent positioning, this should match the presentation's `slide_width`
       so that elements resolve against the correct dimensions.
@@ -93,8 +97,12 @@ defmodule Podium.Slide do
       `:blank` (7), `:content_caption` (8), `:picture_caption` (9),
       `:title_vertical_text` (10), `:vertical_title_text` (11)
   """
-  @spec new(Podium.layout(), keyword()) :: t()
+  @spec new(Podium.layout() | keyword(), keyword()) :: t()
   def new(layout \\ :blank, opts \\ [])
+
+  def new(opts, []) when is_list(opts) do
+    new(:blank, opts)
+  end
 
   def new(layout, opts) when is_atom(layout) or is_integer(layout) do
     layout_index = resolve_layout_index(layout)
@@ -113,6 +121,16 @@ defmodule Podium.Slide do
     slide_width = Units.to_emu(Keyword.get(opts, :slide_width, Units.default_slide_width()))
     slide_height = Units.to_emu(Keyword.get(opts, :slide_height, Units.default_slide_height()))
 
+    grid =
+      case Keyword.get(opts, :style) do
+        nil ->
+          nil
+
+        style ->
+          {grid, _remaining} = Grid.parse_config(style, slide_width, slide_height)
+          grid
+      end
+
     %__MODULE__{
       ref: make_ref(),
       index: nil,
@@ -120,6 +138,7 @@ defmodule Podium.Slide do
       background: background,
       background_image: background_image,
       notes_text: Keyword.get(opts, :notes),
+      grid: grid,
       slide_width: slide_width,
       slide_height: slide_height
     }
@@ -143,10 +162,15 @@ defmodule Podium.Slide do
   """
   @spec add_text_box(t(), Podium.rich_text(), keyword()) :: t()
   def add_text_box(%__MODULE__{} = slide, text, opts) do
-    opts = resolve_opts(opts, slide.slide_width, slide.slide_height)
+    {opts, grid} = resolve_opts(slide, opts)
     shape = Shape.text_box(slide.next_shape_id, text, opts)
 
-    %{slide | shapes: slide.shapes ++ [shape], next_shape_id: slide.next_shape_id + 1}
+    %{
+      slide
+      | shapes: slide.shapes ++ [shape],
+        next_shape_id: slide.next_shape_id + 1,
+        grid: grid || slide.grid
+    }
   end
 
   @doc """
@@ -154,10 +178,15 @@ defmodule Podium.Slide do
   """
   @spec add_auto_shape(t(), atom(), keyword()) :: t()
   def add_auto_shape(%__MODULE__{} = slide, preset, opts) do
-    opts = resolve_opts(opts, slide.slide_width, slide.slide_height)
+    {opts, grid} = resolve_opts(slide, opts)
     shape = Shape.auto_shape(slide.next_shape_id, preset, opts)
 
-    %{slide | shapes: slide.shapes ++ [shape], next_shape_id: slide.next_shape_id + 1}
+    %{
+      slide
+      | shapes: slide.shapes ++ [shape],
+        next_shape_id: slide.next_shape_id + 1,
+        grid: grid || slide.grid
+    }
   end
 
   @doc """
@@ -194,7 +223,7 @@ defmodule Podium.Slide do
   """
   @spec add_picture_fill_text_box(t(), Podium.rich_text(), binary(), keyword()) :: t()
   def add_picture_fill_text_box(%__MODULE__{} = slide, text, image_binary, opts) do
-    opts = resolve_opts(opts, slide.slide_width, slide.slide_height)
+    {opts, grid} = resolve_opts(slide, opts)
     extension = detect_fill_extension(image_binary)
     fill_mode = Keyword.get(opts, :fill_mode, :stretch)
 
@@ -212,6 +241,7 @@ defmodule Podium.Slide do
       slide
       | shapes: slide.shapes ++ [shape],
         fill_images: slide.fill_images ++ [fill_entry],
+        grid: grid || slide.grid,
         next_shape_id: slide.next_shape_id + 1
     }
   end
@@ -221,12 +251,13 @@ defmodule Podium.Slide do
   """
   @spec add_chart(t(), atom(), struct(), keyword()) :: t()
   def add_chart(%__MODULE__{} = slide, chart_type, chart_data, opts) do
-    opts = resolve_opts(opts, slide.slide_width, slide.slide_height)
+    {opts, grid} = resolve_opts(slide, opts)
     chart = Chart.new(chart_type, chart_data, opts)
 
     %{
       slide
       | charts: slide.charts ++ [chart],
+        grid: grid || slide.grid,
         next_shape_id: slide.next_shape_id + 1
     }
   end
@@ -236,13 +267,14 @@ defmodule Podium.Slide do
   """
   @spec add_combo_chart(t(), Podium.Chart.ChartData.t(), [{atom(), keyword()}], keyword()) :: t()
   def add_combo_chart(%__MODULE__{} = slide, chart_data, plot_specs, opts) do
-    opts = resolve_opts(opts, slide.slide_width, slide.slide_height)
+    {opts, grid} = resolve_opts(slide, opts)
     combo = ComboChart.new(chart_data, plot_specs)
     chart = Chart.new_combo(combo, opts)
 
     %{
       slide
       | charts: slide.charts ++ [chart],
+        grid: grid || slide.grid,
         next_shape_id: slide.next_shape_id + 1
     }
   end
@@ -252,12 +284,13 @@ defmodule Podium.Slide do
   """
   @spec add_image(t(), binary(), keyword()) :: t()
   def add_image(%__MODULE__{} = slide, binary, opts) when is_binary(binary) do
-    opts = resolve_opts(opts, slide.slide_width, slide.slide_height)
+    {opts, grid} = resolve_opts(slide, opts)
     image = Image.new(binary, opts)
 
     %{
       slide
       | images: slide.images ++ [image],
+        grid: grid || slide.grid,
         next_shape_id: slide.next_shape_id + 1
     }
   end
@@ -267,12 +300,13 @@ defmodule Podium.Slide do
   """
   @spec add_video(t(), binary(), keyword()) :: t()
   def add_video(%__MODULE__{} = slide, binary, opts) when is_binary(binary) do
-    opts = resolve_opts(opts, slide.slide_width, slide.slide_height)
+    {opts, grid} = resolve_opts(slide, opts)
     video = Video.new(binary, opts)
 
     %{
       slide
       | videos: slide.videos ++ [video],
+        grid: grid || slide.grid,
         next_shape_id: slide.next_shape_id + 1
     }
   end
@@ -308,9 +342,15 @@ defmodule Podium.Slide do
   """
   @spec add_table(t(), [[term()]], keyword()) :: t()
   def add_table(%__MODULE__{} = slide, rows, opts) do
-    opts = resolve_opts(opts, slide.slide_width, slide.slide_height)
+    {opts, grid} = resolve_opts(slide, opts)
     table = Table.new(slide.next_shape_id, rows, opts)
-    %{slide | tables: slide.tables ++ [table], next_shape_id: slide.next_shape_id + 1}
+
+    %{
+      slide
+      | tables: slide.tables ++ [table],
+        grid: grid || slide.grid,
+        next_shape_id: slide.next_shape_id + 1
+    }
   end
 
   @doc """
@@ -484,13 +524,45 @@ defmodule Podium.Slide do
     raise ArgumentError, "unknown layout index #{n}; expected 1..11"
   end
 
-  defp resolve_opts(opts, slide_width, slide_height) do
-    opts
-    |> maybe_apply_style()
-    |> resolve_dim(:x, slide_width)
-    |> resolve_dim(:y, slide_height)
-    |> resolve_dim(:width, slide_width)
-    |> resolve_dim(:height, slide_height)
+  defp resolve_opts(%__MODULE__{grid: grid} = slide, opts) do
+    style = Keyword.get(opts, :style)
+
+    if grid && style && Grid.has_placement?(style) do
+      resolve_grid_opts(slide, opts, style)
+    else
+      resolved =
+        opts
+        |> maybe_apply_style()
+        |> resolve_dim(:x, slide.slide_width)
+        |> resolve_dim(:y, slide.slide_height)
+        |> resolve_dim(:width, slide.slide_width)
+        |> resolve_dim(:height, slide.slide_height)
+
+      {resolved, nil}
+    end
+  end
+
+  defp resolve_grid_opts(%__MODULE__{grid: grid}, opts, style) do
+    {placement, remaining_style} = Grid.parse_placement(style)
+
+    unless placement.row do
+      raise ArgumentError, "row-N is required on elements in a grid slide"
+    end
+
+    {position_opts, updated_grid} = Grid.resolve(grid, placement)
+
+    # Apply remaining style (CSS properties) and merge with explicit opts
+    css_opts =
+      if remaining_style != "" do
+        Podium.CSS.parse_style(remaining_style)
+      else
+        []
+      end
+
+    opts = opts |> Keyword.delete(:style)
+    resolved = Keyword.merge(css_opts, opts) |> Keyword.merge(position_opts)
+
+    {resolved, updated_grid}
   end
 
   defp maybe_apply_style(opts) do
