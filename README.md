@@ -102,24 +102,6 @@ slide = Podium.add_text_box(slide, [
 
 Run options: `bold`, `italic`, `underline`, `strikethrough`, `superscript`, `subscript`, `font_size`, `color` (hex RGB), `font`.
 
-### HTML text
-
-Wrap HTML strings in `{:html, "..."}` anywhere text is accepted:
-
-```elixir
-# HTML — compact, familiar syntax
-slide = Podium.add_text_box(slide,
-  {:html, ~s(<p>Revenue grew <span style="color: #228B22"><b>35%</b></span></p>)},
-  x: {1, :inches}, y: {1, :inches}, width: {10, :inches}, height: {1, :inches})
-
-# Equivalent rich text API
-slide = Podium.add_text_box(slide, [
-  [{"Revenue grew "}, {"35%", bold: true, color: "228B22"}]
-], x: {1, :inches}, y: {1, :inches}, width: {10, :inches}, height: {1, :inches})
-```
-
-Supported: `<b>`, `<i>`, `<u>`, `<s>`, `<sup>`, `<sub>`, `<p>`, `<br>`, `<ul>`, `<ol>`, `<li>`, `<span style="...">`. Style properties: `color`, `font-size`, `font-family`, `text-align`.
-
 ### Paragraph spacing and bullets
 
 Paragraph-level options go in the tuple form `{runs, opts}`:
@@ -239,11 +221,7 @@ All position and size values accept `{number, unit}` tuples or raw EMU integers:
 {2.54, :cm}       # 914,400 EMU
 {72, :pt}         # 914,400 EMU
 914_400            # raw EMU
-{50, :percent}    # 50% of slide width (for x/width) or height (for y/height)
 ```
-
-Percent values are resolved against the slide dimensions when you call `add_text_box`,
-`add_image`, `add_chart`, etc. You can mix units freely — e.g. `x: {10, :percent}, height: {2, :inches}`.
 
 ## Demos
 

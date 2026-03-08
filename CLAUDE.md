@@ -38,3 +38,7 @@ Use it to understand how python-pptx structures its XML output, what edge cases 
 - Use `mix format` before committing
 - No backwards compatibility shims — just change the code
 - When creating a LiveView component function, add `:attr` annotations
+
+## Abandoned: Web Layer (branch `replace-layout-with-tailwind-grid`)
+
+The HTML text input, CSS style strings, and Tailwind grid layout features were abandoned. They pulled Podium away from its core mission of being a faithful python-pptx port. None of these have equivalents in python-pptx. The web layer may be revisited as a separate package (`podium_web` or `podium_html`) once the core is feature-complete. Do not reintroduce these features into the core library.
