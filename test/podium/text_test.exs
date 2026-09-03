@@ -58,6 +58,36 @@ defmodule Podium.TextTest do
       assert xml =~ ~s(b="1")
     end
 
+    test "bold: false turns bold off rather than saying nothing" do
+      paragraphs = Text.normalize([[{"Regular text", bold: false}]])
+      xml = Text.paragraphs_xml(paragraphs)
+      assert xml =~ ~s(b="0")
+    end
+
+    test "a run that says nothing about bold gets no bold attribute" do
+      paragraphs = Text.normalize([[{"Inherited", color: "FF0000"}]])
+      xml = Text.paragraphs_xml(paragraphs)
+      refute xml =~ "b=\""
+    end
+
+    test "italic: false turns italic off rather than saying nothing" do
+      paragraphs = Text.normalize([[{"Upright", italic: false}]])
+      xml = Text.paragraphs_xml(paragraphs)
+      assert xml =~ ~s(i="0")
+    end
+
+    test "a run that says nothing about italic gets no italic attribute" do
+      paragraphs = Text.normalize([[{"Inherited", color: "FF0000"}]])
+      xml = Text.paragraphs_xml(paragraphs)
+      refute xml =~ "i=\""
+    end
+
+    test "includes italic attribute" do
+      paragraphs = Text.normalize([[{"Slanted", italic: true}]])
+      xml = Text.paragraphs_xml(paragraphs)
+      assert xml =~ ~s(i="1")
+    end
+
     test "includes alignment" do
       paragraphs = Text.normalize("Centered", alignment: :center)
       xml = Text.paragraphs_xml(paragraphs)

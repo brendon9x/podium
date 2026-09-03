@@ -86,6 +86,75 @@ defmodule Podium.NotesTest do
       assert notes_xml =~ "Use &lt;b&gt; tags &amp; &quot;quotes&quot;"
     end
 
+    test "each line of the notes becomes its own paragraph" do
+      slide =
+        Podium.Slide.new()
+        |> Podium.set_notes("First line\nSecond line")
+
+      prs =
+        Podium.new()
+        |> Podium.add_slide(slide)
+
+      {:ok, binary} = Podium.save_to_memory(prs)
+      parts = PptxHelpers.unzip_pptx_binary(binary)
+
+      notes_xml = parts["ppt/notesSlides/notesSlide1.xml"]
+
+      assert notes_xml =~ "<a:t>First line</a:t>"
+      assert notes_xml =~ "<a:t>Second line</a:t>"
+      refute notes_xml =~ "First line\nSecond line"
+
+      body =
+        notes_xml
+        |> String.split("<p:txBody>")
+        |> List.last()
+
+      assert body |> String.split("<a:p>") |> length() == 3
+    end
+
+    test "a blank line between paragraphs becomes an empty paragraph" do
+      slide =
+        Podium.Slide.new()
+        |> Podium.set_notes("Above\n\nBelow")
+
+      prs =
+        Podium.new()
+        |> Podium.add_slide(slide)
+
+      {:ok, binary} = Podium.save_to_memory(prs)
+      parts = PptxHelpers.unzip_pptx_binary(binary)
+
+      notes_xml = parts["ppt/notesSlides/notesSlide1.xml"]
+
+      assert notes_xml =~ ~s(<a:p><a:endParaRPr lang="en-US"/></a:p>)
+
+      body =
+        notes_xml
+        |> String.split("<p:txBody>")
+        |> List.last()
+
+      assert body |> String.split("<a:p>") |> length() == 4
+    end
+
+    test "carriage returns are treated as line breaks" do
+      slide =
+        Podium.Slide.new()
+        |> Podium.set_notes("One\r\nTwo")
+
+      prs =
+        Podium.new()
+        |> Podium.add_slide(slide)
+
+      {:ok, binary} = Podium.save_to_memory(prs)
+      parts = PptxHelpers.unzip_pptx_binary(binary)
+
+      notes_xml = parts["ppt/notesSlides/notesSlide1.xml"]
+
+      assert notes_xml =~ "<a:t>One</a:t>"
+      assert notes_xml =~ "<a:t>Two</a:t>"
+      refute notes_xml =~ "\r"
+    end
+
     test "notesSlide has rels to slide and notesMaster" do
       slide =
         Podium.Slide.new()

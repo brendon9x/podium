@@ -238,8 +238,8 @@ defmodule Podium.Text do
         attrs
       end
 
-    attrs = if Keyword.get(opts, :bold), do: attrs ++ [~s(b="1")], else: attrs
-    attrs = if Keyword.get(opts, :italic), do: attrs ++ [~s(i="1")], else: attrs
+    attrs = attrs ++ toggle_attr("b", Keyword.get(opts, :bold))
+    attrs = attrs ++ toggle_attr("i", Keyword.get(opts, :italic))
 
     attrs =
       case Keyword.get(opts, :underline) do
@@ -262,6 +262,15 @@ defmodule Podium.Text do
 
     Enum.join(attrs, " ")
   end
+
+  # A run that says nothing about bold or italic inherits the placeholder's or
+  # the theme's own style, so the attribute is left out. A run that says
+  # `false` means it: `b="0"` is what turns a bold placeholder's style off for
+  # one run, which is the only way to set a regular sentence after a bold
+  # lead-in inside a title that is already bold.
+  defp toggle_attr(_name, nil), do: []
+  defp toggle_attr(name, false), do: [~s(#{name}="0")]
+  defp toggle_attr(name, _truthy), do: [~s(#{name}="1")]
 
   defp run_children_xml(opts, hyperlink_rids) do
     color_xml = color_child_xml(Keyword.get(opts, :color))

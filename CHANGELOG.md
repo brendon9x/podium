@@ -30,6 +30,15 @@
 
 ### Fixed
 
+- `bold: false` and `italic: false` on a run now write `b="0"` and `i="0"`
+  rather than nothing at all. A run that leaves the option out still writes no
+  attribute and inherits the placeholder's or the theme's style, but a run that
+  asks for regular text inside a placeholder styled bold now gets it, which is
+  what a bold lead-in followed by a regular sentence needs.
+- `Podium.set_notes/2` keeps the line breaks in the notes it is given. Each
+  line becomes its own paragraph in the notes slide, and a blank line becomes
+  an empty paragraph, instead of the whole string going into one run where the
+  notes pane showed it as a single block.
 - A JPEG's pixel density is read from the right offset in its JFIF segment.
   It was read two bytes early, off the version field, so a 96 DPI image was
   taken as 257 DPI across and 96 down and placed at the wrong aspect ratio

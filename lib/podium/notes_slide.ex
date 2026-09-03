@@ -7,6 +7,7 @@ defmodule Podium.NotesSlide do
   """
 
   alias Podium.OPC.Constants
+  alias Podium.Text
   alias Podium.XML.Builder
 
   # Embed the python-pptx templates at compile time
@@ -16,14 +17,16 @@ defmodule Podium.NotesSlide do
 
   @doc """
   Generates the XML for a notes slide with the given text.
+
+  Each line of `notes_text` becomes its own paragraph, so the spacing the
+  author typed is the spacing the reader sees in the notes pane. A blank line
+  becomes an empty paragraph rather than being dropped.
   """
   @spec to_xml(String.t()) :: String.t()
   def to_xml(notes_text) do
     ns_a = Constants.ns(:a)
     ns_p = Constants.ns(:p)
     ns_r = Constants.ns(:r)
-
-    escaped = Builder.escape(notes_text)
 
     Builder.xml_declaration() <>
       ~s(<p:notes xmlns:a="#{ns_a}" xmlns:p="#{ns_p}" xmlns:r="#{ns_r}">) <>
@@ -34,7 +37,7 @@ defmodule Podium.NotesSlide do
       ~s(<a:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/><a:chOff x="0" y="0"/><a:chExt cx="0" cy="0"/></a:xfrm>) <>
       ~s(</p:grpSpPr>) <>
       slide_image_placeholder() <>
-      notes_body_placeholder(escaped) <>
+      notes_body_placeholder(notes_text) <>
       ~s(</p:spTree>) <>
       ~s(</p:cSld>) <>
       ~s(<p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr>) <>
@@ -52,7 +55,14 @@ defmodule Podium.NotesSlide do
       ~s(</p:sp>)
   end
 
-  defp notes_body_placeholder(escaped_text) do
+  defp notes_body_placeholder(notes_text) do
+    paragraphs =
+      notes_text
+      |> String.split(~r/\r?\n/)
+      |> Enum.map(&line_paragraph/1)
+      |> Text.normalize()
+      |> Text.paragraphs_xml()
+
     ~s(<p:sp>) <>
       ~s(<p:nvSpPr>) <>
       ~s(<p:cNvPr id="3" name="Notes Placeholder 2"/>) <>
@@ -63,10 +73,15 @@ defmodule Podium.NotesSlide do
       ~s(<p:txBody>) <>
       ~s(<a:bodyPr/>) <>
       ~s(<a:lstStyle/>) <>
-      ~s(<a:p><a:r><a:rPr lang="en-US" dirty="0"/><a:t>#{escaped_text}</a:t></a:r><a:endParaRPr lang="en-US"/></a:p>) <>
+      paragraphs <>
       ~s(</p:txBody>) <>
       ~s(</p:sp>)
   end
+
+  # An empty line is a paragraph with no runs, which `Podium.Text` renders as
+  # `<a:p><a:endParaRPr/></a:p>`: a valid empty paragraph.
+  defp line_paragraph(""), do: []
+  defp line_paragraph(line), do: [line]
 
   @doc """
   Returns the notes master XML (python-pptx template embedded verbatim).
