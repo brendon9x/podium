@@ -24,6 +24,18 @@
   and size from the layout placeholder's box.
 - `Podium.OPC.Package.resolve_partname/2` resolves a relationship target
   against the partname of the part that owns it.
+- `Podium.Image.dimensions/1` returns the natural size of image data in EMU,
+  the size `Podium.Image.new/2` uses when given neither `:width` nor
+  `:height`, so callers can fit an image to a region themselves.
+
+### Fixed
+
+- A JPEG's pixel density is read from the right offset in its JFIF segment.
+  It was read two bytes early, off the version field, so a 96 DPI image was
+  taken as 257 DPI across and 96 down and placed at the wrong aspect ratio
+  when `add_image` was given neither `:width` nor `:height`. The segment's
+  `JFIF` identifier is now checked too, since the bytes it starts with also
+  occur inside compressed image data.
 
 ### Changed
 

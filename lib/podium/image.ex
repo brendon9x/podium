@@ -70,6 +70,21 @@ defmodule Podium.Image do
   end
 
   @doc """
+  Returns the natural size of image data in EMU, as `{width, height}`.
+
+  This is the size `new/2` gives an image when neither `:width` nor `:height`
+  is supplied: the pixel dimensions from the header, scaled by the image's own
+  DPI where the format records one and 72 DPI where it does not.
+
+  Raises `ArgumentError` for TIFF, EMF and WMF, whose sizes this module does
+  not read, and for data in no recognised format.
+  """
+  def dimensions(binary) when is_binary(binary) do
+    extension = detect_extension(binary)
+    resolve_size(binary, extension, nil, nil)
+  end
+
+  @doc """
   Returns the partname for the image media file.
   """
   @spec partname(t()) :: String.t()
@@ -248,23 +263,27 @@ defmodule Podium.Image do
 
   defp jpeg_dimensions(_binary, _offset), do: {1, 1}
 
+  # JFIF APP0 (FF E0): length, the identifier "JFIF\0", a two byte version,
+  # then the density unit and the two densities. The identifier is checked
+  # because FF E0 also occurs inside entropy-coded data, where the bytes after
+  # it are not a density and reading them yields a stretched image.
   defp jpeg_dpi(binary) do
-    # Check for JFIF APP0 marker (FF E0)
     case :binary.match(binary, <<0xFF, 0xE0>>) do
       {pos, 2} ->
         data_start = pos + 4
 
-        if data_start + 10 <= byte_size(binary) do
-          <<_::binary-size(^data_start), _jfif_header::binary-size(5), unit::8, x_density::16-big,
-            y_density::16-big, _::binary>> = binary
+        case binary do
+          <<_::binary-size(^data_start), "JFIF", 0, _version::binary-size(2), unit::8,
+            x_density::16-big, y_density::16-big, _::binary>>
+          when x_density > 0 and y_density > 0 ->
+            case unit do
+              1 -> {x_density, y_density}
+              2 -> {round(x_density * 2.54), round(y_density * 2.54)}
+              _ -> {@default_dpi, @default_dpi}
+            end
 
-          case unit do
-            1 -> {x_density, y_density}
-            2 -> {round(x_density * 2.54), round(y_density * 2.54)}
-            _ -> {@default_dpi, @default_dpi}
-          end
-        else
-          {@default_dpi, @default_dpi}
+          _ ->
+            {@default_dpi, @default_dpi}
         end
 
       :nomatch ->
