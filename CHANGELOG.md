@@ -10,8 +10,39 @@
   coordinates are not scaled. The template must contain no slides.
 - `Podium.add_slide/2` raises when the template has no slide layout at the
   slide's layout index, instead of writing a dangling relationship.
+- `Podium.Template.inspect/1` reports what is in a template package: its slide
+  size, its masters, and for every layout the layout's name, its type, the
+  master it sits on, and each placeholder's `{type, idx}`, shape name and
+  bounding box. Boxes resolve through master inheritance the way PowerPoint
+  does, matching the master placeholder by type. Accepts a path, pptx bytes or
+  a parts map.
+- Placeholders can be addressed by the `{type, idx}` pair inspection reports,
+  as well as by the bundled template's names, so a template of your own can be
+  filled: `Podium.set_placeholder/3`, `Podium.set_picture_placeholder/3`,
+  `Podium.set_chart_placeholder/6` and `Podium.set_table_placeholder/5` all
+  take either. Charts and tables placed by `{type, idx}` take their position
+  and size from the layout placeholder's box.
+- `Podium.OPC.Package.resolve_partname/2` resolves a relationship target
+  against the partname of the part that owns it.
 
 ### Changed
+
+- `Podium.add_slide/2` validates every placeholder on the slide against the
+  layout it sits on, raising when the layout has no placeholder at that idx or
+  has one of a different type.
+- Footer, date and slide number are emitted at the idx the slide's layout uses
+  rather than at fixed 11, 10 and 12, and are skipped for a layout that has no
+  such placeholder. The bundled template's layouts still yield 11, 10 and 12.
+- A `p:ph` element is written without its `type` attribute when the type is
+  `"obj"` and without its `idx` attribute when the idx is 0, matching the OOXML
+  defaults. A picture placeholder writes the layout placeholder's own type
+  rather than a fixed `"pic"`, so a picture in a content placeholder keeps that
+  placeholder's `p:ph`.
+- `Podium.Placeholder.new_footer/2`, `new_date/2` and `new_slide_number/1` take
+  the idx to emit.
+- `Podium.Presentation`'s `placeholder_positions` field is replaced by
+  `template_info`, holding the `%Podium.Template{}` inspection of the template
+  the presentation was built on.
 
 - `presentation.xml` is now edited in place rather than regenerated, so the
   template's own settings survive. For the bundled template this means
@@ -27,6 +58,9 @@
   `Podium.OPC.ContentTypes.parse/1` over the template's own
   `[Content_Types].xml`.
 - `Podium.OPC.Package.read_template/0`, renamed to `read_default_template/0`.
+- `Podium.TemplatePlaceholders`, replaced by `Podium.Template.inspect/1`, which
+  resolves boxes for every placeholder on every layout rather than only for the
+  bundled template's named ones.
 
 ## 0.2.1
 

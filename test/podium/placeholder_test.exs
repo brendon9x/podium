@@ -134,6 +134,55 @@ defmodule Podium.PlaceholderTest do
     end
   end
 
+  describe "addressing by {type, idx}" do
+    alias Podium.Placeholder
+
+    defp ph_xml(ph), do: Placeholder.to_xml(ph)
+
+    test "a title placeholder emits its type and no idx" do
+      xml = ph_xml(Placeholder.new({"title", 0}, "Category performance"))
+
+      assert xml =~ ~s(<p:ph type="title"/>)
+      assert xml =~ "Category performance"
+    end
+
+    test "a content placeholder emits its idx and no type" do
+      assert ph_xml(Placeholder.new({"obj", 14}, "Body")) =~ ~s(<p:ph idx="14"/>)
+    end
+
+    test "a placeholder that is neither obj nor idx 0 emits both" do
+      assert ph_xml(Placeholder.new({"subTitle", 7}, "Sub")) =~
+               ~s(<p:ph type="subTitle" idx="7"/>)
+    end
+
+    test "a picture in a picture placeholder emits type and idx" do
+      xml = ph_xml(%{Placeholder.new_picture({"pic", 13}) | image_rid: "rId2"})
+
+      assert xml =~ ~s(<p:ph type="pic" idx="13"/>)
+      assert xml =~ ~s(r:embed="rId2")
+    end
+
+    test "a picture in a content placeholder keeps the content placeholder's ph" do
+      xml = ph_xml(%{Placeholder.new_picture({"obj", 14}) | image_rid: "rId2"})
+
+      assert xml =~ ~s(<p:ph idx="14"/>)
+      refute xml =~ ~s(type="pic")
+    end
+
+    test "footer, date and slide number take the layout's idx" do
+      assert ph_xml(Placeholder.new_footer("Confidential", 21)) =~ ~s(<p:ph type="ftr" idx="21"/>)
+      assert ph_xml(Placeholder.new_date("Jan 2026", 20)) =~ ~s(<p:ph type="dt" idx="20"/>)
+      assert ph_xml(Placeholder.new_slide_number(22)) =~ ~s(<p:ph type="sldNum" idx="22"/>)
+    end
+
+    test "normalize_ref/1 fills in the OOXML attribute defaults" do
+      assert Placeholder.normalize_ref({nil, nil}) == {"obj", 0}
+      assert Placeholder.normalize_ref({"title", nil}) == {"title", 0}
+      assert Placeholder.normalize_ref(%{type: nil, idx: 1}) == {"obj", 1}
+      assert Placeholder.normalize_ref(Placeholder.new({"pic", 13}, "x")) == {"pic", 13}
+    end
+  end
+
   describe "all 11 layouts" do
     @layouts [
       {:title_slide, 1},

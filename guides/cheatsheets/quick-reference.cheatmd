@@ -330,6 +330,17 @@ slide =
     table_style: [first_row: true])
 ```
 
+### Address a template's own placeholders
+
+```elixir
+template = Podium.Template.inspect("skeleton.pptx")
+template.layouts[2].placeholders
+
+slide = Podium.set_placeholder(slide, {"title", 0}, "Title")
+slide = Podium.set_chart_placeholder(prs, slide,
+  {"obj", 14}, :column_clustered, chart_data)
+```
+
 ### Footer, date, slide numbers
 
 ```elixir

@@ -37,6 +37,34 @@ defmodule Podium.OPC.Package do
     read(template_path)
   end
 
+  @doc """
+  Resolves a relationship target against the partname of the part that owns the
+  relationship, returning a canonical package partname.
+
+  Targets are relative to the owning part's folder, so the same slide master is
+  `slideMasters/slideMaster1.xml` from `ppt/presentation.xml` and
+  `../slideMasters/slideMaster1.xml` from a slide layout. A target starting with
+  `/` is already absolute from the package root.
+
+      iex> Podium.OPC.Package.resolve_partname("ppt/presentation.xml", "slideMasters/slideMaster1.xml")
+      "ppt/slideMasters/slideMaster1.xml"
+
+      iex> Podium.OPC.Package.resolve_partname("ppt/slideLayouts/slideLayout1.xml", "../slideMasters/slideMaster1.xml")
+      "ppt/slideMasters/slideMaster1.xml"
+
+      iex> Podium.OPC.Package.resolve_partname("ppt/slideLayouts/slideLayout1.xml", "/ppt/media/logo.png")
+      "ppt/media/logo.png"
+  """
+  def resolve_partname(_owner_partname, "/" <> target), do: target
+
+  def resolve_partname(owner_partname, target)
+      when is_binary(owner_partname) and is_binary(target) do
+    ["/", Path.dirname(owner_partname), target]
+    |> Path.join()
+    |> Path.expand()
+    |> String.trim_leading("/")
+  end
+
   defp unzip(source) do
     case :zip.unzip(source, [:memory]) do
       {:ok, entries} ->

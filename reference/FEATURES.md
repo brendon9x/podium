@@ -8,6 +8,7 @@ Comprehensive list of Podium's features. Podium uses [python-pptx](https://githu
 |---------|--------|
 | New presentation | `Podium.new/1` with configurable options |
 | Presentation from template | `Podium.from_template/2` builds on any slide-less pptx/potx (path or binary): keeps its masters, layouts, theme, media, notes master, slide size and notes size; no coordinate scaling |
+| Template inspection | `Podium.Template.inspect/1` reports slide size, masters, and per layout its name, type, master and placeholders with `{type, idx}`, shape name and box resolved through master inheritance |
 | Save | To file or to memory (binary) |
 | Slide dimensions | 16:9 default, configurable width/height in any unit |
 | Slide layouts | All 11: blank, title_slide, title_content, section_header, two_content, comparison, title_only, content_caption, picture_caption, title_vertical_text, vertical_title_text; also `:layout_index` for arbitrary index |
@@ -82,9 +83,10 @@ Comprehensive list of Podium's features. Podium uses [python-pptx](https://githu
 |---------|--------|
 | Layouts | All 11 slide layouts |
 | Text placeholders | title, subtitle, content, body, caption, left/right content/heading |
-| Picture placeholder | On picture_caption layout |
+| Picture placeholder | On picture_caption layout, or any placeholder addressed by `{type, idx}` |
 | Chart/table content | `set_chart_placeholder`/`set_table_placeholder` with position inherited from template layout |
-| Footer/date/slide number | Presentation-level settings |
+| Addressing by type and idx | Every placeholder function takes the `{type, idx}` pair `Podium.Template.inspect/1` reports, so any template's layouts can be filled; `add_slide/2` validates each placeholder against its layout |
+| Footer/date/slide number | Presentation-level settings, emitted at the idx the slide's layout uses and skipped when the layout has no such placeholder |
 
 ## Hyperlinks and Actions
 

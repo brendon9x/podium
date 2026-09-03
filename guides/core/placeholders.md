@@ -240,6 +240,85 @@ slide = Podium.set_chart_placeholder(prs, slide, :right_content,
 
 ![Two-content layout with table and pie chart side by side](assets/core/placeholders/two-content-layout.png)
 
+## Inspecting a Template
+
+The placeholder names above belong to the template Podium bundles. A template of
+your own, loaded with `Podium.from_template/2`, has its own layouts with their
+own placeholders. `Podium.Template.inspect/1` reports what is actually in a
+package: its slide size, its masters, and for every layout its name, its type,
+the master it sits on, and each placeholder with the box it resolves to.
+
+```elixir
+template = Podium.Template.inspect("priv/skeleton.pptx")
+
+for {index, layout} <- Enum.sort(template.layouts) do
+  IO.puts("#{index}: #{layout.name}")
+
+  for ph <- layout.placeholders do
+    IO.puts("   {#{ph.type}, #{ph.idx}}  #{ph.name}")
+  end
+end
+```
+
+```
+1: Cover
+   {ctrTitle, 0}  Title 1
+   {subTitle, 7}  Subtitle 2
+   {dt, 20}  Date Placeholder 3
+   {ftr, 21}  Footer Placeholder 4
+   {sldNum, 22}  Slide Number Placeholder 5
+2: Content
+   {title, 0}  Title 1
+   {obj, 14}  Content Placeholder 2
+   ...
+```
+
+A `<p:ph/>` element without a `type` attribute means `"obj"` and one without an
+`idx` attribute means `0`, so inspection always reports a string type and an
+integer idx. A placeholder's box is its own `<a:xfrm>` when it has one, and
+otherwise the box inherited from the master placeholder of the matching type.
+
+`inspect/1` accepts a path, the bytes of a `.pptx`/`.potx`, or an already-read
+parts map. Reading a whole package is not free, so inspect a template once and
+keep the result rather than calling it per slide.
+
+## Addressing Placeholders by Type and Idx
+
+Every placeholder function takes the `{type, idx}` pair that inspection reports,
+in place of a bundled-template name. This is the way to fill placeholders on a
+template of your own:
+
+```elixir
+prs = Podium.from_template("priv/skeleton.pptx")
+
+cover =
+  Podium.Slide.new(1)
+  |> Podium.set_placeholder({"ctrTitle", 0}, "Category performance")
+  |> Podium.set_placeholder({"subTitle", 7}, "Quarterly review, January 2026")
+
+slide = Podium.set_placeholder(Podium.Slide.new(2), {"title", 0}, "Volume grew 4.2%")
+
+slide =
+  Podium.set_chart_placeholder(prs, slide, {"obj", 14}, :column_clustered, chart_data,
+    title: "Volume by quarter"
+  )
+
+prs = prs |> Podium.add_slide(cover) |> Podium.add_slide(slide)
+```
+
+The type is always the layout placeholder's own. PowerPoint leaves a content
+placeholder's `p:ph` alone when a picture goes into it, so a picture in a content
+placeholder is `{"obj", 14}`, not `{"pic", 14}`:
+
+```elixir
+slide = Podium.set_picture_placeholder(slide, {"obj", 14}, File.read!("chart.png"))
+```
+
+`Podium.add_slide/2` checks every placeholder on the slide against the layout and
+raises when the layout has no placeholder at that idx, or has one of a different
+type. That turns a placeholder that PowerPoint would have silently dropped into
+an error at build time.
+
 ## Footer, Date, and Slide Numbers
 
 Set presentation-wide footer text, a date string, and slide numbers with
@@ -261,6 +340,13 @@ prs = Podium.set_footer(prs,
 Footer settings apply to the entire presentation. Call `set_footer/2` before or
 after adding slides -- the values are applied when you save.
 
+The chrome follows the layout. PowerPoint only shows a footer, date or slide
+number on a slide that carries the placeholder itself, so Podium emits each one
+at the idx its layout uses, and emits nothing for a layout that has no such
+placeholder. On the bundled template that is idx 11 for the footer, 10 for the
+date and 12 for the slide number; on a template of your own, whatever
+`Podium.Template.inspect/1` reports.
+
 ## Content Type Rules
 
 Not all placeholders accept all content types. Here is what each placeholder
@@ -275,6 +361,10 @@ function works with:
 
 Using the wrong function for a placeholder type raises an `ArgumentError` with a
 descriptive message.
+
+Addressed by `{type, idx}`, the rules loosen a little: `set_placeholder/3` and
+`set_picture_placeholder/3` take any placeholder, and charts and tables take any
+placeholder that is not a title, subtitle, date, footer or slide number.
 
 ---
 

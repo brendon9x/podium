@@ -82,10 +82,29 @@ slide = Podium.Slide.new(2)
 
 `Podium.add_slide/2` raises if the template has no such layout.
 
-`Podium.set_chart_placeholder/6` and `Podium.set_table_placeholder/5` address
-the bundled template's placeholders by name (`:content`, `:left_content`, and so
-on) and raise for a custom template. Position charts and tables explicitly with
-`:x`, `:y`, `:width` and `:height` instead.
+Placeholder names such as `:content` and `:left_content` belong to the bundled
+template, and the name-based calls raise on a template of your own. Address your
+template's placeholders instead by the `{type, idx}` pair that
+`Podium.Template.inspect/1` reports for them:
+
+```elixir
+template = Podium.Template.inspect("priv/skeleton.pptx")
+template.layouts[2].placeholders
+# => [%{type: "title", idx: 0, name: "Title 1", box: %{...}}, ...]
+
+slide =
+  Podium.Slide.new(2)
+  |> Podium.set_placeholder({"title", 0}, "Volume grew 4.2%")
+
+slide = Podium.set_chart_placeholder(prs, slide, {"obj", 14}, :column_clustered, chart_data)
+```
+
+Charts and tables placed this way take their position and size from the layout
+placeholder's box, so they need no explicit `:x`, `:y`, `:width` or `:height`.
+`Podium.add_slide/2` also checks each placeholder on the slide against the layout
+and raises when the layout has no placeholder at that idx or has one of a
+different type. See
+[Placeholders and Layouts](placeholders.md) for the full picture.
 
 ## Slide Dimensions and Units
 

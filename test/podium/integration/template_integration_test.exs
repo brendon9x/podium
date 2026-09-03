@@ -8,24 +8,36 @@ defmodule Podium.Integration.TemplateIntegrationTest do
 
   describe "rendering into a customer skeleton" do
     setup do
+      prs =
+        @fixture
+        |> PptxHelpers.zip_dir()
+        |> Podium.from_template(title: "Skeleton report", author: "Podium")
+        |> Podium.set_footer(footer: "Skeleton report", slide_number: true)
+
+      chart_data =
+        Podium.Chart.ChartData.new()
+        |> Podium.Chart.ChartData.add_categories(["Q1", "Q2", "Q3", "Q4"])
+        |> Podium.Chart.ChartData.add_series("Volume", [4.2, 5.1, 4.8, 6.3])
+
+      cover =
+        Podium.Slide.new(1)
+        |> Podium.set_placeholder({"ctrTitle", 0}, "Category performance")
+        |> Podium.set_placeholder({"subTitle", 7}, "Quarterly review, January 2026")
+
       slide1 =
         Podium.Slide.new(2)
-        |> Podium.add_text_box("Category performance",
-          x: {0.75, :inches},
-          y: {0.5, :inches},
-          width: {10, :inches},
-          height: {1, :inches},
-          font_size: 36,
-          bold: true
-        )
-        |> Podium.add_text_box("Volume grew 4.2% against a flat category.",
-          x: {0.75, :inches},
-          y: {2, :inches},
-          width: {10, :inches},
-          height: {1, :inches},
-          font_size: 20
-        )
+        |> Podium.set_placeholder({"title", 0}, "Volume grew 4.2%")
         |> Podium.set_notes("Lead with the volume number, then the category context.")
+
+      slide1 =
+        Podium.set_chart_placeholder(
+          prs,
+          slide1,
+          {"obj", 14},
+          :column_clustered,
+          chart_data,
+          title: "Volume by quarter"
+        )
 
       slide2 =
         Podium.Slide.new(3)
@@ -38,9 +50,8 @@ defmodule Podium.Integration.TemplateIntegrationTest do
         )
 
       prs =
-        @fixture
-        |> PptxHelpers.zip_dir()
-        |> Podium.from_template(title: "Skeleton report", author: "Podium")
+        prs
+        |> Podium.add_slide(cover)
         |> Podium.add_slide(slide1)
         |> Podium.add_slide(slide2)
 
@@ -48,6 +59,37 @@ defmodule Podium.Integration.TemplateIntegrationTest do
       assert :ok = Podium.save(prs, output_path)
 
       %{parts: PptxHelpers.unzip_pptx(output_path)}
+    end
+
+    test "fills the layouts' placeholders by type and idx", %{parts: parts} do
+      cover = to_string(parts["ppt/slides/slide1.xml"])
+      content = to_string(parts["ppt/slides/slide2.xml"])
+
+      assert cover =~ ~s(<p:ph type="ctrTitle"/>)
+      assert cover =~ ~s(<p:ph type="subTitle" idx="7"/>)
+      assert cover =~ "Category performance"
+
+      assert content =~ ~s(<p:ph type="title"/>)
+      assert content =~ "Volume grew 4.2%"
+    end
+
+    test "places the chart in the Content layout's own placeholder box", %{parts: parts} do
+      content = to_string(parts["ppt/slides/slide2.xml"])
+
+      assert content =~ "<p:graphicFrame"
+      assert content =~ ~s(<a:off x="685800" y="1825625"/>)
+      assert content =~ ~s(<a:ext cx="10820400" cy="4351338"/>)
+    end
+
+    test "emits footer and slide number at the layout's idx values", %{parts: parts} do
+      for slide_path <- ["ppt/slides/slide1.xml", "ppt/slides/slide2.xml"] do
+        xml = to_string(parts[slide_path])
+
+        assert xml =~ ~s(<p:ph type="ftr" idx="21"/>)
+        assert xml =~ ~s(<p:ph type="sldNum" idx="22"/>)
+        refute xml =~ ~s(idx="11")
+        refute xml =~ ~s(idx="12")
+      end
     end
 
     test "keeps the template's slide size and presentation settings", %{parts: parts} do
@@ -68,16 +110,18 @@ defmodule Podium.Integration.TemplateIntegrationTest do
       refute xml =~ "<p:extLst>"
     end
 
-    test "lists both slides with relationship ids that exist", %{parts: parts} do
+    test "lists every slide with relationship ids that exist", %{parts: parts} do
       xml = to_string(parts["ppt/presentation.xml"])
       rels = Podium.OPC.Relationships.parse(to_string(parts["ppt/_rels/presentation.xml.rels"]))
       declared = MapSet.new(rels.rels, &elem(&1, 0))
 
       entries = Regex.scan(~r/<p:sldId id="(\d+)" r:id="(rId\d+)"\/>/, xml)
 
-      assert [[_, "256", rid1], [_, "257", rid2]] = entries
-      assert MapSet.member?(declared, rid1)
-      assert MapSet.member?(declared, rid2)
+      assert [[_, "256", _], [_, "257", _], [_, "258", _]] = entries
+
+      for [_, _, rid] <- entries do
+        assert MapSet.member?(declared, rid)
+      end
     end
 
     test "reuses the template's notes master rather than adding one", %{parts: parts} do

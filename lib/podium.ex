@@ -507,20 +507,47 @@ defmodule Podium do
   | `:picture_caption` | `:title`, `:caption` (use `set_picture_placeholder/3` for `:picture`) |
   | `:title_vertical_text` | `:title`, `:body` |
   | `:vertical_title_text` | `:title`, `:body` |
+
+  ## By type and idx
+
+  On a presentation built with `from_template/2`, address the placeholder by the
+  `{type, idx}` pair `Podium.Template.inspect/1` reports for it:
+
+      Podium.set_placeholder(slide, {"title", 0}, "Category performance")
+      Podium.set_placeholder(slide, {"obj", 14}, "Volume grew 4.2%")
+
+  The type is always the layout placeholder's own, so a content placeholder is
+  `{"obj", idx}` even when it holds a picture or a chart.
   """
-  @spec set_placeholder(Podium.Slide.t(), atom(), rich_text()) :: Podium.Slide.t()
-  def set_placeholder(slide, name, text) do
+  @spec set_placeholder(
+          Podium.Slide.t(),
+          atom() | {String.t(), non_neg_integer()},
+          rich_text()
+        ) :: Podium.Slide.t()
+  def set_placeholder(slide, name, text) when is_atom(name) do
     layout = Slide.layout_atom(slide.layout_index)
     ph = Podium.Placeholder.new(layout, name, text)
+    %{slide | placeholders: slide.placeholders ++ [ph]}
+  end
+
+  def set_placeholder(slide, {type, idx}, text) when is_binary(type) and is_integer(idx) do
+    ph = Podium.Placeholder.new({type, idx}, text)
     %{slide | placeholders: slide.placeholders ++ [ph]}
   end
 
   @doc """
   Sets a picture placeholder on a slide. Returns the updated slide.
 
-  Only works on layouts with picture placeholders (e.g. `:picture_caption`).
+  With a bundled-template name, this only works on layouts that have a picture
+  placeholder (e.g. `:picture_caption`). A `{type, idx}` pair from
+  `Podium.Template.inspect/1` works on any template, including dropping a
+  picture into a content placeholder such as `{"obj", 14}`.
   """
-  @spec set_picture_placeholder(Podium.Slide.t(), atom(), binary()) :: Podium.Slide.t()
+  @spec set_picture_placeholder(
+          Podium.Slide.t(),
+          atom() | {String.t(), non_neg_integer()},
+          binary()
+        ) :: Podium.Slide.t()
   def set_picture_placeholder(slide, name, binary) do
     Slide.set_picture_placeholder(slide, name, binary)
   end
@@ -528,14 +555,16 @@ defmodule Podium do
   @doc """
   Places a chart into a content placeholder. Returns the updated slide.
 
-  The placeholder must be a content placeholder (type: nil) — e.g. `:content` on
-  `:title_content`, or `:left_content`/`:right_content` on `:two_content`.
-  Position and size are inherited from the template layout.
+  Addressed by a bundled-template name, the placeholder must be a content
+  placeholder (type: nil) — e.g. `:content` on `:title_content`, or
+  `:left_content`/`:right_content` on `:two_content`. Addressed by the
+  `{type, idx}` pair `Podium.Template.inspect/1` reports, it works on any
+  template. Position and size are taken from the layout.
   """
   @spec set_chart_placeholder(
           Podium.Presentation.t(),
           Podium.Slide.t(),
-          atom(),
+          atom() | {String.t(), non_neg_integer()},
           chart_type(),
           Podium.Chart.ChartData.t(),
           keyword()
@@ -547,13 +576,15 @@ defmodule Podium do
   @doc """
   Places a table into a content placeholder. Returns the updated slide.
 
-  The placeholder must be a content placeholder (type: nil).
-  Position and size are inherited from the template layout.
+  Addressed by a bundled-template name, the placeholder must be a content
+  placeholder (type: nil). Addressed by the `{type, idx}` pair
+  `Podium.Template.inspect/1` reports, it works on any template. Position and
+  size are taken from the layout.
   """
   @spec set_table_placeholder(
           Podium.Presentation.t(),
           Podium.Slide.t(),
-          atom(),
+          atom() | {String.t(), non_neg_integer()},
           [[term()]],
           keyword()
         ) :: Podium.Slide.t()
@@ -563,6 +594,9 @@ defmodule Podium do
 
   @doc """
   Sets presentation-level footer, date, and slide number.
+
+  Each is emitted on a slide only when the slide's layout defines the matching
+  placeholder, and at the idx that layout uses.
 
   ## Options
     * `:footer` - footer text string

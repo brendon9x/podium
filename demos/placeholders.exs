@@ -94,3 +94,63 @@ prs
 |> Podium.save("demos/output/placeholders.pptx")
 
 IO.puts("Generated demos/output/placeholders.pptx")
+
+# --- Addressing a template's own placeholders by {type, idx} ---
+#
+# A template of your own has its own layouts with their own placeholders. Read
+# what it has with Podium.Template.inspect/1, then fill it by {type, idx}.
+
+skeleton_dir = "test/fixtures/skeleton_16x9"
+
+skeleton =
+  skeleton_dir
+  |> Path.join("**")
+  |> Path.wildcard(match_dot: true)
+  |> Enum.reject(&File.dir?/1)
+  |> Enum.map(&{&1 |> Path.relative_to(skeleton_dir) |> to_charlist(), File.read!(&1)})
+  |> then(fn entries ->
+    {:ok, {_name, binary}} = :zip.create(~c"skeleton.pptx", entries, [:memory])
+    binary
+  end)
+
+template = Podium.Template.inspect(skeleton)
+
+IO.puts("\nInspected the skeleton template:")
+
+for {index, layout} <- Enum.sort(template.layouts) do
+  IO.puts("  layout #{index}: #{layout.name} (#{layout.type})")
+
+  for ph <- layout.placeholders do
+    IO.puts(~s(    {"#{ph.type}", #{ph.idx}}  #{ph.name}))
+  end
+end
+
+custom =
+  skeleton
+  |> Podium.from_template(title: "Category performance")
+  |> Podium.set_footer(footer: "Acme Corp Confidential", slide_number: true)
+
+cover =
+  Podium.Slide.new(1)
+  |> Podium.set_placeholder({"ctrTitle", 0}, "Category performance")
+  |> Podium.set_placeholder({"subTitle", 7}, "Quarterly review, January 2026")
+
+volume_data =
+  ChartData.new()
+  |> ChartData.add_categories(["Q1", "Q2", "Q3", "Q4"])
+  |> ChartData.add_series("Volume", [4.2, 5.1, 4.8, 6.3], color: "2E75B6")
+
+content = Podium.set_placeholder(Podium.Slide.new(2), {"title", 0}, "Volume grew 4.2%")
+
+content =
+  Podium.set_chart_placeholder(custom, content, {"obj", 14}, :column_clustered, volume_data,
+    title: "Volume by quarter",
+    legend: :bottom
+  )
+
+custom
+|> Podium.add_slide(cover)
+|> Podium.add_slide(content)
+|> Podium.save("demos/output/placeholders_custom_template.pptx")
+
+IO.puts("\nGenerated demos/output/placeholders_custom_template.pptx")

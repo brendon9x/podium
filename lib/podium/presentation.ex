@@ -17,7 +17,7 @@ defmodule Podium.Presentation do
     NotesSlide,
     Placeholder,
     Slide,
-    TemplatePlaceholders,
+    Template,
     Units,
     Video
   }
@@ -56,7 +56,7 @@ defmodule Podium.Presentation do
     slide_height: @default_slide_height,
     core_properties: nil,
     footer: nil,
-    placeholder_positions: %{},
+    template_info: nil,
     notes_master_created: false,
     notes_master_rid: nil,
     notes_master_partname: @default_notes_master_partname,
@@ -74,7 +74,7 @@ defmodule Podium.Presentation do
           slide_height: non_neg_integer(),
           core_properties: Podium.CoreProperties.t() | nil,
           footer: keyword() | nil,
-          placeholder_positions: map(),
+          template_info: Podium.Template.t() | nil,
           notes_master_created: boolean(),
           notes_master_rid: String.t() | nil,
           notes_master_partname: String.t(),
@@ -93,8 +93,7 @@ defmodule Podium.Presentation do
     %{
       prs
       | slide_width: Units.to_emu(Keyword.get(opts, :slide_width, @default_slide_width)),
-        slide_height: Units.to_emu(Keyword.get(opts, :slide_height, @default_slide_height)),
-        placeholder_positions: TemplatePlaceholders.resolve_positions(parts)
+        slide_height: Units.to_emu(Keyword.get(opts, :slide_height, @default_slide_height))
     }
   end
 
@@ -170,11 +169,18 @@ defmodule Podium.Presentation do
         nil -> {false, nil, @default_notes_master_partname}
       end
 
+    template_info =
+      case template do
+        :bundled -> Template.bundled()
+        :custom -> Template.inspect(parts)
+      end
+
     %__MODULE__{
       template_parts: parts,
       content_types: content_types,
       pres_rels: pres_rels,
       template: template,
+      template_info: template_info,
       template_width: template_width,
       slide_width: template_width,
       slide_height: template_height,
@@ -185,13 +191,13 @@ defmodule Podium.Presentation do
     }
   end
 
-  # A presentation relationship target is relative to `ppt/`, or absolute from
-  # the package root.
-  defp normalise_pres_target("/" <> target), do: target
-  defp normalise_pres_target(target), do: "ppt/" <> target
+  defp normalise_pres_target(target), do: Package.resolve_partname("ppt/presentation.xml", target)
 
   @doc """
   Adds a slide to the presentation. Returns the updated presentation.
+
+  Raises when the template has no layout at the slide's layout index, or when a
+  placeholder on the slide does not match one the layout defines.
   """
   @spec add_slide(t(), Podium.Slide.t()) :: t()
   def add_slide(%__MODULE__{} = prs, %Slide{} = slide) do
@@ -202,7 +208,40 @@ defmodule Podium.Presentation do
             "template has no #{layout_partname} for layout #{inspect(slide.layout_index)}"
     end
 
+    validate_slide_placeholders!(prs, slide)
+
     %{prs | slides: prs.slides ++ [slide]}
+  end
+
+  # Footer, date and slide number chrome is injected at build time from the
+  # layout itself, so it is not among the placeholders checked here.
+  defp validate_slide_placeholders!(prs, slide) do
+    picture_phs = Enum.map(slide.picture_placeholders, fn {ph, _binary, _ext} -> ph end)
+
+    for ph <- slide.placeholders ++ picture_phs do
+      validate_placeholder_ref!(prs, slide.layout_index, ph)
+    end
+
+    :ok
+  end
+
+  defp validate_placeholder_ref!(prs, layout_index, ph) do
+    {type, idx} = Placeholder.normalize_ref(ph)
+
+    case Template.placeholder_by_idx(prs.template_info, layout_index, idx) do
+      nil ->
+        raise ArgumentError,
+              "layout #{layout_index} has no placeholder with idx #{idx}; " <>
+                "inspect the template with Podium.Template.inspect/1 to see what it defines"
+
+      %{type: ^type} ->
+        :ok
+
+      %{type: actual} ->
+        raise ArgumentError,
+              "layout #{layout_index} placeholder idx #{idx} has type #{inspect(actual)}, " <>
+                "not #{inspect(type)}"
+    end
   end
 
   @doc """
@@ -224,31 +263,32 @@ defmodule Podium.Presentation do
   @doc """
   Places a chart into a content placeholder. Returns the updated slide.
 
-  The placeholder must be a content placeholder (type: nil) on a layout that supports it.
-  Position is inherited from the template layout.
+  The placeholder is addressed either by a bundled-template name or by the
+  `{type, idx}` pair `Podium.Template.inspect/1` reports for it. Position and
+  size are taken from the layout.
   """
-  @spec set_chart_placeholder(t(), Podium.Slide.t(), atom(), atom(), struct(), keyword()) ::
-          Podium.Slide.t()
+  @spec set_chart_placeholder(
+          t(),
+          Podium.Slide.t(),
+          atom() | {String.t(), non_neg_integer()},
+          atom(),
+          struct(),
+          keyword()
+        ) :: Podium.Slide.t()
   def set_chart_placeholder(
         %__MODULE__{} = prs,
         %Slide{} = slide,
-        name,
+        ref,
         chart_type,
         chart_data,
         opts
-      )
-      when is_atom(name) do
-    validate_bundled_template!(prs, "set_chart_placeholder/6")
-    layout_index = slide.layout_index
-    layout = Slide.layout_atom(layout_index)
-    validate_content_placeholder!(layout, name)
-    pos = lookup_position!(prs, layout_index, layout, name)
-    scaled = scale_position(prs, pos)
+      ) do
+    box = placeholder_box!(prs, slide, ref, "set_chart_placeholder/6")
 
     chart_opts =
       opts
       |> Keyword.drop([:x, :y, :width, :height])
-      |> Keyword.merge(x: scaled.x, y: scaled.y, width: scaled.cx, height: scaled.cy)
+      |> Keyword.merge(x: box.x, y: box.y, width: box.w, height: box.h)
 
     Slide.add_chart(slide, chart_type, chart_data, chart_opts)
   end
@@ -256,26 +296,68 @@ defmodule Podium.Presentation do
   @doc """
   Places a table into a content placeholder. Returns the updated slide.
 
-  The placeholder must be a content placeholder (type: nil) on a layout that supports it.
-  Position is inherited from the template layout.
+  The placeholder is addressed either by a bundled-template name or by the
+  `{type, idx}` pair `Podium.Template.inspect/1` reports for it. Position and
+  size are taken from the layout.
   """
-  @spec set_table_placeholder(t(), Podium.Slide.t(), atom(), [[term()]], keyword()) ::
-          Podium.Slide.t()
-  def set_table_placeholder(%__MODULE__{} = prs, %Slide{} = slide, name, rows, opts \\ [])
-      when is_atom(name) do
-    validate_bundled_template!(prs, "set_table_placeholder/5")
-    layout_index = slide.layout_index
-    layout = Slide.layout_atom(layout_index)
-    validate_content_placeholder!(layout, name)
-    pos = lookup_position!(prs, layout_index, layout, name)
-    scaled = scale_position(prs, pos)
+  @spec set_table_placeholder(
+          t(),
+          Podium.Slide.t(),
+          atom() | {String.t(), non_neg_integer()},
+          [[term()]],
+          keyword()
+        ) :: Podium.Slide.t()
+  def set_table_placeholder(%__MODULE__{} = prs, %Slide{} = slide, ref, rows, opts \\ []) do
+    box = placeholder_box!(prs, slide, ref, "set_table_placeholder/5")
 
     table_opts =
       opts
       |> Keyword.drop([:x, :y, :width, :height])
-      |> Keyword.merge(x: scaled.x, y: scaled.y, width: scaled.cx, height: scaled.cy)
+      |> Keyword.merge(x: box.x, y: box.y, width: box.w, height: box.h)
 
     Slide.add_table(slide, rows, table_opts)
+  end
+
+  # The name path is the bundled template's; the {type, idx} path works on any
+  # template. Both end at the layout placeholder's own box, scaled.
+  defp placeholder_box!(prs, slide, name, fun) when is_atom(name) do
+    validate_bundled_template!(prs, fun)
+    layout = Slide.layout_atom(slide.layout_index)
+    validate_content_placeholder!(layout, name)
+
+    definition = Map.fetch!(Placeholder.placeholders_for(layout), name)
+
+    box_for_ref!(prs, slide.layout_index, definition, inspect(name))
+  end
+
+  defp placeholder_box!(prs, slide, {type, idx} = ref, _fun)
+       when is_binary(type) and is_integer(idx) do
+    box_for_ref!(prs, slide.layout_index, ref, inspect(ref))
+  end
+
+  @chrome_types ["title", "ctrTitle", "subTitle", "dt", "ftr", "sldNum"]
+
+  defp box_for_ref!(prs, layout_index, ref, label) do
+    {type, idx} = Placeholder.normalize_ref(ref)
+
+    ph =
+      Template.placeholder(prs.template_info, layout_index, {type, idx}) ||
+        raise ArgumentError,
+              "layout #{layout_index} has no placeholder #{inspect({type, idx})}; " <>
+                "inspect the template with Podium.Template.inspect/1 to see what it defines"
+
+    if ph.type in @chrome_types do
+      raise ArgumentError,
+            "placeholder #{label} has type #{inspect(ph.type)}; " <>
+              "only content placeholders accept charts/tables"
+    end
+
+    box =
+      ph.box ||
+        raise ArgumentError,
+              "could not resolve position for placeholder #{label} on layout #{layout_index}"
+
+    scale_box(prs, box)
   end
 
   defp validate_bundled_template!(%__MODULE__{template: :bundled}, _fun), do: :ok
@@ -284,7 +366,8 @@ defmodule Podium.Presentation do
     raise ArgumentError,
           "#{fun} addresses placeholders by the bundled template's names and is not " <>
             "available for a presentation created with Podium.from_template/2; " <>
-            "position charts and tables explicitly instead"
+            "address the placeholder by the {type, idx} pair that " <>
+            "Podium.Template.inspect/1 reports instead"
   end
 
   defp validate_content_placeholder!(layout, name) do
@@ -305,23 +388,12 @@ defmodule Podium.Presentation do
     end
   end
 
-  defp lookup_position!(prs, layout_index, layout, name) do
-    case get_in(prs.placeholder_positions, [layout_index, name]) do
-      nil ->
-        raise ArgumentError,
-              "could not resolve position for placeholder #{inspect(name)} on layout #{inspect(layout)}"
-
-      pos ->
-        pos
-    end
-  end
-
-  defp scale_position(%__MODULE__{} = prs, %{x: x, y: y, cx: cx, cy: cy}) do
+  defp scale_box(%__MODULE__{} = prs, %{x: x, y: y, w: w, h: h}) do
     if prs.slide_width == prs.template_width do
-      %{x: x, y: y, cx: cx, cy: cy}
+      %{x: x, y: y, w: w, h: h}
     else
       scale = prs.slide_width / prs.template_width
-      %{x: round(x * scale), y: y, cx: round(cx * scale), cy: cy}
+      %{x: round(x * scale), y: y, w: round(w * scale), h: h}
     end
   end
 
@@ -793,7 +865,7 @@ defmodule Podium.Presentation do
     # Inject footer/date/slide_number placeholders if set
     slide =
       if prs.footer do
-        inject_footer_placeholders(slide, prs.footer)
+        inject_footer_placeholders(slide, prs.footer, prs.template_info)
       else
         slide
       end
@@ -955,29 +1027,36 @@ defmodule Podium.Presentation do
     {slide_rels, parts, prs}
   end
 
-  defp inject_footer_placeholders(slide, opts) do
-    placeholders = slide.placeholders
-
-    placeholders =
-      case Keyword.get(opts, :footer) do
-        nil -> placeholders
-        text -> placeholders ++ [Placeholder.new_footer(text)]
+  # PowerPoint only shows footer, date or slide number on a slide that carries
+  # the placeholder itself, and at the idx its layout uses. A layout without one
+  # of them gets nothing.
+  defp inject_footer_placeholders(slide, opts, template_info) do
+    layout_idx = fn type ->
+      case Template.placeholder_by_type(template_info, slide.layout_index, type) do
+        nil -> nil
+        ph -> ph.idx
       end
+    end
 
     placeholders =
-      case Keyword.get(opts, :date) do
-        nil -> placeholders
-        text -> placeholders ++ [Placeholder.new_date(text)]
-      end
+      slide.placeholders
+      |> append_chrome(Keyword.get(opts, :footer), layout_idx.("ftr"), &Placeholder.new_footer/2)
+      |> append_chrome(Keyword.get(opts, :date), layout_idx.("dt"), &Placeholder.new_date/2)
 
     placeholders =
-      if Keyword.get(opts, :slide_number, false) do
-        placeholders ++ [Placeholder.new_slide_number()]
-      else
-        placeholders
+      case {Keyword.get(opts, :slide_number, false), layout_idx.("sldNum")} do
+        {true, idx} when is_integer(idx) -> placeholders ++ [Placeholder.new_slide_number(idx)]
+        _ -> placeholders
       end
 
     %{slide | placeholders: placeholders}
+  end
+
+  defp append_chrome(placeholders, nil, _idx, _build), do: placeholders
+  defp append_chrome(placeholders, _text, nil, _build), do: placeholders
+
+  defp append_chrome(placeholders, text, idx, build) when is_integer(idx) do
+    placeholders ++ [build.(text, idx)]
   end
 
   # Edits the template's own presentation.xml rather than regenerating it, so

@@ -3,7 +3,46 @@ defmodule Podium.OPC.PackageTest do
 
   alias Podium.OPC.Package
 
+  doctest Podium.OPC.Package, only: [resolve_partname: 2]
+
   @template_path "priv/templates/default.pptx"
+
+  describe "resolve_partname/2" do
+    test "resolves a target relative to the owning part's folder" do
+      assert Package.resolve_partname(
+               "ppt/presentation.xml",
+               "slideMasters/slideMaster1.xml"
+             ) == "ppt/slideMasters/slideMaster1.xml"
+
+      assert Package.resolve_partname("ppt/presentation.xml", "notesMasters/notesMaster1.xml") ==
+               "ppt/notesMasters/notesMaster1.xml"
+    end
+
+    test "resolves a target that walks up out of the owning part's folder" do
+      assert Package.resolve_partname(
+               "ppt/slideLayouts/slideLayout1.xml",
+               "../slideMasters/slideMaster1.xml"
+             ) == "ppt/slideMasters/slideMaster1.xml"
+
+      assert Package.resolve_partname("ppt/slides/slide1.xml", "../media/image1.png") ==
+               "ppt/media/image1.png"
+    end
+
+    test "keeps an absolute target as it is, minus the leading slash" do
+      assert Package.resolve_partname("ppt/slideLayouts/slideLayout1.xml", "/ppt/media/logo.png") ==
+               "ppt/media/logo.png"
+
+      assert Package.resolve_partname("ppt/presentation.xml", "/docProps/core.xml") ==
+               "docProps/core.xml"
+    end
+
+    test "resolves against a part at the package root" do
+      assert Package.resolve_partname("", "docProps/app.xml") == "docProps/app.xml"
+
+      assert Package.resolve_partname("[Content_Types].xml", "ppt/presentation.xml") ==
+               "ppt/presentation.xml"
+    end
+  end
 
   describe "read/1" do
     test "reads a pptx file into a map of parts" do

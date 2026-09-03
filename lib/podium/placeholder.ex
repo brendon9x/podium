@@ -5,6 +5,11 @@ defmodule Podium.Placeholder do
   Each slide layout defines named placeholder positions (title, subtitle, content,
   etc.) that can be filled with text or pictures. This module handles creating
   placeholder structs and rendering their XML.
+
+  Placeholders can be addressed two ways. The bundled template's layouts have
+  names (`:title`, `:content`, ...) listed in `placeholders_for/1`. Any
+  template's layouts can be addressed by the `{type, idx}` pair that
+  `Podium.Template.inspect/1` reports for each placeholder.
   """
 
   alias Podium.OPC.Constants
@@ -86,6 +91,30 @@ defmodule Podium.Placeholder do
   end
 
   @doc """
+  Normalises a placeholder reference to `{type, idx}` with the OOXML attribute
+  defaults filled in: a missing type is `"obj"` and a missing idx is `0`.
+
+  Accepts a `{type, idx}` tuple, a `%Podium.Placeholder{}`, or any map with
+  `:type` and `:idx` keys, such as a definition from `placeholders_for/1`.
+  """
+  def normalize_ref({type, idx}), do: {normalize_type(type), normalize_idx(idx)}
+  def normalize_ref(%{type: type, idx: idx}), do: {normalize_type(type), normalize_idx(idx)}
+
+  defp normalize_type(nil), do: "obj"
+  defp normalize_type(type) when is_binary(type), do: type
+
+  defp normalize_idx(nil), do: 0
+  defp normalize_idx(idx) when is_integer(idx), do: idx
+
+  @doc """
+  Creates a text placeholder shape addressed by the layout placeholder's own
+  `{type, idx}`, as reported by `Podium.Template.inspect/1`.
+  """
+  def new({type, idx}, text) when is_binary(type) and is_integer(idx) do
+    %__MODULE__{type: type, idx: idx, kind: :text, paragraphs: Text.normalize(text)}
+  end
+
+  @doc """
   Creates a text placeholder shape for the given placeholder name and text.
   """
   @spec new(atom(), atom(), Podium.rich_text()) :: t()
@@ -106,6 +135,18 @@ defmodule Podium.Placeholder do
         paragraphs = Text.normalize(text)
         %__MODULE__{type: type, idx: idx, kind: :text, paragraphs: paragraphs}
     end
+  end
+
+  @doc """
+  Creates a picture placeholder struct addressed by the layout placeholder's own
+  `{type, idx}`.
+
+  The type is the layout placeholder's, not `"pic"`: PowerPoint leaves a
+  content placeholder's `p:ph` alone when a picture is inserted into it, so a
+  picture in a content placeholder is `{"obj", idx}`.
+  """
+  def new_picture({type, idx}) when is_binary(type) and is_integer(idx) do
+    %__MODULE__{type: type, idx: idx, kind: :picture}
   end
 
   @doc """
@@ -131,27 +172,25 @@ defmodule Podium.Placeholder do
   end
 
   @doc """
-  Creates a footer placeholder.
+  Creates a footer placeholder at the idx the layout uses for its footer.
   """
-  @spec new_footer(String.t()) :: t()
-  def new_footer(text) do
-    %__MODULE__{type: "ftr", idx: 11, kind: :footer, field_text: text}
+  def new_footer(text, idx) when is_integer(idx) do
+    %__MODULE__{type: "ftr", idx: idx, kind: :footer, field_text: text}
   end
 
   @doc """
-  Creates a date placeholder.
+  Creates a date placeholder at the idx the layout uses for its date.
   """
-  @spec new_date(String.t()) :: t()
-  def new_date(text) do
-    %__MODULE__{type: "dt", idx: 10, kind: :date, field_text: text}
+  def new_date(text, idx) when is_integer(idx) do
+    %__MODULE__{type: "dt", idx: idx, kind: :date, field_text: text}
   end
 
   @doc """
-  Creates a slide number placeholder.
+  Creates a slide number placeholder at the idx the layout uses for its slide
+  number.
   """
-  @spec new_slide_number() :: t()
-  def new_slide_number do
-    %__MODULE__{type: "sldNum", idx: 12, kind: :slide_number}
+  def new_slide_number(idx) when is_integer(idx) do
+    %__MODULE__{type: "sldNum", idx: idx, kind: :slide_number}
   end
 
   @doc """
@@ -165,15 +204,13 @@ defmodule Podium.Placeholder do
     ns_a = Constants.ns(:a)
     ns_p = Constants.ns(:p)
 
-    type_attr = if ph.type, do: ~s( type="#{ph.type}"), else: ""
-    idx_attr = if ph.idx, do: ~s( idx="#{ph.idx}"), else: ""
     body_xml = Text.paragraphs_xml(ph.paragraphs, hyperlink_rids)
 
     ~s(<p:sp xmlns:a="#{ns_a}" xmlns:p="#{ns_p}">) <>
       ~s(<p:nvSpPr>) <>
       ~s(<p:cNvPr id="0" name=""/>) <>
       ~s(<p:cNvSpPr><a:spLocks noGrp="1"/></p:cNvSpPr>) <>
-      ~s(<p:nvPr><p:ph#{type_attr}#{idx_attr}/></p:nvPr>) <>
+      ~s(<p:nvPr><p:ph#{ph_attrs(ph)}/></p:nvPr>) <>
       ~s(</p:nvSpPr>) <>
       ~s(<p:spPr/>) <>
       ~s(<p:txBody>) <>
@@ -189,13 +226,11 @@ defmodule Podium.Placeholder do
     ns_p = Constants.ns(:p)
     ns_r = Constants.ns(:r)
 
-    idx_attr = if ph.idx, do: ~s( idx="#{ph.idx}"), else: ""
-
     ~s(<p:pic xmlns:a="#{ns_a}" xmlns:p="#{ns_p}" xmlns:r="#{ns_r}">) <>
       ~s(<p:nvPicPr>) <>
       ~s(<p:cNvPr id="0" name=""/>) <>
       ~s(<p:cNvPicPr><a:picLocks noGrp="1"/></p:cNvPicPr>) <>
-      ~s(<p:nvPr><p:ph type="pic"#{idx_attr}/></p:nvPr>) <>
+      ~s(<p:nvPr><p:ph#{ph_attrs(ph)}/></p:nvPr>) <>
       ~s(</p:nvPicPr>) <>
       ~s(<p:blipFill>) <>
       ~s(<a:blip r:embed="#{ph.image_rid}"/>) <>
@@ -213,7 +248,7 @@ defmodule Podium.Placeholder do
       ~s(<p:nvSpPr>) <>
       ~s(<p:cNvPr id="0" name=""/>) <>
       ~s(<p:cNvSpPr><a:spLocks noGrp="1"/></p:cNvSpPr>) <>
-      ~s(<p:nvPr><p:ph type="ftr" idx="11"/></p:nvPr>) <>
+      ~s(<p:nvPr><p:ph#{ph_attrs(ph)}/></p:nvPr>) <>
       ~s(</p:nvSpPr>) <>
       ~s(<p:spPr/>) <>
       ~s(<p:txBody>) <>
@@ -232,7 +267,7 @@ defmodule Podium.Placeholder do
       ~s(<p:nvSpPr>) <>
       ~s(<p:cNvPr id="0" name=""/>) <>
       ~s(<p:cNvSpPr><a:spLocks noGrp="1"/></p:cNvSpPr>) <>
-      ~s(<p:nvPr><p:ph type="dt" idx="10"/></p:nvPr>) <>
+      ~s(<p:nvPr><p:ph#{ph_attrs(ph)}/></p:nvPr>) <>
       ~s(</p:nvSpPr>) <>
       ~s(<p:spPr/>) <>
       ~s(<p:txBody>) <>
@@ -243,7 +278,7 @@ defmodule Podium.Placeholder do
       ~s(</p:sp>)
   end
 
-  def to_xml(%__MODULE__{kind: :slide_number}, _hyperlink_rids) do
+  def to_xml(%__MODULE__{kind: :slide_number} = ph, _hyperlink_rids) do
     ns_a = Constants.ns(:a)
     ns_p = Constants.ns(:p)
 
@@ -253,7 +288,7 @@ defmodule Podium.Placeholder do
       ~s(<p:nvSpPr>) <>
       ~s(<p:cNvPr id="0" name=""/>) <>
       ~s(<p:cNvSpPr><a:spLocks noGrp="1"/></p:cNvSpPr>) <>
-      ~s(<p:nvPr><p:ph type="sldNum" idx="12"/></p:nvPr>) <>
+      ~s(<p:nvPr><p:ph#{ph_attrs(ph)}/></p:nvPr>) <>
       ~s(</p:nvSpPr>) <>
       ~s(<p:spPr/>) <>
       ~s(<p:txBody>) <>
@@ -267,6 +302,16 @@ defmodule Podium.Placeholder do
   # Backward compat: placeholders created without :kind default to :text behavior
   def to_xml(%__MODULE__{kind: nil} = ph, hyperlink_rids) do
     to_xml(%{ph | kind: :text}, hyperlink_rids)
+  end
+
+  # `type` defaults to "obj" and `idx` to 0 in OOXML, so neither is written when
+  # it holds the default. The membership checks are explicit because 0 is truthy
+  # in Elixir.
+  defp ph_attrs(%__MODULE__{} = ph) do
+    type_attr = if ph.type in [nil, "obj"], do: "", else: ~s( type="#{ph.type}")
+    idx_attr = if ph.idx in [nil, 0], do: "", else: ~s( idx="#{ph.idx}")
+
+    type_attr <> idx_attr
   end
 
   defp escape(text) when is_binary(text) do

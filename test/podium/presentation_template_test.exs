@@ -5,6 +5,14 @@ defmodule Podium.PresentationTemplateTest do
 
   @fixture "test/fixtures/skeleton_16x9"
 
+  # Minimal valid PNG (1x1 pixel, RGBA)
+  @png_binary <<0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D, 0x49,
+                0x48, 0x44, 0x52, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x08, 0x06,
+                0x00, 0x00, 0x00, 0x1F, 0x15, 0xC4, 0x89, 0x00, 0x00, 0x00, 0x0A, 0x49, 0x44,
+                0x41, 0x54, 0x78, 0x9C, 0x62, 0x00, 0x00, 0x00, 0x02, 0x00, 0x01, 0xE5, 0x27,
+                0xDE, 0xFC, 0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60,
+                0x82>>
+
   setup_all do
     %{skeleton: zip_dir(@fixture)}
   end
@@ -18,7 +26,7 @@ defmodule Podium.PresentationTemplateTest do
       assert prs.slide_width == 12_192_000
       assert prs.slide_height == 6_858_000
       assert prs.notes_master_created == false
-      assert map_size(prs.placeholder_positions) > 0
+      assert map_size(prs.template_info.layouts) == 11
 
       parts =
         prs
@@ -67,8 +75,13 @@ defmodule Podium.PresentationTemplateTest do
       assert prs.slide_height == 6_858_000
     end
 
-    test "ignores the name-based placeholder tables", %{skeleton: skeleton} do
-      assert Podium.from_template(skeleton).placeholder_positions == %{}
+    test "inspects the template's own layouts", %{skeleton: skeleton} do
+      template = Podium.from_template(skeleton).template_info
+
+      assert Enum.sort(Map.keys(template.layouts)) == [1, 2, 3]
+      assert template.layouts[1].name == "Cover"
+      assert template.layouts[2].name == "Content"
+      assert template.layouts[3].name == "Blank"
     end
 
     test "detects the template's notes master", %{skeleton: skeleton} do
@@ -181,6 +194,153 @@ defmodule Podium.PresentationTemplateTest do
       assert_raise ArgumentError, ~r|ppt/slideLayouts/slideLayout9\.xml|, fn ->
         Podium.add_slide(prs, Podium.Slide.new(9))
       end
+    end
+  end
+
+  describe "add_slide/2 placeholder validation" do
+    test "accepts a placeholder the layout defines", %{skeleton: skeleton} do
+      slide =
+        Podium.Slide.new(2)
+        |> Podium.set_placeholder({"title", 0}, "Category performance")
+        |> Podium.set_placeholder({"obj", 14}, "Volume grew 4.2%")
+
+      prs = skeleton |> Podium.from_template() |> Podium.add_slide(slide)
+
+      assert length(prs.slides) == 1
+    end
+
+    test "raises for an idx the layout does not have", %{skeleton: skeleton} do
+      slide = Podium.set_placeholder(Podium.Slide.new(2), {"obj", 1}, "Nope")
+
+      assert_raise ArgumentError, ~r/layout 2 has no placeholder with idx 1/, fn ->
+        Podium.add_slide(Podium.from_template(skeleton), slide)
+      end
+    end
+
+    test "raises when the idx exists but the type differs", %{skeleton: skeleton} do
+      slide = Podium.set_picture_placeholder(Podium.Slide.new(2), {"pic", 14}, @png_binary)
+
+      assert_raise ArgumentError, ~r/idx 14 has type "obj", not "pic"/, fn ->
+        Podium.add_slide(Podium.from_template(skeleton), slide)
+      end
+    end
+
+    test "accepts a picture dropped into a content placeholder", %{skeleton: skeleton} do
+      slide = Podium.set_picture_placeholder(Podium.Slide.new(2), {"obj", 14}, @png_binary)
+
+      prs = skeleton |> Podium.from_template() |> Podium.add_slide(slide)
+
+      assert length(prs.slides) == 1
+    end
+
+    test "a bundled name table placeholder still validates on the bundled template" do
+      slide =
+        Podium.Slide.new(:title_content)
+        |> Podium.set_placeholder(:title, "Title")
+        |> Podium.set_placeholder(:content, "Content")
+
+      assert length(Podium.add_slide(Podium.new(), slide).slides) == 1
+    end
+  end
+
+  describe "{type, idx} charts and tables on a custom template" do
+    test "positions a chart at the layout's own box, unscaled", %{skeleton: skeleton} do
+      prs = Podium.from_template(skeleton)
+
+      data =
+        Podium.Chart.ChartData.new()
+        |> Podium.Chart.ChartData.add_categories(["a", "b"])
+        |> Podium.Chart.ChartData.add_series("S1", [1, 2])
+
+      slide =
+        Podium.set_chart_placeholder(
+          prs,
+          Podium.Slide.new(2),
+          {"obj", 14},
+          :column_clustered,
+          data
+        )
+
+      {:ok, binary} = prs |> Podium.add_slide(slide) |> Podium.save_to_memory()
+      slide_xml = to_string(unzip_pptx_binary(binary)["ppt/slides/slide1.xml"])
+
+      assert slide_xml =~ ~s(<a:off x="685800" y="1825625"/>)
+      assert slide_xml =~ ~s(<a:ext cx="10820400" cy="4351338"/>)
+    end
+
+    test "positions a table at the layout's own box", %{skeleton: skeleton} do
+      prs = Podium.from_template(skeleton)
+
+      slide =
+        Podium.set_table_placeholder(prs, Podium.Slide.new(2), {"obj", 14}, [["A", "B"]])
+
+      {:ok, binary} = prs |> Podium.add_slide(slide) |> Podium.save_to_memory()
+      slide_xml = to_string(unzip_pptx_binary(binary)["ppt/slides/slide1.xml"])
+
+      assert slide_xml =~ ~s(<a:off x="685800" y="1825625"/>)
+    end
+
+    test "raises for a placeholder the layout does not have", %{skeleton: skeleton} do
+      prs = Podium.from_template(skeleton)
+
+      assert_raise ArgumentError, ~r/layout 2 has no placeholder \{"obj", 3\}/, fn ->
+        Podium.set_table_placeholder(prs, Podium.Slide.new(2), {"obj", 3}, [["A"]])
+      end
+    end
+
+    test "raises for a placeholder that is chrome rather than content",
+         %{skeleton: skeleton} do
+      prs = Podium.from_template(skeleton)
+
+      assert_raise ArgumentError, ~r/only content placeholders accept charts\/tables/, fn ->
+        Podium.set_table_placeholder(prs, Podium.Slide.new(2), {"title", 0}, [["A"]])
+      end
+    end
+  end
+
+  describe "footer chrome follows the layout" do
+    test "uses the layout's own idx values", %{skeleton: skeleton} do
+      {:ok, binary} =
+        skeleton
+        |> Podium.from_template()
+        |> Podium.set_footer(footer: "Confidential", date: "Jan 2026", slide_number: true)
+        |> Podium.add_slide(Podium.Slide.new(2))
+        |> Podium.save_to_memory()
+
+      slide_xml = to_string(unzip_pptx_binary(binary)["ppt/slides/slide1.xml"])
+
+      assert slide_xml =~ ~s(<p:ph type="ftr" idx="21"/>)
+      assert slide_xml =~ ~s(<p:ph type="dt" idx="20"/>)
+      assert slide_xml =~ ~s(<p:ph type="sldNum" idx="22"/>)
+    end
+
+    test "emits nothing for chrome the layout does not define", %{skeleton: skeleton} do
+      # Strip every placeholder shape from the Blank layout.
+      parts = unzip_pptx_binary(skeleton)
+
+      stripped =
+        parts["ppt/slideLayouts/slideLayout3.xml"]
+        |> to_string()
+        |> String.replace(~r|<p:sp>.*</p:sp>|s, "")
+
+      binary =
+        parts
+        |> Map.put("ppt/slideLayouts/slideLayout3.xml", stripped)
+        |> Enum.to_list()
+        |> zip_parts()
+
+      {:ok, output} =
+        binary
+        |> Podium.from_template()
+        |> Podium.set_footer(footer: "Confidential", slide_number: true)
+        |> Podium.add_slide(Podium.Slide.new(3))
+        |> Podium.save_to_memory()
+
+      slide_xml = to_string(unzip_pptx_binary(output)["ppt/slides/slide1.xml"])
+
+      refute slide_xml =~ ~s(type="ftr")
+      refute slide_xml =~ ~s(type="sldNum")
+      refute slide_xml =~ "Confidential"
     end
   end
 

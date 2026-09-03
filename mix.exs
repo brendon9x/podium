@@ -115,7 +115,7 @@ defmodule Podium.MixProject do
 
   defp groups_for_modules do
     [
-      "Presentation API": [Podium, Podium.Presentation, Podium.Slide],
+      "Presentation API": [Podium, Podium.Presentation, Podium.Slide, Podium.Template],
       "Shapes and Drawing": [
         Podium.Shape,
         Podium.AutoShapeType,
@@ -141,7 +141,6 @@ defmodule Podium.MixProject do
         Podium.Units
       ],
       Internals: [
-        Podium.TemplatePlaceholders,
         Podium.Chart.XmlWriter,
         Podium.Chart.XlsxWriter,
         Podium.OPC.Package,

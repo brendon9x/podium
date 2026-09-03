@@ -253,15 +253,23 @@ defmodule Podium.Slide do
   @doc """
   Sets a picture placeholder on the slide. Stores the placeholder, binary,
   and extension for later index assignment during serialization.
+
+  The placeholder is addressed either by a bundled-template name or by the
+  layout placeholder's own `{type, idx}` pair.
   """
-  @spec set_picture_placeholder(t(), atom(), binary()) :: t()
   def set_picture_placeholder(%__MODULE__{} = slide, name, binary)
       when is_atom(name) and is_binary(binary) do
     layout_atom = layout_atom(slide.layout_index)
-    ph = Podium.Placeholder.new_picture(layout_atom, name)
-    extension = detect_fill_extension(binary)
+    put_picture_placeholder(slide, Podium.Placeholder.new_picture(layout_atom, name), binary)
+  end
 
-    picture_entry = {ph, binary, extension}
+  def set_picture_placeholder(%__MODULE__{} = slide, {type, idx}, binary)
+      when is_binary(type) and is_integer(idx) and is_binary(binary) do
+    put_picture_placeholder(slide, Podium.Placeholder.new_picture({type, idx}), binary)
+  end
+
+  defp put_picture_placeholder(slide, ph, binary) do
+    picture_entry = {ph, binary, detect_fill_extension(binary)}
     %{slide | picture_placeholders: slide.picture_placeholders ++ [picture_entry]}
   end
 
@@ -451,6 +459,9 @@ defmodule Podium.Slide do
   def layout_atom(11), do: :vertical_title_text
 
   def layout_atom(n) when is_integer(n) do
-    raise ArgumentError, "unknown layout index #{n}; expected 1..11"
+    raise ArgumentError,
+          "unknown layout index #{n}; expected 1..11. Placeholder names belong to " <>
+            "the bundled template; on a template of your own, address placeholders " <>
+            "by the {type, idx} pair that Podium.Template.inspect/1 reports"
   end
 end
