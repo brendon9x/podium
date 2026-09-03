@@ -33,6 +33,60 @@ prs = Podium.new(slide_width: {10, :inches}, slide_height: {7.5, :inches})
 prs = Podium.new(slide_width: {14, :inches}, slide_height: {8, :inches})
 ```
 
+## Building on Your Own Template
+
+`Podium.from_template/2` starts from a template package of your own instead of
+the bundled one, so the deck comes out in your brand's masters, layouts, theme
+and fonts. Pass a path or the bytes of a `.pptx` or `.potx`.
+
+```elixir
+prs =
+  Podium.from_template("priv/brand/skeleton.pptx", title: "Q3 review")
+  |> Podium.add_slide(slide)
+
+Podium.save(prs, "q3.pptx")
+```
+
+### What the template needs
+
+A package saved by PowerPoint, Keynote or Google Slides already qualifies. In
+detail:
+
+- `ppt/presentation.xml`, `ppt/_rels/presentation.xml.rels` and
+  `[Content_Types].xml` must be present.
+- The template must contain **no slides**. Masters, layouts, themes, media and a
+  notes master are what a template is for. An existing slide would collide with
+  the ones Podium writes, so Podium raises rather than deleting your content.
+- To set core properties, the template's `_rels/.rels` must already relate to
+  `docProps/core.xml`, which any PowerPoint-saved package does.
+
+Everything else the template declares survives: masters, layouts, themes, notes
+master, embedded media, the default text style and the notes page size.
+
+### Slide size and scaling
+
+The slide size comes from the template's own `p:sldSz`, so `:slide_width` and
+`:slide_height` are ignored. Nothing is scaled: the layout and master
+coordinates your designer set are written through untouched. This is different
+from `Podium.new/1`, which scales the bundled 4:3 template's coordinates
+horizontally to whatever slide width you ask for.
+
+### Layouts and placeholders
+
+Refer to layouts by their 1-based index in the template's
+`ppt/slideLayouts/` directory:
+
+```elixir
+slide = Podium.Slide.new(2)
+```
+
+`Podium.add_slide/2` raises if the template has no such layout.
+
+`Podium.set_chart_placeholder/6` and `Podium.set_table_placeholder/5` address
+the bundled template's placeholders by name (`:content`, `:left_content`, and so
+on) and raise for a custom template. Position charts and tables explicitly with
+`:x`, `:y`, `:width` and `:height` instead.
+
 ## Slide Dimensions and Units
 
 Podium uses English Metric Units (EMU) internally. You can pass dimensions as raw

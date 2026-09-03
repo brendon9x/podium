@@ -7,33 +7,50 @@ defmodule Podium.OPC.Package do
   """
 
   @doc """
-  Reads a .pptx file and returns a map of %{path => binary}.
+  Reads a .pptx file from disk and returns a map of %{path => binary}.
   """
   @spec read(String.t()) :: {:ok, %{String.t() => binary()}} | {:error, term()}
   def read(path) do
-    path = to_charlist(path)
+    path |> to_charlist() |> unzip()
+  end
 
-    case :zip.unzip(path, [:memory]) do
+  @doc """
+  Reads a .pptx from an in-memory ZIP binary and returns a map of %{path => binary}.
+  """
+  def read_binary(binary) when is_binary(binary), do: unzip(binary)
+
+  @doc """
+  Reads a .pptx from either a filesystem path or a ZIP binary.
+
+  A binary starting with the ZIP local file header signature (`PK\\x03\\x04`) is
+  treated as pptx bytes; anything else is treated as a path.
+  """
+  def read_source(<<"PK", 3, 4, _::binary>> = binary), do: read_binary(binary)
+  def read_source(path) when is_binary(path), do: read(path)
+
+  @doc """
+  Reads the default.pptx template bundled with the library.
+  """
+  @spec read_default_template() :: {:ok, %{String.t() => binary()}} | {:error, term()}
+  def read_default_template do
+    template_path = Application.app_dir(:podium, "priv/templates/default.pptx")
+    read(template_path)
+  end
+
+  defp unzip(source) do
+    case :zip.unzip(source, [:memory]) do
       {:ok, entries} ->
         map =
-          Map.new(entries, fn {name, binary} ->
-            {to_string(name), binary}
-          end)
+          entries
+          |> Enum.map(fn {name, binary} -> {to_string(name), binary} end)
+          |> Enum.reject(fn {name, _binary} -> String.ends_with?(name, "/") end)
+          |> Map.new()
 
         {:ok, map}
 
       {:error, reason} ->
         {:error, reason}
     end
-  end
-
-  @doc """
-  Reads the default.pptx template bundled with the library.
-  """
-  @spec read_template() :: {:ok, %{String.t() => binary()}} | {:error, term()}
-  def read_template do
-    template_path = Application.app_dir(:podium, "priv/templates/default.pptx")
-    read(template_path)
   end
 
   @doc """

@@ -8,6 +8,12 @@
 prs = Podium.new()
 ```
 
+### Create from your own template
+
+```elixir
+prs = Podium.from_template("brand.pptx")
+```
+
 ### Custom slide dimensions
 
 ```elixir

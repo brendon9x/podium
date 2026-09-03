@@ -22,6 +22,104 @@ defmodule Podium.OPC.RelationshipsTest do
       assert length(rels.rels) == 2
       assert rels.next_id == 4
     end
+
+    test "ignores ids that are not of the form rIdN" do
+      rels =
+        Relationships.from_list([
+          {"docRId", Constants.rt(:theme), "theme/theme1.xml"},
+          {"rId2", Constants.rt(:slide_master), "slideMasters/slideMaster1.xml"}
+        ])
+
+      assert length(rels.rels) == 2
+      assert rels.next_id == 3
+    end
+  end
+
+  describe "parse/1" do
+    test "reads internal and external relationships" do
+      xml = """
+      <?xml version="1.0"?>
+      <Relationships xmlns="#{Constants.ns(:pr)}">
+      <Relationship Id="rId1" Type="#{Constants.rt(:slide_master)}" Target="slideMasters/slideMaster1.xml"/>
+      <Relationship Id="rId2" Type="#{Constants.rt(:hyperlink)}" Target="https://example.com/" TargetMode="External"/>
+      </Relationships>
+      """
+
+      rels = Relationships.parse(xml)
+
+      assert rels.rels == [
+               {"rId1", Constants.rt(:slide_master), "slideMasters/slideMaster1.xml"},
+               {"rId2", Constants.rt(:hyperlink), "https://example.com/", true}
+             ]
+    end
+
+    test "does not depend on attribute order" do
+      xml =
+        ~s(<Relationships><Relationship Target="theme/theme1.xml" Type="#{Constants.rt(:theme)}" Id="rId9"/></Relationships>)
+
+      assert Relationships.parse(xml).rels == [
+               {"rId9", Constants.rt(:theme), "theme/theme1.xml"}
+             ]
+    end
+
+    test "sets next_id past the highest rIdN even when ids are non-contiguous" do
+      xml = """
+      <Relationships>
+      <Relationship Id="rId1" Type="#{Constants.rt(:slide_master)}" Target="a.xml"/>
+      <Relationship Id="rId7" Type="#{Constants.rt(:theme)}" Target="b.xml"/>
+      <Relationship Id="rId5" Type="#{Constants.rt(:view_props)}" Target="c.xml"/>
+      </Relationships>
+      """
+
+      assert Relationships.parse(xml).next_id == 8
+    end
+
+    test "tolerates a foreign id" do
+      xml = """
+      <Relationships>
+      <Relationship Id="R7f3" Type="#{Constants.rt(:theme)}" Target="a.xml"/>
+      <Relationship Id="rId2" Type="#{Constants.rt(:view_props)}" Target="b.xml"/>
+      </Relationships>
+      """
+
+      rels = Relationships.parse(xml)
+
+      assert rels.next_id == 3
+      assert {rels, "rId3"} = Relationships.add(rels, Constants.rt(:slide), "slides/slide1.xml")
+      assert length(rels.rels) == 3
+    end
+
+    test "round-trips through to_xml/1" do
+      xml = """
+      <Relationships>
+      <Relationship Id="rId1" Type="#{Constants.rt(:slide_master)}" Target="a.xml"/>
+      <Relationship Id="rId2" Type="#{Constants.rt(:hyperlink)}" Target="https://example.com/" TargetMode="External"/>
+      </Relationships>
+      """
+
+      rels = Relationships.parse(xml)
+
+      assert rels |> Relationships.to_xml() |> Relationships.parse() == rels
+    end
+  end
+
+  describe "find_by_type/2" do
+    test "returns the rId and target of the first matching relationship" do
+      rels =
+        Relationships.from_list([
+          {"rId1", Constants.rt(:slide_master), "slideMasters/slideMaster1.xml"},
+          {"rId4", Constants.rt(:notes_master), "notesMasters/notesMaster1.xml"}
+        ])
+
+      assert Relationships.find_by_type(rels, Constants.rt(:notes_master)) ==
+               {"rId4", "notesMasters/notesMaster1.xml"}
+    end
+
+    test "returns nil when no relationship has the type" do
+      rels = Relationships.from_list([{"rId1", Constants.rt(:theme), "theme/theme1.xml"}])
+
+      assert Relationships.find_by_type(rels, Constants.rt(:notes_master)) == nil
+    end
   end
 
   describe "add/3" do

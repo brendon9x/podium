@@ -22,17 +22,36 @@ defmodule Podium.Presentation do
     Video
   }
 
-  alias Podium.OPC.{Constants, ContentTypes, Package, Relationships}
+  alias Podium.OPC.{Constants, ContentTypes, Package, PresentationXml, Relationships}
 
   @default_slide_width 12_192_000
   @default_slide_height 6_858_000
-  @template_width 9_144_000
+  @default_notes_master_partname "ppt/notesMasters/notesMaster1.xml"
+
+  @core_prop_keys [
+    :title,
+    :author,
+    :subject,
+    :keywords,
+    :category,
+    :comments,
+    :last_modified_by,
+    :created,
+    :modified,
+    :last_printed,
+    :revision,
+    :content_status,
+    :language,
+    :version
+  ]
 
   defstruct [
     :template_parts,
     :content_types,
     slides: [],
     pres_rels: nil,
+    template: :bundled,
+    template_width: @default_slide_width,
     slide_width: @default_slide_width,
     slide_height: @default_slide_height,
     core_properties: nil,
@@ -40,6 +59,7 @@ defmodule Podium.Presentation do
     placeholder_positions: %{},
     notes_master_created: false,
     notes_master_rid: nil,
+    notes_master_partname: @default_notes_master_partname,
     notes_count: 0
   ]
 
@@ -48,6 +68,8 @@ defmodule Podium.Presentation do
           content_types: Podium.OPC.ContentTypes.t() | nil,
           slides: [Podium.Slide.t()],
           pres_rels: Podium.OPC.Relationships.t() | nil,
+          template: :bundled | :custom,
+          template_width: non_neg_integer(),
           slide_width: non_neg_integer(),
           slide_height: non_neg_integer(),
           core_properties: Podium.CoreProperties.t() | nil,
@@ -55,6 +77,7 @@ defmodule Podium.Presentation do
           placeholder_positions: map(),
           notes_master_created: boolean(),
           notes_master_rid: String.t() | nil,
+          notes_master_partname: String.t(),
           notes_count: non_neg_integer()
         }
 
@@ -63,59 +86,122 @@ defmodule Podium.Presentation do
   """
   @spec new(keyword()) :: t()
   def new(opts \\ []) do
-    {:ok, parts} = Package.read_template()
+    {:ok, parts} = Package.read_default_template()
+
+    prs = from_parts(parts, :bundled, opts)
+
+    %{
+      prs
+      | slide_width: Units.to_emu(Keyword.get(opts, :slide_width, @default_slide_width)),
+        slide_height: Units.to_emu(Keyword.get(opts, :slide_height, @default_slide_height)),
+        placeholder_positions: TemplatePlaceholders.resolve_positions(parts)
+    }
+  end
+
+  @doc """
+  Creates a new presentation from an arbitrary template package.
+
+  `source` is either a path to a `.pptx`/`.potx` file or its bytes. The slide
+  size is taken from the template and coordinates are never scaled. The template
+  must contain no slides.
+  """
+  def from_template(source, opts \\ []) when is_binary(source) do
+    parts =
+      case Package.read_source(source) do
+        {:ok, parts} ->
+          parts
+
+        {:error, reason} ->
+          raise ArgumentError, "could not read template package: #{inspect(reason)}"
+      end
+
+    validate_template!(parts)
+    from_parts(parts, :custom, opts)
+  end
+
+  defp validate_template!(parts) do
+    for required <- [
+          "ppt/presentation.xml",
+          "[Content_Types].xml",
+          "ppt/_rels/presentation.xml.rels"
+        ],
+        not Map.has_key?(parts, required) do
+      raise ArgumentError, "template package is missing #{required}"
+    end
+
+    slide_parts = Enum.filter(Map.keys(parts), &String.starts_with?(&1, "ppt/slides/"))
+
+    if slide_parts != [] do
+      raise ArgumentError,
+            "template must contain no slides, found: #{Enum.sort(slide_parts) |> Enum.join(", ")}"
+    end
+
+    rels = Relationships.parse(to_string(Map.fetch!(parts, "ppt/_rels/presentation.xml.rels")))
+
+    if Relationships.find_by_type(rels, Constants.rt(:slide)) do
+      raise ArgumentError,
+            "template must contain no slides, found a slide relationship in " <>
+              "ppt/_rels/presentation.xml.rels"
+    end
+
+    unless Relationships.find_by_type(rels, Constants.rt(:slide_master)) do
+      raise ArgumentError, "template has no slide master; slides have no layouts to sit on"
+    end
+
+    :ok
+  end
+
+  defp from_parts(parts, template, opts) do
+    pres_xml = to_string(Map.fetch!(parts, "ppt/presentation.xml"))
+    content_types = ContentTypes.parse(to_string(Map.fetch!(parts, "[Content_Types].xml")))
 
     pres_rels =
-      Relationships.from_list([
-        {"rId1", Constants.rt(:slide_master), "slideMasters/slideMaster1.xml"},
-        {"rId2", Constants.rt(:printer_settings), "printerSettings/printerSettings1.bin"},
-        {"rId3", Constants.rt(:pres_props), "presProps.xml"},
-        {"rId4", Constants.rt(:view_props), "viewProps.xml"},
-        {"rId5", Constants.rt(:theme), "theme/theme1.xml"},
-        {"rId6", Constants.rt(:table_styles), "tableStyles.xml"}
-      ])
+      Relationships.parse(to_string(Map.fetch!(parts, "ppt/_rels/presentation.xml.rels")))
 
-    slide_width = Units.to_emu(Keyword.get(opts, :slide_width, @default_slide_width))
-    slide_height = Units.to_emu(Keyword.get(opts, :slide_height, @default_slide_height))
+    {template_width, template_height} =
+      PresentationXml.slide_size(pres_xml) || {@default_slide_width, @default_slide_height}
 
-    core_prop_keys = [
-      :title,
-      :author,
-      :subject,
-      :keywords,
-      :category,
-      :comments,
-      :last_modified_by,
-      :created,
-      :modified,
-      :last_printed,
-      :revision,
-      :content_status,
-      :language,
-      :version
-    ]
+    core_opts = Keyword.take(opts, @core_prop_keys)
+    core_properties = if core_opts == [], do: nil, else: CoreProperties.new(core_opts)
 
-    core_opts = Keyword.take(opts, core_prop_keys)
-
-    core_properties =
-      if core_opts == [], do: nil, else: CoreProperties.new(core_opts)
+    {notes_master_created, notes_master_rid, notes_master_partname} =
+      case Relationships.find_by_type(pres_rels, Constants.rt(:notes_master)) do
+        {rid, target} -> {true, rid, normalise_pres_target(target)}
+        nil -> {false, nil, @default_notes_master_partname}
+      end
 
     %__MODULE__{
       template_parts: parts,
-      content_types: ContentTypes.from_template(),
+      content_types: content_types,
       pres_rels: pres_rels,
-      slide_width: slide_width,
-      slide_height: slide_height,
+      template: template,
+      template_width: template_width,
+      slide_width: template_width,
+      slide_height: template_height,
       core_properties: core_properties,
-      placeholder_positions: TemplatePlaceholders.resolve_positions(parts)
+      notes_master_created: notes_master_created,
+      notes_master_rid: notes_master_rid,
+      notes_master_partname: notes_master_partname
     }
   end
+
+  # A presentation relationship target is relative to `ppt/`, or absolute from
+  # the package root.
+  defp normalise_pres_target("/" <> target), do: target
+  defp normalise_pres_target(target), do: "ppt/" <> target
 
   @doc """
   Adds a slide to the presentation. Returns the updated presentation.
   """
   @spec add_slide(t(), Podium.Slide.t()) :: t()
   def add_slide(%__MODULE__{} = prs, %Slide{} = slide) do
+    layout_partname = "ppt/slideLayouts/slideLayout#{slide.layout_index}.xml"
+
+    unless Map.has_key?(prs.template_parts, layout_partname) do
+      raise ArgumentError,
+            "template has no #{layout_partname} for layout #{inspect(slide.layout_index)}"
+    end
+
     %{prs | slides: prs.slides ++ [slide]}
   end
 
@@ -152,11 +238,12 @@ defmodule Podium.Presentation do
         opts
       )
       when is_atom(name) do
+    validate_bundled_template!(prs, "set_chart_placeholder/6")
     layout_index = slide.layout_index
     layout = Slide.layout_atom(layout_index)
     validate_content_placeholder!(layout, name)
     pos = lookup_position!(prs, layout_index, layout, name)
-    scaled = scale_position(pos, prs.slide_width)
+    scaled = scale_position(prs, pos)
 
     chart_opts =
       opts
@@ -176,11 +263,12 @@ defmodule Podium.Presentation do
           Podium.Slide.t()
   def set_table_placeholder(%__MODULE__{} = prs, %Slide{} = slide, name, rows, opts \\ [])
       when is_atom(name) do
+    validate_bundled_template!(prs, "set_table_placeholder/5")
     layout_index = slide.layout_index
     layout = Slide.layout_atom(layout_index)
     validate_content_placeholder!(layout, name)
     pos = lookup_position!(prs, layout_index, layout, name)
-    scaled = scale_position(pos, prs.slide_width)
+    scaled = scale_position(prs, pos)
 
     table_opts =
       opts
@@ -188,6 +276,15 @@ defmodule Podium.Presentation do
       |> Keyword.merge(x: scaled.x, y: scaled.y, width: scaled.cx, height: scaled.cy)
 
     Slide.add_table(slide, rows, table_opts)
+  end
+
+  defp validate_bundled_template!(%__MODULE__{template: :bundled}, _fun), do: :ok
+
+  defp validate_bundled_template!(%__MODULE__{template: :custom}, fun) do
+    raise ArgumentError,
+          "#{fun} addresses placeholders by the bundled template's names and is not " <>
+            "available for a presentation created with Podium.from_template/2; " <>
+            "position charts and tables explicitly instead"
   end
 
   defp validate_content_placeholder!(layout, name) do
@@ -219,13 +316,13 @@ defmodule Podium.Presentation do
     end
   end
 
-  defp scale_position(%{x: x, y: y, cx: cx, cy: cy}, @template_width) do
-    %{x: x, y: y, cx: cx, cy: cy}
-  end
-
-  defp scale_position(%{x: x, y: y, cx: cx, cy: cy}, slide_width) do
-    scale = slide_width / @template_width
-    %{x: round(x * scale), y: y, cx: round(cx * scale), cy: cy}
+  defp scale_position(%__MODULE__{} = prs, %{x: x, y: y, cx: cx, cy: cy}) do
+    if prs.slide_width == prs.template_width do
+      %{x: x, y: y, cx: cx, cy: cy}
+    else
+      scale = prs.slide_width / prs.template_width
+      %{x: round(x * scale), y: y, cx: round(cx * scale), cy: cy}
+    end
   end
 
   @doc """
@@ -284,12 +381,11 @@ defmodule Podium.Presentation do
   defp next_theme_index(parts) do
     parts
     |> Map.keys()
-    |> Enum.filter(&String.starts_with?(&1, "ppt/theme/theme"))
-    |> Enum.map(fn path ->
-      path
-      |> String.replace_prefix("ppt/theme/theme", "")
-      |> String.replace_suffix(".xml", "")
-      |> String.to_integer()
+    |> Enum.flat_map(fn path ->
+      case Regex.run(~r{^ppt/theme/theme(\d+)\.xml$}, path) do
+        [_, digits] -> [String.to_integer(digits)]
+        nil -> []
+      end
     end)
     |> Enum.max(fn -> 0 end)
     |> Kernel.+(1)
@@ -481,7 +577,7 @@ defmodule Podium.Presentation do
     # Resolve all indices at serialization time
     prs = resolve_indices(prs)
 
-    parts = scale_layout_coordinates(prs.template_parts, prs.slide_width)
+    parts = scale_layout_coordinates(prs.template_parts, prs.slide_width, prs.template_width)
 
     # Build ref_to_index map for slide jump resolution
     ref_to_index = Map.new(prs.slides, &{&1.ref, &1.index})
@@ -492,25 +588,37 @@ defmodule Podium.Presentation do
         build_slide_parts(slide, acc, prs_acc, ref_to_index)
       end)
 
-    # Update presentation.xml to include slide references
-    parts = Map.put(parts, "ppt/presentation.xml", build_presentation_xml(prs))
+    # Edit the template's presentation.xml in place
+    parts = Map.put(parts, "ppt/presentation.xml", build_presentation_xml(prs, parts))
 
     # Update presentation rels
     parts =
       Map.put(parts, "ppt/_rels/presentation.xml.rels", Relationships.to_xml(prs.pres_rels))
 
-    # Update content types
-    parts = Map.put(parts, "[Content_Types].xml", ContentTypes.to_xml(prs.content_types))
+    # Podium always writes a presentation, never a template (.potx)
+    content_types =
+      ContentTypes.add_override(
+        prs.content_types,
+        "/ppt/presentation.xml",
+        Constants.ct(:presentation)
+      )
 
-    # Replace core properties if set
-    parts =
+    # Replace core properties if set. The template's own `_rels/.rels` is
+    # expected to already carry the core-properties relationship, which any
+    # package saved by PowerPoint does.
+    {parts, content_types} =
       if prs.core_properties do
-        Map.put(parts, "docProps/core.xml", CoreProperties.to_xml(prs.core_properties))
+        {Map.put(parts, "docProps/core.xml", CoreProperties.to_xml(prs.core_properties)),
+         ContentTypes.add_override(
+           content_types,
+           "/docProps/core.xml",
+           Constants.ct(:core_properties)
+         )}
       else
-        parts
+        {parts, content_types}
       end
 
-    parts
+    Map.put(parts, "[Content_Types].xml", ContentTypes.to_xml(content_types))
   end
 
   defp build_slide_parts(slide, parts, prs, ref_to_index) do
@@ -816,7 +924,7 @@ defmodule Podium.Presentation do
       Relationships.add(
         notes_rels,
         Constants.rt(:notes_master),
-        "../notesMasters/notesMaster1.xml"
+        "../" <> Path.relative_to(prs.notes_master_partname, "ppt")
       )
 
     parts =
@@ -872,70 +980,50 @@ defmodule Podium.Presentation do
     %{slide | placeholders: placeholders}
   end
 
-  defp build_presentation_xml(%__MODULE__{} = prs) do
-    ns_a = Constants.ns(:a)
-    ns_r = Constants.ns(:r)
-    ns_p = Constants.ns(:p)
+  # Edits the template's own presentation.xml rather than regenerating it, so
+  # the template's notes size, default text style and any other settings survive.
+  defp build_presentation_xml(%__MODULE__{} = prs, parts) do
+    slide_id_entries =
+      prs.slides
+      |> Enum.with_index()
+      |> Enum.map(fn {slide, idx} -> {256 + idx, slide.pres_rid} end)
 
-    slide_id_list =
-      if prs.slides == [] do
-        ""
-      else
-        entries =
-          prs.slides
-          |> Enum.with_index()
-          |> Enum.map(fn {slide, idx} ->
-            slide_id = 256 + idx
-            ~s(<p:sldId id="#{slide_id}" r:id="#{slide.pres_rid}"/>)
-          end)
-          |> Enum.join()
-
-        "<p:sldIdLst>#{entries}</p:sldIdLst>"
-      end
-
-    notes_master_id_list =
-      if prs.notes_master_rid do
-        ~s(<p:notesMasterIdLst><p:notesMasterId r:id="#{prs.notes_master_rid}"/></p:notesMasterIdLst>)
-      else
-        ""
-      end
-
-    Podium.XML.Builder.xml_declaration() <>
-      ~s(<p:presentation xmlns:a="#{ns_a}" xmlns:r="#{ns_r}" xmlns:p="#{ns_p}" saveSubsetFonts="1" autoCompressPictures="0">) <>
-      ~s(<p:sldMasterIdLst><p:sldMasterId id="2147483648" r:id="rId1"/></p:sldMasterIdLst>) <>
-      notes_master_id_list <>
-      slide_id_list <>
-      ~s(<p:sldSz cx="#{prs.slide_width}" cy="#{prs.slide_height}"/>) <>
-      ~s(<p:notesSz cx="#{prs.slide_height}" cy="#{prs.slide_width}"/>) <>
-      default_text_style_xml() <>
-      ~s(</p:presentation>)
+    parts
+    |> Map.fetch!("ppt/presentation.xml")
+    |> to_string()
+    |> PresentationXml.strip_section_list()
+    |> PresentationXml.put_slide_id_list(slide_id_entries)
+    |> put_notes_master_id(prs)
+    |> put_slide_size(prs)
   end
 
-  defp default_text_style_xml do
-    levels =
-      Enum.map(1..9, fn level ->
-        mar_l = (level - 1) * 457_200
+  defp put_notes_master_id(xml, %__MODULE__{notes_master_rid: nil}), do: xml
 
-        ~s(<a:lvl#{level}pPr marL="#{mar_l}" algn="l" defTabSz="457200" rtl="0" eaLnBrk="1" latinLnBrk="0" hangingPunct="1">) <>
-          ~s(<a:defRPr sz="1800" kern="1200">) <>
-          ~s(<a:solidFill><a:schemeClr val="tx1"/></a:solidFill>) <>
-          ~s(<a:latin typeface="+mn-lt"/><a:ea typeface="+mn-ea"/><a:cs typeface="+mn-cs"/>) <>
-          ~s(</a:defRPr></a:lvl#{level}pPr>)
-      end)
-      |> Enum.join()
+  defp put_notes_master_id(xml, %__MODULE__{notes_master_rid: rid}) do
+    PresentationXml.put_notes_master_id(xml, rid)
+  end
 
-    ~s(<p:defaultTextStyle><a:defPPr><a:defRPr lang="en-US"/></a:defPPr>#{levels}</p:defaultTextStyle>)
+  defp put_slide_size(xml, %__MODULE__{} = prs) do
+    if PresentationXml.slide_size(xml) == {prs.slide_width, prs.slide_height} do
+      xml
+    else
+      PresentationXml.put_slide_size(xml, prs.slide_width, prs.slide_height)
+    end
   end
 
   # --- Template coordinate scaling ---
   # The bundled template is 4:3 (9,144,000 EMU wide). When the presentation uses
   # a different width (e.g. 16:9 = 12,192,000), we scale horizontal coordinates
   # in the slide layout and slide master XMLs so placeholders fill the slide.
+  # A presentation built from a custom template keeps its own width, so nothing
+  # is scaled.
 
-  defp scale_layout_coordinates(parts, @template_width), do: parts
+  defp scale_layout_coordinates(parts, slide_width, template_width)
+       when slide_width == template_width,
+       do: parts
 
-  defp scale_layout_coordinates(parts, slide_width) do
-    scale = slide_width / @template_width
+  defp scale_layout_coordinates(parts, slide_width, template_width) do
+    scale = slide_width / template_width
 
     Map.new(parts, fn {path, data} ->
       if layout_or_master_xml?(path) do

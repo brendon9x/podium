@@ -143,7 +143,9 @@ defmodule Podium do
   alias Podium.{Presentation, Slide}
 
   @doc """
-  Creates a new presentation.
+  Creates a new presentation from the bundled template.
+
+  Use `from_template/2` to build on a template of your own.
 
   ## Options
     * `:slide_width` - slide width, default 16:9 (12_192_000 EMU). Accepts EMU integer or `{value, unit}`.
@@ -166,6 +168,44 @@ defmodule Podium do
   @spec new(keyword()) :: Podium.Presentation.t()
   def new(opts \\ []) do
     Presentation.new(opts)
+  end
+
+  @doc """
+  Creates a new presentation from your own template package.
+
+  `source` is either a path to a `.pptx`/`.potx` file or the bytes of one. The
+  template keeps everything it declares: masters, layouts, themes, media, notes
+  master, default text style and notes size. Podium adds slides to it.
+
+  ## Template requirements
+
+    * `ppt/presentation.xml`, `ppt/_rels/presentation.xml.rels` and
+      `[Content_Types].xml` must be present, as they are in any package saved by
+      PowerPoint, Keynote or Google Slides.
+    * The template must contain no slides. Slide masters, layouts and a notes
+      master are what a template is for; existing slides would collide with the
+      ones Podium writes.
+    * To set core properties, the template's `_rels/.rels` must already relate
+      to `docProps/core.xml`. A package saved by PowerPoint always does.
+
+  ## Differences from `new/1`
+
+    * Slide size comes from the template, so `:slide_width` and `:slide_height`
+      are ignored. Layout and master coordinates are never scaled.
+    * `set_chart_placeholder/6` and `set_table_placeholder/5` address the
+      bundled template's placeholders by name and raise here. Position charts
+      and tables explicitly instead.
+
+  Core-property options are the same as `new/1`.
+
+  ## Example
+
+      Podium.from_template("priv/brand/skeleton.pptx", title: "Q3 review")
+      |> Podium.add_slide(slide)
+      |> Podium.save("q3.pptx")
+  """
+  def from_template(source, opts \\ []) do
+    Presentation.from_template(source, opts)
   end
 
   @doc """

@@ -15,40 +15,51 @@ defmodule Podium.OPC.ContentTypes do
           overrides: %{String.t() => String.t()}
         }
 
+  @default_re ~r/<Default\s[^>]*\/?>/
+  @override_re ~r/<Override\s[^>]*\/?>/
+
   @doc """
-  Returns the base content types from the default template.
+  Parses a `[Content_Types].xml` string into a `%ContentTypes{}`.
+
+  Attributes are matched individually so their order in the source does not
+  matter. `Extension` values are downcased because OPC extension matching is
+  case-insensitive.
   """
-  @spec from_template() :: t()
-  def from_template do
-    %__MODULE__{
-      defaults: %{
-        "xml" => Constants.ct(:xml),
-        "jpeg" => Constants.ct(:jpeg),
-        "bin" => Constants.ct(:printer_settings),
-        "rels" => Constants.ct(:rels)
-      },
-      overrides: %{
-        "/ppt/presentation.xml" => Constants.ct(:presentation),
-        "/ppt/slideMasters/slideMaster1.xml" => Constants.ct(:slide_master),
-        "/ppt/presProps.xml" => Constants.ct(:pres_props),
-        "/ppt/viewProps.xml" => Constants.ct(:view_props),
-        "/ppt/theme/theme1.xml" => Constants.ct(:theme),
-        "/ppt/tableStyles.xml" => Constants.ct(:table_styles),
-        "/ppt/slideLayouts/slideLayout1.xml" => Constants.ct(:slide_layout),
-        "/ppt/slideLayouts/slideLayout2.xml" => Constants.ct(:slide_layout),
-        "/ppt/slideLayouts/slideLayout3.xml" => Constants.ct(:slide_layout),
-        "/ppt/slideLayouts/slideLayout4.xml" => Constants.ct(:slide_layout),
-        "/ppt/slideLayouts/slideLayout5.xml" => Constants.ct(:slide_layout),
-        "/ppt/slideLayouts/slideLayout6.xml" => Constants.ct(:slide_layout),
-        "/ppt/slideLayouts/slideLayout7.xml" => Constants.ct(:slide_layout),
-        "/ppt/slideLayouts/slideLayout8.xml" => Constants.ct(:slide_layout),
-        "/ppt/slideLayouts/slideLayout9.xml" => Constants.ct(:slide_layout),
-        "/ppt/slideLayouts/slideLayout10.xml" => Constants.ct(:slide_layout),
-        "/ppt/slideLayouts/slideLayout11.xml" => Constants.ct(:slide_layout),
-        "/docProps/core.xml" => Constants.ct(:core_properties),
-        "/docProps/app.xml" => Constants.ct(:extended_properties)
-      }
-    }
+  def parse(xml) when is_binary(xml) do
+    defaults =
+      @default_re
+      |> Regex.scan(xml)
+      |> Enum.flat_map(fn [element] ->
+        with ext when is_binary(ext) <- attribute(element, "Extension"),
+             ct when is_binary(ct) <- attribute(element, "ContentType") do
+          [{String.downcase(ext), ct}]
+        else
+          _ -> []
+        end
+      end)
+      |> Map.new()
+
+    overrides =
+      @override_re
+      |> Regex.scan(xml)
+      |> Enum.flat_map(fn [element] ->
+        with part when is_binary(part) <- attribute(element, "PartName"),
+             ct when is_binary(ct) <- attribute(element, "ContentType") do
+          [{part, ct}]
+        else
+          _ -> []
+        end
+      end)
+      |> Map.new()
+
+    %__MODULE__{defaults: defaults, overrides: overrides}
+  end
+
+  defp attribute(element, name) do
+    case Regex.run(~r/\s#{name}="([^"]*)"/, element) do
+      [_, value] -> value
+      nil -> nil
+    end
   end
 
   @doc """
@@ -61,10 +72,13 @@ defmodule Podium.OPC.ContentTypes do
 
   @doc """
   Adds a default content type for a file extension.
+
+  Extensions are downcased so a template declaring `Extension="PNG"` and a part
+  added as `"png"` do not produce two conflicting `Default` entries.
   """
   @spec add_default(t(), String.t(), String.t()) :: t()
   def add_default(%__MODULE__{} = ct, extension, content_type) do
-    %{ct | defaults: Map.put(ct.defaults, extension, content_type)}
+    %{ct | defaults: Map.put(ct.defaults, String.downcase(extension), content_type)}
   end
 
   @doc """
