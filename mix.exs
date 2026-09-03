@@ -11,6 +11,7 @@ defmodule Podium.MixProject do
       start_permanent: Mix.env() == :prod,
       elixirc_paths: elixirc_paths(Mix.env()),
       deps: deps(),
+      aliases: aliases(),
       docs: docs(),
       package: package(),
       name: "Podium",
@@ -21,6 +22,16 @@ defmodule Podium.MixProject do
 
   defp elixirc_paths(:test), do: ["lib", "test/support"]
   defp elixirc_paths(_), do: ["lib"]
+
+  def cli do
+    [preferred_envs: [precommit: :test]]
+  end
+
+  defp aliases do
+    [
+      precommit: ["format --check-formatted", "compile --warnings-as-errors", "test"]
+    ]
+  end
 
   # Run "mix help compile.app" to learn about applications.
   def application do

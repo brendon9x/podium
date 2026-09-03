@@ -215,7 +215,7 @@ defmodule Podium.Image do
       {pos, 4} ->
         # pHYs chunk data starts 4 bytes after the type
         data_start = pos + 4
-        <<_::binary-size(data_start), ppm_x::32-big, ppm_y::32-big, unit::8, _::binary>> = binary
+        <<_::binary-size(^data_start), ppm_x::32-big, ppm_y::32-big, unit::8, _::binary>> = binary
 
         if unit == 1 do
           {ppm_to_dpi(ppm_x), ppm_to_dpi(ppm_y)}
@@ -231,13 +231,11 @@ defmodule Podium.Image do
   defp ppm_to_dpi(ppm), do: round(ppm / 39.3701)
 
   defp jpeg_dimensions(binary, offset) when offset < byte_size(binary) - 1 do
-    <<_::binary-size(offset), rest::binary>> = binary
+    <<_::binary-size(^offset), rest::binary>> = binary
 
     case rest do
-      <<0xFF, marker, _::binary>> when marker in [0xC0, 0xC1, 0xC2] ->
-        <<_::binary-size(offset), 0xFF, _marker, _len::16, _precision::8, height::16-big,
-          width::16-big, _rest2::binary>> = binary
-
+      <<0xFF, marker, _len::16, _precision::8, height::16-big, width::16-big, _::binary>>
+      when marker in [0xC0, 0xC1, 0xC2] ->
         {width, height}
 
       <<0xFF, _marker, len::16-big, _::binary>> ->
@@ -257,7 +255,7 @@ defmodule Podium.Image do
         data_start = pos + 4
 
         if data_start + 10 <= byte_size(binary) do
-          <<_::binary-size(data_start), _jfif_header::binary-size(5), unit::8, x_density::16-big,
+          <<_::binary-size(^data_start), _jfif_header::binary-size(5), unit::8, x_density::16-big,
             y_density::16-big, _::binary>> = binary
 
           case unit do
