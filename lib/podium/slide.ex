@@ -257,6 +257,7 @@ defmodule Podium.Slide do
   The placeholder is addressed either by a bundled-template name or by the
   layout placeholder's own `{type, idx}` pair.
   """
+  @spec set_picture_placeholder(t(), atom() | {String.t(), non_neg_integer()}, binary()) :: t()
   def set_picture_placeholder(%__MODULE__{} = slide, name, binary)
       when is_atom(name) and is_binary(binary) do
     layout_atom = layout_atom(slide.layout_index)

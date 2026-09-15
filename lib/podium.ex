@@ -185,6 +185,8 @@ defmodule Podium do
     * The template must contain no slides. Slide masters, layouts and a notes
       master are what a template is for; existing slides would collide with the
       ones Podium writes.
+    * The template must relate to at least one slide master, or its layouts
+      have nothing for slides to sit on.
     * To set core properties, the template's `_rels/.rels` must already relate
       to `docProps/core.xml`. A package saved by PowerPoint always does.
 
@@ -192,9 +194,12 @@ defmodule Podium do
 
     * Slide size comes from the template, so `:slide_width` and `:slide_height`
       are ignored. Layout and master coordinates are never scaled.
-    * `set_chart_placeholder/6` and `set_table_placeholder/5` address the
-      bundled template's placeholders by name and raise here. Position charts
-      and tables explicitly instead.
+    * Placeholders are addressed by the `{type, idx}` pair
+      `Podium.Template.inspect/1` reports, not by the bundled template's names.
+      `set_placeholder/3`, `set_picture_placeholder/3`,
+      `set_chart_placeholder/6` and `set_table_placeholder/5` all take a pair;
+      the last two take the layout placeholder's box as the chart's or table's
+      position and size. Passing a name raises.
 
   Core-property options are the same as `new/1`.
 
@@ -204,6 +209,7 @@ defmodule Podium do
       |> Podium.add_slide(slide)
       |> Podium.save("q3.pptx")
   """
+  @spec from_template(binary(), keyword()) :: Podium.Presentation.t()
   def from_template(source, opts \\ []) do
     Presentation.from_template(source, opts)
   end

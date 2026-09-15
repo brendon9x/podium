@@ -7,9 +7,10 @@ Podium's Powerpoint support is feature complete beyond most common use-cases, in
 - **Rich text** — bold, italic, underline, strikethrough, superscript, subscript, color, font, alignment, bullets, paragraph spacing
 - **Charts** — column (clustered/stacked), bar (clustered/stacked), line, line with markers, pie, XY, Radar — all fully editable
 - **Chart formatting** — titles, legends, data labels, axis customization (min/max, gridlines, number format), per-series colors
-- **Images** — PNG and JPEG with automatic format detection, masking, rotations
+- **Images** — PNG, JPEG, BMP, GIF, TIFF, EMF and WMF with automatic format detection, masking, rotations
 - **Tables** — rows and columns with rich text cells, cell merging, styling, full border control, etc
 - **Placeholders** — title, subtitle, and body on standard slide layouts
+- **Templates** — build on your own pptx or potx, inspect its layouts, address placeholders by type and idx
 - **Shape styling** — solid, gradient, pattern fills and lines with configurable width
 - **Slide dimensions** — 16:9 default, fully configurable
 - **Extras** – Speaker's notes, footers, document metadata

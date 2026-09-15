@@ -41,6 +41,25 @@ Feature progress is tracked in `reference/FEATURES.md`. Keep it up to date when 
 - Add tests that cover the same scenarios python-pptx tests for
 - Add or update a demo script in `demos/` to exercise new features
 
+## Releasing
+
+While the library is 0.x, removals, signature changes and new features take a
+minor bump; fixes take a patch bump.
+
+1. Move the CHANGELOG's `Unreleased` section under a version heading with no
+   date, with its sections in the order Added, Changed, Fixed, Removed
+2. In the same commit, set `version` and `docs.source_ref` in `mix.exs` and the
+   dependency constraint in `README.md` and
+   `guides/introduction/installation.md`
+3. Check that `mix precommit`, `mix docs --warnings-as-errors` and
+   `mix hex.build` are clean
+4. Commit as `Bump version to X.Y.Z`
+5. Push `main` and wait for CI to pass
+6. Tag `vX.Y.Z` and push the tag
+
+Pushing the tag runs `.github/workflows/release.yml`, which publishes the
+package and its documentation to Hex using the `HEX_API_KEY` repository secret.
+
 ## What Makes a Good PR
 
 - **Focused** — one feature or fix per PR
@@ -50,4 +69,4 @@ Feature progress is tracked in `reference/FEATURES.md`. Keep it up to date when 
 
 ## Scope
 
-Podium is a create-only library. We don't aim to read or edit existing PowerPoint files. See the "Won't Implement" section of `reference/FEATURES.md` for other things that are explicitly out of scope.
+Podium is a create-only library. It reads a template package to build on, but we don't aim to open or edit existing decks. See the "Won't Implement" section of `reference/FEATURES.md` for other things that are explicitly out of scope.

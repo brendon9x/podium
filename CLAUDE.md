@@ -1,6 +1,6 @@
 # Podium
 
-Elixir library aiming to be a robust PowerPoint (.pptx) generation library for Elixir. We use [python-pptx](https://github.com/scanny/python-pptx) as our reference implementation — the goal is to match its features and test coverage except for niche cases. Also, we're not aiming to have a library that can read and edit Powerpoint.
+Elixir library aiming to be a robust PowerPoint (.pptx) generation library for Elixir. We use [python-pptx](https://github.com/scanny/python-pptx) as our reference implementation — the goal is to match its features and test coverage except for niche cases. Podium reads a template package to build on, but we're not aiming to have a library that can open or edit existing decks.
 
 ## Project Goals
 
@@ -31,5 +31,7 @@ Use it to understand how python-pptx structures its XML output, what edge cases 
 ## Code Style
 
 - Use `mix format` before committing
+- Public functions carry a `@spec`. The library supports Elixir 1.18, where
+  there is no set-theoretic type inference, and HexDocs shows the specs
 - No backwards compatibility shims — just change the code
 - When creating a LiveView component function, add `:attr` annotations

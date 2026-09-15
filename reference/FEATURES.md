@@ -71,7 +71,8 @@ Comprehensive list of Podium's features. Podium uses [python-pptx](https://githu
 |---------|--------|
 | Formats | PNG, JPEG, BMP, GIF, TIFF, EMF, WMF via magic-byte detection |
 | Cropping | Per-side in 1/1000ths of percent |
-| Auto-scale | When size omitted, reads native pixel dimensions + DPI from image headers |
+| Auto-scale | When size omitted, reads native pixel dimensions + DPI from image headers. TIFF, EMF and WMF need an explicit `:width` and `:height` |
+| Natural size | `Podium.Image.dimensions/1` returns the natural size in EMU for PNG, JPEG, BMP and GIF |
 | Aspect ratio | Preserved when only width or height given |
 | Masking | Via `:shape` option (ellipse, diamond, roundRect, star5, etc.) |
 | Dedup | SHA-1 content deduplication |
@@ -115,7 +116,7 @@ Comprehensive list of Podium's features. Podium uses [python-pptx](https://githu
 
 | Feature | Reason |
 |---------|--------|
-| Open existing .pptx | Create-only by design |
+| Open an existing deck to edit | Create-only by design. `Podium.from_template/2` opens a slide-less template to write into, not a deck to modify |
 | Slide master/layout editing | Only needed for read-modify-write |
 | Slide reorder/delete/duplicate | Editing operations, not creation |
 | Group shapes | Primarily useful for read-modify-write |
@@ -124,7 +125,7 @@ Comprehensive list of Podium's features. Podium uses [python-pptx](https://githu
 | Shape adjustments | Massive surface area (180+ shapes × different handles) for minimal value |
 | Picture cell fill | Too niche |
 | Table cell unmerge | Create-only library |
-| Master → layout → slide inheritance | Only needed for read-modify-write; Podium resolves positions from the template at parse time |
+| Master → layout → slide inheritance | Only placeholder position is resolved: `Podium.Template.inspect/1` gives a layout placeholder without its own `xfrm` the box of the master placeholder of the matching type. Text and style inheritance is left to PowerPoint |
 
 ## Notes
 

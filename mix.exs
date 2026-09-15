@@ -146,6 +146,7 @@ defmodule Podium.MixProject do
         Podium.OPC.Package,
         Podium.OPC.Relationships,
         Podium.OPC.ContentTypes,
+        Podium.OPC.PresentationXml,
         Podium.OPC.Constants,
         Podium.XML.Builder
       ]

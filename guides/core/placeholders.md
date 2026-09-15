@@ -244,12 +244,16 @@ slide = Podium.set_chart_placeholder(prs, slide, :right_content,
 
 The placeholder names above belong to the template Podium bundles. A template of
 your own, loaded with `Podium.from_template/2`, has its own layouts with their
-own placeholders. `Podium.Template.inspect/1` reports what is actually in a
-package: its slide size, its masters, and for every layout its name, its type,
-the master it sits on, and each placeholder with the box it resolves to.
+own placeholders. See
+[Building on Your Own Template](presentations-and-slides.md#building-on-your-own-template)
+for what a template has to contain and how slide size is handled.
+
+`Podium.Template.inspect/1` reports what is actually in a package: its slide
+size, its masters, and for every layout its name, its type, the master it sits
+on, and each placeholder with the box it resolves to.
 
 ```elixir
-template = Podium.Template.inspect("priv/skeleton.pptx")
+template = Podium.Template.inspect("priv/brand/skeleton.pptx")
 
 for {index, layout} <- Enum.sort(template.layouts) do
   IO.puts("#{index}: #{layout.name}")
@@ -289,7 +293,14 @@ in place of a bundled-template name. This is the way to fill placeholders on a
 template of your own:
 
 ```elixir
-prs = Podium.from_template("priv/skeleton.pptx")
+alias Podium.Chart.ChartData
+
+chart_data =
+  ChartData.new()
+  |> ChartData.add_categories(["Q1", "Q2", "Q3"])
+  |> ChartData.add_series("Volume", [1500, 4600, 5156])
+
+prs = Podium.from_template("priv/brand/skeleton.pptx")
 
 cover =
   Podium.Slide.new(1)
@@ -356,8 +367,8 @@ function works with:
 |----------|-------------------|
 | `set_placeholder/3` | All text placeholders (`:title`, `:subtitle`, `:content`, `:body`, `:caption`, etc.) |
 | `set_picture_placeholder/3` | Picture placeholders only (`:picture`) |
-| `set_chart_placeholder/6` | Content placeholders only (type: nil) -- `:content`, `:left_content`, `:right_content` |
-| `set_table_placeholder/5` | Content placeholders only (type: nil) -- `:content`, `:left_content`, `:right_content` |
+| `set_chart_placeholder/6` | Content placeholders only -- `:content`, `:left_content`, `:right_content` |
+| `set_table_placeholder/5` | Content placeholders only -- `:content`, `:left_content`, `:right_content` |
 
 Using the wrong function for a placeholder type raises an `ArgumentError` with a
 descriptive message.

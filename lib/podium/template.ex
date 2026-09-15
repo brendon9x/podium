@@ -7,7 +7,7 @@ defmodule Podium.Template do
   its type, the master it sits on, and every placeholder it defines with the
   bounding box that placeholder resolves to.
 
-      template = Podium.Template.inspect("priv/skeleton.pptx")
+      template = Podium.Template.inspect("priv/brand/skeleton.pptx")
 
       for {index, layout} <- Enum.sort(template.layouts) do
         IO.puts("\#{index}: \#{layout.name}")
@@ -35,8 +35,8 @@ defmodule Podium.Template do
   and `title` inherit from the master's `title`; `body`, `subTitle`, `obj`,
   `chart`, `tbl`, `pic`, `clipArt`, `dgm` and `media` inherit from the master's
   `body`; `dt`, `ftr` and `sldNum` inherit from the master placeholder of the
-  same type. This is how PowerPoint and python-pptx resolve it. `box` is `nil`
-  when nothing in the chain has a position.
+  same type. This is how PowerPoint resolves it. `box` is `nil` when nothing in
+  the chain has a position.
   """
 
   import Kernel, except: [inspect: 1]
@@ -69,6 +69,19 @@ defmodule Podium.Template do
           layouts: %{pos_integer() => layout()}
         }
 
+  @typedoc """
+  A way of naming one placeholder on a layout: the `{type, idx}` pair
+  inspection reports, a `%Podium.Placeholder{}`, or any map carrying `:type`
+  and `:idx`. A `nil` type means `"obj"` and a `nil` idx means `0`.
+  """
+  @type ref ::
+          {String.t() | nil, non_neg_integer() | nil}
+          | %{
+              :type => String.t() | nil,
+              :idx => non_neg_integer() | nil,
+              optional(atom()) => term()
+            }
+
   @default_slide_size {9_144_000, 6_858_000}
 
   @doc """
@@ -77,6 +90,7 @@ defmodule Podium.Template do
   `source` is a parts map (`%{partname => binary}`), a path to a
   `.pptx`/`.potx` file, or the bytes of one.
   """
+  @spec inspect(%{String.t() => binary()} | binary()) :: t()
   def inspect(parts) when is_map(parts) and not is_struct(parts), do: from_parts(parts)
 
   def inspect(source) when is_binary(source) do
@@ -93,6 +107,7 @@ defmodule Podium.Template do
   The inspection of the template bundled with Podium, cached in
   `:persistent_term` because its parts never change.
   """
+  @spec bundled() :: t()
   def bundled do
     key = {__MODULE__, :bundled}
 
@@ -116,6 +131,7 @@ defmodule Podium.Template do
   definition taken from `Podium.Placeholder.placeholders_for/1` can be passed
   straight in.
   """
+  @spec placeholder(t(), pos_integer(), ref()) :: placeholder() | nil
   def placeholder(%__MODULE__{} = template, layout_index, ref) do
     {type, idx} = Placeholder.normalize_ref(ref)
 
@@ -130,6 +146,7 @@ defmodule Podium.Template do
   `nil`. Callers that need to tell "no such idx" apart from "wrong type" use
   this rather than `placeholder/3`.
   """
+  @spec placeholder_by_idx(t(), pos_integer(), non_neg_integer()) :: placeholder() | nil
   def placeholder_by_idx(%__MODULE__{} = template, layout_index, idx) when is_integer(idx) do
     template
     |> layout_placeholders(layout_index)
@@ -140,6 +157,7 @@ defmodule Podium.Template do
   The first placeholder of the given type on `layout_index`, or `nil`. Used to
   find the layout's footer, date and slide number chrome.
   """
+  @spec placeholder_by_type(t(), pos_integer(), String.t()) :: placeholder() | nil
   def placeholder_by_type(%__MODULE__{} = template, layout_index, type) when is_binary(type) do
     template
     |> layout_placeholders(layout_index)

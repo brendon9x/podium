@@ -17,34 +17,22 @@
   does, matching the master placeholder by type. Accepts a path, pptx bytes or
   a parts map.
 - Placeholders can be addressed by the `{type, idx}` pair inspection reports,
-  as well as by the bundled template's names, so a template of your own can be
-  filled: `Podium.set_placeholder/3`, `Podium.set_picture_placeholder/3`,
-  `Podium.set_chart_placeholder/6` and `Podium.set_table_placeholder/5` all
-  take either. Charts and tables placed by `{type, idx}` take their position
-  and size from the layout placeholder's box.
+  so a template of your own can be filled: `Podium.set_placeholder/3`,
+  `Podium.set_picture_placeholder/3`, `Podium.set_chart_placeholder/6` and
+  `Podium.set_table_placeholder/5` all take one. The bundled template's names
+  go on working for a presentation built with `Podium.new/1`. Charts and tables
+  placed by `{type, idx}` take their position and size from the layout
+  placeholder's box.
 - `Podium.OPC.Package.resolve_partname/2` resolves a relationship target
   against the partname of the part that owns it.
 - `Podium.Image.dimensions/1` returns the natural size of image data in EMU,
   the size `Podium.Image.new/2` uses when given neither `:width` nor
   `:height`, so callers can fit an image to a region themselves.
-
-### Fixed
-
-- `bold: false` and `italic: false` on a run now write `b="0"` and `i="0"`
-  rather than nothing at all. A run that leaves the option out still writes no
-  attribute and inherits the placeholder's or the theme's style, but a run that
-  asks for regular text inside a placeholder styled bold now gets it, which is
-  what a bold lead-in followed by a regular sentence needs.
-- `Podium.set_notes/2` keeps the line breaks in the notes it is given. Each
-  line becomes its own paragraph in the notes slide, and a blank line becomes
-  an empty paragraph, instead of the whole string going into one run where the
-  notes pane showed it as a single block.
-- A JPEG's pixel density is read from the right offset in its JFIF segment.
-  It was read two bytes early, off the version field, so a 96 DPI image was
-  taken as 257 DPI across and 96 down and placed at the wrong aspect ratio
-  when `add_image` was given neither `:width` nor `:height`. The segment's
-  `JFIF` identifier is now checked too, since the bytes it starts with also
-  occur inside compressed image data.
+- `Podium.OPC.Relationships.parse/1` reads a `.rels` part into a
+  `%Podium.OPC.Relationships{}`, and `find_by_type/2` returns the first
+  relationship of a given type as `{rid, target}`.
+- `Podium.OPC.PresentationXml` edits an existing `ppt/presentation.xml`: its
+  slide size, slide id list, notes master id list and section list.
 
 ### Changed
 
@@ -64,7 +52,12 @@
 - `Podium.Presentation`'s `placeholder_positions` field is replaced by
   `template_info`, holding the `%Podium.Template{}` inspection of the template
   the presentation was built on.
-
+- Writing a custom slide size replaces the whole `<p:sldSz>` element rather
+  than its `cx` and `cy` attributes, so the element's `type` attribute goes
+  with it and a deck sized 16:9 no longer carries `type="screen4x3"`.
+- The presentation part's content type is always the presentation type, so a
+  `.potx` template yields a `.pptx` document rather than a package PowerPoint
+  reopens as a template.
 - `presentation.xml` is now edited in place rather than regenerated, so the
   template's own settings survive. For the bundled template this means
   `notesSz` is the template's 7.5" x 10" portrait page rather than a value
@@ -72,6 +65,24 @@
 - PowerPoint's section list is stripped from the presentation, because it
   references slide ids that Podium reissues.
 - Content type extensions are matched case-insensitively.
+
+### Fixed
+
+- `bold: false` and `italic: false` on a run now write `b="0"` and `i="0"`
+  rather than nothing at all. A run that leaves the option out still writes no
+  attribute and inherits the placeholder's or the theme's style, but a run that
+  asks for regular text inside a placeholder styled bold now gets it, which is
+  what a bold lead-in followed by a regular sentence needs.
+- `Podium.set_notes/2` keeps the line breaks in the notes it is given. Each
+  line becomes its own paragraph in the notes slide, and a blank line becomes
+  an empty paragraph, instead of the whole string going into one run where the
+  notes pane showed it as a single block.
+- A JPEG's pixel density is read from the right offset in its JFIF segment.
+  It was read two bytes early, off the version field, so a 96 DPI image was
+  taken as 257 DPI across and 96 down and placed at the wrong aspect ratio
+  when `add_image` was given neither `:width` nor `:height`. The segment's
+  `JFIF` identifier is now checked too, since the bytes it starts with also
+  occur inside compressed image data.
 
 ### Removed
 

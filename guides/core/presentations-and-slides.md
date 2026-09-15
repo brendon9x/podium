@@ -57,6 +57,8 @@ detail:
 - The template must contain **no slides**. Masters, layouts, themes, media and a
   notes master are what a template is for. An existing slide would collide with
   the ones Podium writes, so Podium raises rather than deleting your content.
+- The template must relate to at least one slide master, or its layouts have
+  nothing for slides to sit on.
 - To set core properties, the template's `_rels/.rels` must already relate to
   `docProps/core.xml`, which any PowerPoint-saved package does.
 
@@ -67,7 +69,7 @@ master, embedded media, the default text style and the notes page size.
 
 The slide size comes from the template's own `p:sldSz`, so `:slide_width` and
 `:slide_height` are ignored. Nothing is scaled: the layout and master
-coordinates your designer set are written through untouched. This is different
+coordinates your designer set are carried through unscaled. This is different
 from `Podium.new/1`, which scales the bundled 4:3 template's coordinates
 horizontally to whatever slide width you ask for.
 
@@ -88,9 +90,18 @@ template's placeholders instead by the `{type, idx}` pair that
 `Podium.Template.inspect/1` reports for them:
 
 ```elixir
-template = Podium.Template.inspect("priv/skeleton.pptx")
+alias Podium.Chart.ChartData
+
+template = Podium.Template.inspect("priv/brand/skeleton.pptx")
 template.layouts[2].placeholders
 # => [%{type: "title", idx: 0, name: "Title 1", box: %{...}}, ...]
+
+chart_data =
+  ChartData.new()
+  |> ChartData.add_categories(["Q1", "Q2", "Q3"])
+  |> ChartData.add_series("Volume", [1500, 4600, 5156])
+
+prs = Podium.from_template("priv/brand/skeleton.pptx")
 
 slide =
   Podium.Slide.new(2)

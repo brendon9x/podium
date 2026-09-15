@@ -104,6 +104,7 @@ defmodule Podium.Presentation do
   size is taken from the template and coordinates are never scaled. The template
   must contain no slides.
   """
+  @spec from_template(binary(), keyword()) :: t()
   def from_template(source, opts \\ []) when is_binary(source) do
     parts =
       case Package.read_source(source) do

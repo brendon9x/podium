@@ -97,6 +97,7 @@ defmodule Podium.Placeholder do
   Accepts a `{type, idx}` tuple, a `%Podium.Placeholder{}`, or any map with
   `:type` and `:idx` keys, such as a definition from `placeholders_for/1`.
   """
+  @spec normalize_ref(Podium.Template.ref()) :: {String.t(), non_neg_integer()}
   def normalize_ref({type, idx}), do: {normalize_type(type), normalize_idx(idx)}
   def normalize_ref(%{type: type, idx: idx}), do: {normalize_type(type), normalize_idx(idx)}
 
@@ -110,6 +111,7 @@ defmodule Podium.Placeholder do
   Creates a text placeholder shape addressed by the layout placeholder's own
   `{type, idx}`, as reported by `Podium.Template.inspect/1`.
   """
+  @spec new({String.t(), non_neg_integer()}, Podium.rich_text()) :: t()
   def new({type, idx}, text) when is_binary(type) and is_integer(idx) do
     %__MODULE__{type: type, idx: idx, kind: :text, paragraphs: Text.normalize(text)}
   end
@@ -145,6 +147,7 @@ defmodule Podium.Placeholder do
   content placeholder's `p:ph` alone when a picture is inserted into it, so a
   picture in a content placeholder is `{"obj", idx}`.
   """
+  @spec new_picture({String.t(), non_neg_integer()}) :: t()
   def new_picture({type, idx}) when is_binary(type) and is_integer(idx) do
     %__MODULE__{type: type, idx: idx, kind: :picture}
   end
@@ -174,6 +177,7 @@ defmodule Podium.Placeholder do
   @doc """
   Creates a footer placeholder at the idx the layout uses for its footer.
   """
+  @spec new_footer(String.t(), non_neg_integer()) :: t()
   def new_footer(text, idx) when is_integer(idx) do
     %__MODULE__{type: "ftr", idx: idx, kind: :footer, field_text: text}
   end
@@ -181,6 +185,7 @@ defmodule Podium.Placeholder do
   @doc """
   Creates a date placeholder at the idx the layout uses for its date.
   """
+  @spec new_date(String.t(), non_neg_integer()) :: t()
   def new_date(text, idx) when is_integer(idx) do
     %__MODULE__{type: "dt", idx: idx, kind: :date, field_text: text}
   end
@@ -189,6 +194,7 @@ defmodule Podium.Placeholder do
   Creates a slide number placeholder at the idx the layout uses for its slide
   number.
   """
+  @spec new_slide_number(non_neg_integer()) :: t()
   def new_slide_number(idx) when is_integer(idx) do
     %__MODULE__{type: "sldNum", idx: idx, kind: :slide_number}
   end

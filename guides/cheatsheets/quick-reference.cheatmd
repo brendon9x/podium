@@ -11,7 +11,7 @@ prs = Podium.new()
 ### Create from your own template
 
 ```elixir
-prs = Podium.from_template("brand.pptx")
+prs = Podium.from_template("brand/skeleton.pptx")
 ```
 
 ### Custom slide dimensions
@@ -333,7 +333,7 @@ slide =
 ### Address a template's own placeholders
 
 ```elixir
-template = Podium.Template.inspect("skeleton.pptx")
+template = Podium.Template.inspect("brand/skeleton.pptx")
 template.layouts[2].placeholders
 
 slide = Podium.set_placeholder(slide, {"title", 0}, "Title")

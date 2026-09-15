@@ -10,8 +10,12 @@ defmodule Podium.OPC.Relationships do
 
   defstruct rels: [], next_id: 1
 
+  @type rel ::
+          {String.t(), String.t(), String.t()}
+          | {String.t(), String.t(), String.t(), true}
+
   @type t :: %__MODULE__{
-          rels: [tuple()],
+          rels: [rel()],
           next_id: pos_integer()
         }
 
@@ -27,7 +31,7 @@ defmodule Podium.OPC.Relationships do
   Only ids of the form `rIdN` contribute to `next_id`; any other id is kept but
   ignored when picking the next one, so foreign ids never cause a collision.
   """
-  @spec from_list([tuple()]) :: t()
+  @spec from_list([rel()]) :: t()
   def from_list(rels) when is_list(rels) do
     max_id =
       rels
@@ -50,6 +54,7 @@ defmodule Podium.OPC.Relationships do
   Each relationship becomes `{id, type, target}`, or `{id, type, target, true}`
   when `TargetMode="External"`. Attribute order in the source does not matter.
   """
+  @spec parse(String.t()) :: t()
   def parse(xml) when is_binary(xml) do
     @relationship_re
     |> Regex.scan(xml)
@@ -72,6 +77,7 @@ defmodule Podium.OPC.Relationships do
   @doc """
   Returns `{rid, target}` for the first relationship of the given type, or `nil`.
   """
+  @spec find_by_type(t(), String.t()) :: {String.t(), String.t()} | nil
   def find_by_type(%__MODULE__{} = rels, type) do
     Enum.find_value(rels.rels, fn rel ->
       if elem(rel, 1) == type, do: {elem(rel, 0), elem(rel, 2)}

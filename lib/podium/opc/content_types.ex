@@ -25,6 +25,7 @@ defmodule Podium.OPC.ContentTypes do
   matter. `Extension` values are downcased because OPC extension matching is
   case-insensitive.
   """
+  @spec parse(String.t()) :: t()
   def parse(xml) when is_binary(xml) do
     defaults =
       @default_re

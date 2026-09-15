@@ -17,6 +17,7 @@ defmodule Podium.OPC.Package do
   @doc """
   Reads a .pptx from an in-memory ZIP binary and returns a map of %{path => binary}.
   """
+  @spec read_binary(binary()) :: {:ok, %{String.t() => binary()}} | {:error, term()}
   def read_binary(binary) when is_binary(binary), do: unzip(binary)
 
   @doc """
@@ -25,6 +26,7 @@ defmodule Podium.OPC.Package do
   A binary starting with the ZIP local file header signature (`PK\\x03\\x04`) is
   treated as pptx bytes; anything else is treated as a path.
   """
+  @spec read_source(binary()) :: {:ok, %{String.t() => binary()}} | {:error, term()}
   def read_source(<<"PK", 3, 4, _::binary>> = binary), do: read_binary(binary)
   def read_source(path) when is_binary(path), do: read(path)
 
@@ -55,6 +57,7 @@ defmodule Podium.OPC.Package do
       iex> Podium.OPC.Package.resolve_partname("ppt/slideLayouts/slideLayout1.xml", "/ppt/media/logo.png")
       "ppt/media/logo.png"
   """
+  @spec resolve_partname(String.t(), String.t()) :: String.t()
   def resolve_partname(_owner_partname, "/" <> target), do: target
 
   def resolve_partname(owner_partname, target)

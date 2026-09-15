@@ -79,6 +79,7 @@ defmodule Podium.Image do
   Raises `ArgumentError` for TIFF, EMF and WMF, whose sizes this module does
   not read, and for data in no recognised format.
   """
+  @spec dimensions(binary()) :: {non_neg_integer(), non_neg_integer()}
   def dimensions(binary) when is_binary(binary) do
     extension = detect_extension(binary)
     resolve_size(binary, extension, nil, nil)

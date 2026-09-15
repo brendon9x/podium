@@ -21,6 +21,7 @@ defmodule Podium.OPC.PresentationXml do
   Returns `{cx, cy}` from `<p:sldSz/>`, or `nil` when the element is absent or
   malformed.
   """
+  @spec slide_size(String.t()) :: {non_neg_integer(), non_neg_integer()} | nil
   def slide_size(xml) when is_binary(xml) do
     with [element] <- Regex.run(@slide_size_re, xml),
          cx when is_integer(cx) <- integer_attribute(element, "cx"),
@@ -37,6 +38,7 @@ defmodule Podium.OPC.PresentationXml do
   Any other attribute (notably `type="screen4x3"`) is dropped, since it would
   contradict the new dimensions.
   """
+  @spec put_slide_size(String.t(), non_neg_integer(), non_neg_integer()) :: String.t()
   def put_slide_size(xml, cx, cy) when is_binary(xml) do
     Regex.replace(@slide_size_re, xml, ~s(<p:sldSz cx="#{cx}" cy="#{cy}"/>), global: false)
   end
@@ -50,6 +52,7 @@ defmodule Podium.OPC.PresentationXml do
   if there is one, else after the notes master list, else after the slide master
   list.
   """
+  @spec put_slide_id_list(String.t(), [{pos_integer(), String.t()}]) :: String.t()
   def put_slide_id_list(xml, entries) when is_binary(xml) and is_list(entries) do
     xml = remove_element(xml, "p:sldIdLst")
 
@@ -74,6 +77,7 @@ defmodule Podium.OPC.PresentationXml do
   @doc """
   Inserts a `<p:notesMasterIdLst>` naming `rid`, unless the XML already has one.
   """
+  @spec put_notes_master_id(String.t(), String.t()) :: String.t()
   def put_notes_master_id(xml, rid) when is_binary(xml) do
     if element_present?(xml, "p:notesMasterIdLst") do
       xml
@@ -89,6 +93,7 @@ defmodule Podium.OPC.PresentationXml do
   Removes PowerPoint's section list extension, and the `<p:extLst>` around it
   when that leaves it empty.
   """
+  @spec strip_section_list(String.t()) :: String.t()
   def strip_section_list(xml) when is_binary(xml) do
     xml
     |> String.replace(
