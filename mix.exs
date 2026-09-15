@@ -6,7 +6,7 @@ defmodule Podium.MixProject do
   def project do
     [
       app: :podium,
-      version: "0.2.1",
+      version: "0.3.0",
       elixir: "~> 1.18",
       start_permanent: Mix.env() == :prod,
       elixirc_paths: elixirc_paths(Mix.env()),
@@ -59,7 +59,7 @@ defmodule Podium.MixProject do
   defp docs do
     [
       main: "overview",
-      source_ref: "v0.2.1",
+      source_ref: "v0.3.0",
       source_url: @source_url,
       extra_section: "GUIDES",
       formatters: ["html", "markdown"],
