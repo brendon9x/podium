@@ -56,7 +56,8 @@ defmodule Podium.Chart.XyChartData do
     * `:marker` - marker options keyword list
     * `:point_colors` - `%{index => color}` map for per-point colors
     * `:point_formats` - `%{index => opts}` map for per-point formatting
-    * `:data_labels` - `%{index => opts}` map for per-point data labels
+    * `:data_labels` - a keyword list labelling the whole series (with per-point
+      overrides under `:points`), or a `%{index => opts}` map labelling single points
   """
   @spec add_series(t(), String.t(), [number()], [number()], keyword()) :: t()
   def add_series(%__MODULE__{} = data, name, x_values, y_values, opts \\ []) do

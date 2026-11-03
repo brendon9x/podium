@@ -1811,6 +1811,217 @@ defmodule Podium.Chart.XmlWriterTest do
     end
   end
 
+  describe "series and point data labels" do
+    defp labelled(chart_type, series_labels, chart_opts \\ []) do
+      chart_data =
+        ChartData.new()
+        |> ChartData.add_categories(["A", "B", "C"])
+        |> ChartData.add_series("S1", [10, 20, 30], data_labels: series_labels)
+        |> ChartData.add_series("S2", [5, 15, 25])
+
+      Chart.new(chart_type, chart_data, [x: 0, y: 0, width: 100, height: 100] ++ chart_opts)
+    end
+
+    defp first_series(xml), do: xml |> fragments("c:ser") |> hd()
+
+    test "a keyword list labels the whole series" do
+      xml =
+        :column_clustered
+        |> labelled(
+          show: [:value, :category],
+          position: :inside_end,
+          number_format: "0.0",
+          bold: true
+        )
+        |> XmlWriter.to_xml()
+
+      ser = first_series(xml)
+
+      assert child_names(xml, "dLbls") ==
+               ~w(c:numFmt c:txPr c:dLblPos c:showLegendKey c:showVal c:showCatName c:showSerName c:showPercent)
+
+      assert ser =~ ~s(<c:showVal val="1"/><c:showCatName val="1"/>)
+      refute xml |> fragments("c:ser") |> List.last() =~ "c:dLbls"
+    end
+
+    test "a series keyword list takes per-point overrides under :points" do
+      xml =
+        :column_clustered
+        |> labelled(
+          show: [:value],
+          font_size: 9,
+          points: %{2 => [show: [:value, :category], bold: true], 0 => [show: []]}
+        )
+        |> XmlWriter.to_xml()
+
+      names = child_names(xml, "dLbls")
+      assert Enum.take(names, 3) == ~w(c:dLbl c:dLbl c:txPr)
+
+      [first, second] = xml |> elements("c:dLbl") |> Enum.map(&children/1)
+      assert hd(first) == "c:idx"
+      assert "c:txPr" in second
+      assert first_series(xml) =~ ~s(<c:dLbl><c:idx val="0"/>)
+      assert first_series(xml) =~ ~s(<c:dLbl><c:idx val="2"/>)
+    end
+
+    test "a series with show: [] stays unlabelled under chart-wide labels" do
+      xml = :column_clustered |> labelled([show: []], data_labels: [:value]) |> XmlWriter.to_xml()
+      assert first_series(xml) =~ ~s(<c:dLbls><c:showLegendKey val="0"/><c:showVal val="0"/>)
+    end
+
+    test "a point override keeps the chart's labels on the series' other points" do
+      xml =
+        :column_clustered
+        |> labelled(%{2 => [bold: true]},
+          data_labels: [show: [:value], position: :outside_end, color: "404040"]
+        )
+        |> XmlWriter.to_xml()
+
+      ser = first_series(xml)
+      # The series still shows its values where the chart put them
+      assert ser =~ ~s(</c:dLbl><c:txPr>)
+      assert ser =~ ~r{</c:dLbl>.*<c:dLblPos val="outEnd"/>.*<c:showVal val="1"/>.*</c:dLbls>}s
+      # The point keeps the chart's position and colour, adding bold
+      point = fragment(ser, "c:dLbl")
+      assert point =~ ~s(<c:dLblPos val="outEnd"/>)
+      assert point =~ ~s(<a:defRPr b="1"><a:solidFill><a:srgbClr val="404040"/>)
+      assert point =~ ~s(<c:showVal val="1"/>)
+    end
+
+    test "series labels take what they do not set from the chart's" do
+      xml =
+        :column_clustered
+        |> labelled([show: [:series]], data_labels: [position: :inside_base, font_size: 8])
+        |> XmlWriter.to_xml()
+
+      ser = first_series(xml)
+      assert ser =~ ~s(<c:dLblPos val="inBase"/>)
+      assert ser =~ ~s(<a:defRPr sz="800"/>)
+      assert ser =~ ~s(<c:showVal val="0"/><c:showCatName val="0"/><c:showSerName val="1"/>)
+    end
+
+    test "point overrides take what they do not set from the series' labels" do
+      xml =
+        :column_clustered
+        |> labelled(
+          show: [:value],
+          position: :inside_end,
+          color: "FFFFFF",
+          points: %{1 => [show: [:value, :category], bold: true]}
+        )
+        |> XmlWriter.to_xml()
+
+      point = fragment(xml, "c:dLbl")
+      assert point =~ ~s(<c:dLblPos val="inEnd"/>)
+      assert point =~ ~s(<a:defRPr b="1"><a:solidFill><a:srgbClr val="FFFFFF"/>)
+      assert point =~ ~s(<c:showVal val="1"/><c:showCatName val="1"/>)
+    end
+
+    test "with no chart labels a point map labels only its points" do
+      xml = :column_clustered |> labelled(%{1 => [show: [:value]]}) |> XmlWriter.to_xml()
+      assert first_series(xml) =~ ~s(</c:dLbl><c:showLegendKey val="0"/><c:showVal val="0"/>)
+    end
+
+    test "an atom list labels the whole series" do
+      xml = :line_markers |> labelled([:series]) |> XmlWriter.to_xml()
+      assert first_series(xml) =~ ~s(<c:showSerName val="1"/>)
+    end
+
+    test "a point label without :show labels the value" do
+      xml = :column_clustered |> labelled(%{1 => [bold: true]}) |> XmlWriter.to_xml()
+      assert fragment(xml, "c:dLbl") =~ ~s(<c:showVal val="1"/>)
+    end
+
+    test "legend key, bubble size and separator" do
+      xml =
+        :column_clustered
+        |> labelled([], data_labels: [show: [:value, :category, :legend_key], separator: "; "])
+        |> XmlWriter.to_xml()
+
+      labels = xml |> fragments("c:dLbls") |> List.last()
+      assert labels =~ ~s(<c:showLegendKey val="1"/>)
+      assert labels =~ ~s(<c:showPercent val="0"/><c:separator>; </c:separator></c:dLbls>)
+
+      bubble =
+        BubbleChartData.add_series(BubbleChartData.new(), "S", [1, 2], [3, 4], [5, 6],
+          data_labels: [show: [:bubble_size], separator: "\n", position: :center]
+        )
+
+      xml =
+        :bubble
+        |> Chart.new(bubble, x: 0, y: 0, width: 100, height: 100)
+        |> XmlWriter.to_xml()
+
+      assert Enum.take(child_names(xml, "dLbls"), -2) == ["c:showBubbleSize", "c:separator"]
+      assert xml =~ ~s(<c:showBubbleSize val="1"/>)
+    end
+
+    test "a separator is escaped" do
+      xml = :line |> labelled(show: [:value, :series], separator: " & ") |> XmlWriter.to_xml()
+      assert xml =~ ~s(<c:separator> &amp; </c:separator>)
+    end
+
+    test "scatter series take whole-series labels" do
+      data =
+        XyChartData.add_series(XyChartData.new(), "S", [1, 2], [3, 4],
+          data_labels: [show: [:value], position: :top]
+        )
+
+      xml = :scatter |> Chart.new(data, x: 0, y: 0, width: 100, height: 100) |> XmlWriter.to_xml()
+      assert xml =~ ~s(<c:dLblPos val="t"/>)
+    end
+  end
+
+  describe "data label validation" do
+    test "positions follow the chart type", %{chart_data: chart_data} do
+      new = &Chart.new(&1, chart_data, [x: 0, y: 0, width: 100, height: 100] ++ &2)
+
+      assert new.(:column_clustered, data_labels: [position: :outside_end])
+      assert new.(:line, data_labels: [position: :top])
+      assert new.(:pie, data_labels: [position: :best_fit])
+
+      for {type, position, message} <- [
+            {:column_stacked, :outside_end, ~r/:outside_end is not available on :column_stacked/},
+            {:line, :inside_end, ~r/choose from \[:center, :left, :right, :top, :bottom\]/},
+            {:area, :center, ~r/they take no label position/},
+            {:doughnut, :center, ~r/they take no label position/},
+            {:pie, :top, ~r/:top is not available on :pie/}
+          ] do
+        assert_raise ArgumentError, message, fn ->
+          new.(type, data_labels: [position: position])
+        end
+      end
+    end
+
+    test "series and point positions are checked too" do
+      assert_raise ArgumentError, ~r/series "S1" :data_labels position :top/, fn ->
+        labelled(:column_clustered, show: [:value], position: :top)
+      end
+
+      assert_raise ArgumentError, ~r/series "S1" :data_labels point 1 position :left/, fn ->
+        labelled(:column_clustered, %{1 => [position: :left]})
+      end
+
+      assert_raise ArgumentError, ~r/point 2 position :left/, fn ->
+        labelled(:column_clustered, show: [:value], points: %{2 => [position: :left]})
+      end
+    end
+
+    test "unknown label contents and a non-string separator raise", %{chart_data: chart_data} do
+      new = &Chart.new(:column_clustered, chart_data, [x: 0, y: 0, width: 100, height: 100] ++ &1)
+
+      assert_raise ArgumentError, ~r/cannot show \[:values\]/, fn ->
+        new.(data_labels: [show: [:values]])
+      end
+
+      assert_raise ArgumentError, ~r/cannot show \[:name\]/, fn -> new.(data_labels: [:name]) end
+
+      assert_raise ArgumentError, ~r/:separator must be a string/, fn ->
+        new.(data_labels: [separator: ?,])
+      end
+    end
+  end
+
   describe "schema order" do
     test "chart-level dLbls writes numFmt, txPr and dLblPos before the show flags",
          %{chart_data: chart_data} do

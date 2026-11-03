@@ -306,6 +306,33 @@ s14 =
     gap_width: 80
   )
 
+# Slide 15: Series data labels with a point override and an unlabelled series
+label_data =
+  ChartData.new()
+  |> ChartData.add_categories(["Ad A", "Ad B", "Ad C", "Ad D"])
+  |> ChartData.add_series("Score", [72, 58, 64, 81],
+    color: "4472C4",
+    data_labels: [
+      show: [:value],
+      position: :inside_end,
+      color: "FFFFFF",
+      points: %{3 => [show: [:value, :category], separator: "\n", bold: true]}
+    ]
+  )
+  |> ChartData.add_series("Target", [70, 70, 70, 70], color: "D9D9D9", data_labels: [show: []])
+
+s15 =
+  Podium.Slide.new()
+  |> Podium.add_chart(:column_clustered, label_data,
+    x: {0.5, :inches},
+    y: {0.5, :inches},
+    width: {12, :inches},
+    height: {6, :inches},
+    title: "Series Data Labels",
+    legend: :bottom,
+    data_labels: [show: [:value], position: :outside_end]
+  )
+
 prs
 |> Podium.add_slide(s1)
 |> Podium.add_slide(s2)
@@ -321,6 +348,7 @@ prs
 |> Podium.add_slide(s12)
 |> Podium.add_slide(s13)
 |> Podium.add_slide(s14)
+|> Podium.add_slide(s15)
 |> Podium.save("demos/output/charts.pptx")
 
 IO.puts("Generated demos/output/charts.pptx")

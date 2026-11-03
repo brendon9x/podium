@@ -500,4 +500,91 @@ defmodule Podium.Integration.ChartFormattingTest do
       assert parts["ppt/charts/chart5.xml"] =~ ~s(<c:gapWidth val="300"/>)
     end
   end
+
+  describe "data labels" do
+    test "series labels, point overrides, legend keys, separators and bubble sizes" do
+      data =
+        ChartData.new()
+        |> ChartData.add_categories(["Ad A", "Ad B", "Ad C", "Ad D"])
+        |> ChartData.add_series("Score", [72, 58, 64, 81],
+          color: "4472C4",
+          data_labels: [
+            show: [:value],
+            position: :inside_end,
+            color: "FFFFFF",
+            points: %{3 => [show: [:value, :category], separator: "\n", bold: true]}
+          ]
+        )
+        |> ChartData.add_series("Target", [70, 70, 70, 70],
+          color: "D9D9D9",
+          data_labels: [show: []]
+        )
+
+      bubbles =
+        Podium.Chart.BubbleChartData.new()
+        |> Podium.Chart.BubbleChartData.add_series("Regions", [1, 2, 3], [4, 6, 5], [10, 20, 15],
+          data_labels: [show: [:bubble_size], position: :center]
+        )
+
+      slides = [
+        slide_with(
+          "Score labels white inside the bar tops; Ad D's label bold on two lines " <>
+            "('81' and 'Ad D'); grey Target bars unlabelled although the chart labels all series",
+          &Podium.add_chart(
+            &1,
+            :column_clustered,
+            data,
+            &2 ++ [legend: :bottom, data_labels: [show: [:value], position: :outside_end]]
+          )
+        ),
+        slide_with(
+          "each label shows the legend swatch, then 'series; value'",
+          &Podium.add_chart(
+            &1,
+            :line_markers,
+            regional_data(),
+            &2 ++
+              [
+                data_labels: [
+                  show: [:legend_key, :series, :value],
+                  separator: "; ",
+                  position: :top,
+                  font_size: 9
+                ]
+              ]
+          )
+        ),
+        slide_with(
+          "every column labelled above in grey 9pt; the 2026 West label also bold and " <>
+            "red, still above its column (a point override keeps the chart's labels)",
+          &Podium.add_chart(
+            &1,
+            :column_clustered,
+            ChartData.new()
+            |> ChartData.add_categories(["North", "South", "East", "West"])
+            |> ChartData.add_series("2025", [48, 61, 37, 55], color: "4472C4")
+            |> ChartData.add_series("2026", [52, 58, 44, 63],
+              color: "ED7D31",
+              data_labels: %{3 => [bold: true, color: "C00000"]}
+            ),
+            &2 ++
+              [
+                legend: :bottom,
+                data_labels: [position: :outside_end, font_size: 9, color: "808080"]
+              ]
+          )
+        ),
+        slide_with(
+          "bubble sizes (10, 20, 15) centred on each bubble",
+          &Podium.add_chart(&1, :bubble, bubbles, &2)
+        )
+      ]
+
+      parts = save_deck(slides, "chart_data_labels.pptx")
+      assert parts["ppt/charts/chart1.xml"] =~ ~s(<c:dLbl><c:idx val="3"/>)
+      assert parts["ppt/charts/chart2.xml"] =~ ~s(<c:showLegendKey val="1"/>)
+      assert parts["ppt/charts/chart3.xml"] =~ ~s(<c:dLbl><c:idx val="3"/>)
+      assert parts["ppt/charts/chart4.xml"] =~ ~s(<c:showBubbleSize val="1"/>)
+    end
+  end
 end

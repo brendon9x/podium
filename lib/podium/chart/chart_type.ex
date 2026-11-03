@@ -21,6 +21,31 @@ defmodule Podium.Chart.ChartType do
   """
 
   @doc """
+  Returns the data label positions PowerPoint accepts for a chart type. A
+  label position outside this list makes PowerPoint repair the file, and
+  area, doughnut and radar charts take none.
+  """
+  @spec label_positions(Podium.chart_type()) :: [atom()]
+  def label_positions(chart_type) do
+    case config(chart_type) do
+      %{element: "c:barChart", grouping: "clustered"} ->
+        [:center, :inside_end, :inside_base, :outside_end]
+
+      %{element: "c:barChart"} ->
+        [:center, :inside_end, :inside_base]
+
+      %{element: element} when element in ["c:lineChart", "c:scatterChart", "c:bubbleChart"] ->
+        [:center, :left, :right, :top, :bottom]
+
+      %{element: "c:pieChart"} ->
+        [:center, :inside_end, :outside_end, :best_fit]
+
+      _ ->
+        []
+    end
+  end
+
+  @doc """
   Returns the XML configuration for a chart type.
   """
   @spec config(Podium.chart_type()) :: map()
