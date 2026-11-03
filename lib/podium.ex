@@ -327,15 +327,17 @@ defmodule Podium do
     * `:text` - font options for all chart text. Each element below overrides them.
       Chart text is 18pt unless this gives another `:font_size`; titles take every
       option but the size
-    * `:title` - chart title as string, or keyword list with `:text` and font options
+    * `:title` - chart title as a string, rich text (a list of paragraphs, as for
+      `add_text_box/3`), or keyword list with `:text` (either form) and font options
+      that apply to every run
     * `:legend` - legend position atom (`:left`, `:right`, `:top`, `:bottom`) or `false`
       to hide, or keyword list with `:position` (default `:right`) and font options
     * `:data_labels` - list of atoms to show (`:value`, `:category`, `:series`, `:percent`)
       or keyword list with `:show` (list, default `[:value]`), `:position` (`:center`,
       `:inside_end`, `:inside_base`, `:outside_end`, `:top`, `:bottom`, `:left`, `:right`,
       `:best_fit`), `:number_format` (Excel format string) and font options
-    * `:category_axis` - keyword list with `:title` (string, or keyword list with `:text`
-      and font options), `:type` (`:date` for date axis),
+    * `:category_axis` - keyword list with `:title` (same forms as the chart `:title`),
+      `:type` (`:date` for date axis),
       `:number_format`, `:major_gridlines`, `:minor_gridlines`, `:visible`, `:reverse`,
       `:crosses`, `:label_rotation`, `:major_tick_mark`, `:minor_tick_mark`,
       `:base_time_unit`, `:major_time_unit`, `:minor_time_unit`, `:major_unit`, `:minor_unit`,

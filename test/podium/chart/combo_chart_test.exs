@@ -495,6 +495,31 @@ defmodule Podium.Chart.ComboChartTest do
     end
   end
 
+  describe "rich-text titles" do
+    test "combo chart and secondary axis titles take rich text" do
+      combo =
+        ComboChart.new(sample_chart_data(), [
+          {:column_clustered, series: [0, 1]},
+          {:line_markers, series: [2], secondary_axis: true}
+        ])
+
+      xml =
+        combo
+        |> Podium.Chart.new_combo(
+          x: 0,
+          y: 0,
+          width: 100,
+          height: 100,
+          title: [[{"Revenue", bold: true}, " and margin"]],
+          secondary_value_axis: [title: [["Margin ", {"%", bold: true}]]]
+        )
+        |> Podium.Chart.XmlWriter.to_xml()
+
+      assert xml =~ ~s(<a:rPr lang="en-US" b="1" dirty="0"/><a:t>Revenue</a:t>)
+      assert xml =~ ~s(<a:rPr lang="en-US" b="1" dirty="0"/><a:t>%</a:t>)
+    end
+  end
+
   describe "schema order" do
     test "combo axes write txPr between spPr and crossAx" do
       data = sample_chart_data()

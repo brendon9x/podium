@@ -272,6 +272,25 @@ Podium.add_chart(slide, :column_clustered, data,
 A formatted title takes `:text` plus any of the font options under
 [Chart Text](#chart-text).
 
+A title can also be rich text, in the same form a text box takes: a list of
+paragraphs, each a list of runs or a `{runs, paragraph_opts}` tuple. Font options
+given alongside `:text` apply to every run, under each run's own options.
+
+```elixir
+# Two runs, the second italic
+title: [[{"Revenue", bold: true}, {" (USD)", italic: true}]]
+
+# Two paragraphs, all 20pt, the subtitle smaller and grey
+title: [
+  text: [["Revenue by Region"], [{"FY2026", font_size: 12, color: "808080"}]],
+  font_size: 20
+]
+```
+
+![Chart with a two-paragraph rich-text title and a rich axis title](assets/core/charts/rich-titles.png)
+
+Axis titles take the same forms. Hyperlinks are not supported in chart text.
+
 ## Legends
 
 Control legend visibility and position. Pass `false` or `nil` for no legend, an atom
@@ -350,7 +369,7 @@ slide = Podium.add_chart(slide, :column_clustered, data,
 Tick labels take the font options under [Chart Text](#chart-text) directly on the
 axis, for example `category_axis: [font_size: 9, color: "666666"]`.
 
-Axis titles take `:text` plus the same font options.
+Axis titles take a string, rich text, or `:text` plus the same font options.
 
 ```elixir
 category_axis: [title: [text: "Quarter", font_size: 12, bold: true, color: "333333"]]

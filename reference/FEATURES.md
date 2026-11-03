@@ -56,7 +56,7 @@ Comprehensive list of Podium's features. Podium uses [python-pptx](https://githu
 |---------|--------|
 | Chart types | 29 types across 10 families: column (3), bar (3), line (6), pie (2), area (3), doughnut (2), radar (3), scatter (5), bubble (2) |
 | Chart text | `text` sets the font for all chart text (18pt without a size); every element takes the full run font vocabulary: font_size, bold/italic (true or false), underline, strikethrough, superscript/subscript, color, font, lang |
-| Titles | Plain string or keyword list with text and font options |
+| Titles | Chart and axis titles: plain string, rich text (runs and paragraphs), or keyword list with text and font options |
 | Legends | Position atom or keyword list with position (default right) and font options |
 | Data labels | Simple list or keyword list with show, position (9 options), number_format and font options; per-point overrides (with font options) via series `data_labels` map |
 | Category axis | title, gridlines, number_format, label_rotation, tick marks, reverse order, visibility, tick label font options, axis line color |

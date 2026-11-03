@@ -78,7 +78,12 @@ defmodule Podium.Chart.XmlWriter do
 
   defp title_with_defaults(nil, _defaults), do: nil
   defp title_with_defaults(title, defaults) when is_binary(title), do: [text: title] ++ defaults
-  defp title_with_defaults(title, defaults), do: Keyword.merge(defaults, title)
+
+  defp title_with_defaults(title, defaults) do
+    if Keyword.keyword?(title),
+      do: Keyword.merge(defaults, title),
+      else: [text: title] ++ defaults
+  end
 
   def to_xml(chart_type, chart_data) do
     chart = %Chart{chart_type: chart_type, chart_data: chart_data}
@@ -110,30 +115,8 @@ defmodule Podium.Chart.XmlWriter do
 
   defp title_xml(nil), do: ~s(<c:autoTitleDeleted val="1"/>)
 
-  defp title_xml(title) when is_binary(title) do
-    escaped = Builder.escape(title)
-
-    ~s(<c:title>) <>
-      ~s(<c:tx><c:rich>) <>
-      ~s(<a:bodyPr/><a:lstStyle/>) <>
-      ~s(<a:p><a:r><a:rPr lang="en-US" dirty="0"/><a:t>#{escaped}</a:t></a:r><a:endParaRPr lang="en-US"/></a:p>) <>
-      ~s(</c:rich></c:tx>) <>
-      ~s(<c:overlay val="0"/>) <>
-      ~s(</c:title>)
-  end
-
-  defp title_xml(opts) when is_list(opts) do
-    text = Keyword.fetch!(opts, :text)
-    escaped = Builder.escape(text)
-    rpr_xml = Text.run_properties_xml(font_opts(opts))
-
-    ~s(<c:title>) <>
-      ~s(<c:tx><c:rich>) <>
-      ~s(<a:bodyPr/><a:lstStyle/>) <>
-      ~s(<a:p><a:r>#{rpr_xml}<a:t>#{escaped}</a:t></a:r><a:endParaRPr lang="en-US"/></a:p>) <>
-      ~s(</c:rich></c:tx>) <>
-      ~s(<c:overlay val="0"/>) <>
-      ~s(</c:title>)
+  defp title_xml(title) do
+    ~s(<c:title>#{title_text_xml(title)}<c:overlay val="0"/></c:title>)
   end
 
   # -- Legend --
@@ -921,30 +904,44 @@ defmodule Podium.Chart.XmlWriter do
 
   defp axis_title_xml(nil), do: ""
 
-  defp axis_title_xml(title) when is_binary(title) do
-    escaped = Builder.escape(title)
-
-    ~s(<c:title>) <>
-      ~s(<c:tx><c:rich>) <>
-      ~s(<a:bodyPr/><a:lstStyle/>) <>
-      ~s(<a:p><a:r><a:rPr lang="en-US" dirty="0"/><a:t>#{escaped}</a:t></a:r><a:endParaRPr lang="en-US"/></a:p>) <>
-      ~s(</c:rich></c:tx>) <>
-      ~s(<c:overlay val="0"/>) <>
-      ~s(</c:title>)
+  defp axis_title_xml(title) do
+    ~s(<c:title>#{title_text_xml(title)}<c:overlay val="0"/></c:title>)
   end
 
-  defp axis_title_xml(opts) when is_list(opts) do
-    text = Keyword.fetch!(opts, :text)
-    escaped = Builder.escape(text)
-    rpr_xml = Text.run_properties_xml(font_opts(opts))
+  # The <c:tx> of a chart or axis title. A title is a string, rich text (a
+  # list of paragraphs, as for a text box), or a keyword list with `:text`
+  # (either of those) and font options that apply to every run, under the
+  # runs' own options.
+  defp title_text_xml(title) do
+    paragraphs = title_paragraphs(title)
 
-    ~s(<c:title>) <>
-      ~s(<c:tx><c:rich>) <>
-      ~s(<a:bodyPr/><a:lstStyle/>) <>
-      ~s(<a:p><a:r>#{rpr_xml}<a:t>#{escaped}</a:t></a:r><a:endParaRPr lang="en-US"/></a:p>) <>
-      ~s(</c:rich></c:tx>) <>
-      ~s(<c:overlay val="0"/>) <>
-      ~s(</c:title>)
+    ~s(<c:tx><c:rich><a:bodyPr/><a:lstStyle/>) <>
+      Text.paragraphs_xml(paragraphs) <> ~s(</c:rich></c:tx>)
+  end
+
+  defp title_paragraphs(title) when is_binary(title), do: Text.normalize(title)
+
+  defp title_paragraphs(title) when is_list(title) do
+    {text, font} =
+      if Keyword.keyword?(title) and title != [] do
+        {Keyword.fetch!(title, :text), font_opts(title)}
+      else
+        {title, []}
+      end
+
+    text
+    |> Text.normalize()
+    |> Enum.map(fn para ->
+      %{para | runs: Enum.map(para.runs, &title_run(&1, font))}
+    end)
+  end
+
+  defp title_run(%{opts: opts} = run, font) do
+    if Keyword.has_key?(opts, :hyperlink) do
+      raise ArgumentError, "chart and axis titles do not support hyperlinks"
+    end
+
+    %{run | opts: Keyword.merge(font, opts)}
   end
 
   defp line_sppr_xml(nil), do: ""

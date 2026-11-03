@@ -1118,6 +1118,111 @@ defmodule Podium.Chart.XmlWriterTest do
     end
   end
 
+  describe "rich-text titles" do
+    test "a chart title takes runs", %{chart_data: chart_data} do
+      chart = %Chart{
+        chart_type: :column_clustered,
+        chart_data: chart_data,
+        title: [[{"Revenue", bold: true}, " (USD)"]]
+      }
+
+      title = fragment(XmlWriter.to_xml(chart), "c:title")
+
+      assert title =~
+               ~s(<a:p><a:r><a:rPr lang="en-US" b="1" dirty="0"/><a:t>Revenue</a:t></a:r>) <>
+                 ~s|<a:r><a:rPr lang="en-US" dirty="0"/><a:t> (USD)</a:t></a:r><a:endParaRPr lang="en-US"/></a:p>|
+    end
+
+    test "a chart title takes several paragraphs with alignment", %{chart_data: chart_data} do
+      chart = %Chart{
+        chart_type: :column_clustered,
+        chart_data: chart_data,
+        title: [["Revenue"], {[{"FY2026", italic: true, font_size: 12}], alignment: :right}]
+      }
+
+      title = fragment(XmlWriter.to_xml(chart), "c:title")
+      assert [_, _] = Regex.scan(~r/<a:p>|<a:p /, title)
+      assert title =~ ~s(<a:pPr algn="r"/>)
+      assert title =~ ~s(<a:rPr lang="en-US" sz="1200" i="1" dirty="0"/><a:t>FY2026</a:t>)
+    end
+
+    test "title font options apply under each run's own", %{chart_data: chart_data} do
+      chart = %Chart{
+        chart_type: :column_clustered,
+        chart_data: chart_data,
+        title: [
+          text: [[{"Revenue", color: "C00000"}, " by quarter"]],
+          font_size: 20,
+          color: "333333"
+        ]
+      }
+
+      title = fragment(XmlWriter.to_xml(chart), "c:title")
+      assert title =~ ~s(sz="2000" dirty="0"><a:solidFill><a:srgbClr val="C00000"/>)
+      assert title =~ ~s(sz="2000" dirty="0"><a:solidFill><a:srgbClr val="333333"/>)
+    end
+
+    test "a plain-string title is unchanged", %{chart_data: chart_data} do
+      chart = %Chart{chart_type: :column_clustered, chart_data: chart_data, title: "Revenue"}
+
+      assert fragment(XmlWriter.to_xml(chart), "c:title") ==
+               ~s(<c:title><c:tx><c:rich><a:bodyPr/><a:lstStyle/><a:p><a:r><a:rPr lang="en-US" dirty="0"/>) <>
+                 ~s(<a:t>Revenue</a:t></a:r><a:endParaRPr lang="en-US"/></a:p></c:rich></c:tx>) <>
+                 ~s(<c:overlay val="0"/></c:title>)
+    end
+
+    test "a line break in a title string becomes <a:br/>", %{chart_data: chart_data} do
+      chart = %Chart{
+        chart_type: :column_clustered,
+        chart_data: chart_data,
+        title: "Revenue\nFY2026"
+      }
+
+      assert fragment(XmlWriter.to_xml(chart), "c:title") =~ "</a:r><a:br/><a:r>"
+    end
+
+    test "axis titles take rich text", %{chart_data: chart_data} do
+      chart = %Chart{
+        chart_type: :column_clustered,
+        chart_data: chart_data,
+        category_axis: [title: [[{"Quarter", bold: true}, " (FY)"]]],
+        value_axis: [title: [text: [["Revenue ", {"$K", italic: true}]], font_size: 10]]
+      }
+
+      xml = XmlWriter.to_xml(chart)
+
+      assert fragment(xml, "c:catAx") =~
+               ~s(<a:rPr lang="en-US" b="1" dirty="0"/><a:t>Quarter</a:t>)
+
+      assert fragment(xml, "c:valAx") =~
+               ~s(<a:rPr lang="en-US" sz="1000" i="1" dirty="0"/><a:t>$K</a:t>)
+    end
+
+    test "a rich-text title follows :text under its runs' own options",
+         %{chart_data: chart_data} do
+      chart = %Chart{
+        chart_type: :column_clustered,
+        chart_data: chart_data,
+        text: [font: "Georgia", color: "404040"],
+        title: [[{"Revenue", color: "C00000"}, " by quarter"]]
+      }
+
+      title = fragment(XmlWriter.to_xml(chart), "c:title")
+      assert title =~ ~s(<a:srgbClr val="C00000"/></a:solidFill><a:latin typeface="Georgia"/>)
+      assert title =~ ~s(<a:srgbClr val="404040"/></a:solidFill><a:latin typeface="Georgia"/>)
+    end
+
+    test "a hyperlink in a title raises", %{chart_data: chart_data} do
+      chart = %Chart{
+        chart_type: :column_clustered,
+        chart_data: chart_data,
+        title: [[{"Revenue", hyperlink: "https://example.com"}]]
+      }
+
+      assert_raise ArgumentError, ~r/hyperlinks/, fn -> XmlWriter.to_xml(chart) end
+    end
+  end
+
   describe "schema order" do
     test "chart-level dLbls writes numFmt, txPr and dLblPos before the show flags",
          %{chart_data: chart_data} do

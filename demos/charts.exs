@@ -200,6 +200,25 @@ s9 =
     value_axis: [font_size: 9, color: "808080"]
   )
 
+# Slide 10: Rich-text chart and axis titles
+s10 =
+  Podium.Slide.new()
+  |> Podium.add_chart(:line_markers, font_data,
+    x: {0.5, :inches},
+    y: {0.5, :inches},
+    width: {12, :inches},
+    height: {6, :inches},
+    title: [
+      text: [
+        [{"Revenue ", bold: true}, {"by Region", italic: true}],
+        [{"FY2025 vs FY2026, in $M", font_size: 12, color: "808080"}]
+      ],
+      font_size: 20
+    ],
+    legend: :bottom,
+    value_axis: [title: [["Revenue ", {"($M)", italic: true, color: "808080"}]]]
+  )
+
 prs
 |> Podium.add_slide(s1)
 |> Podium.add_slide(s2)
@@ -210,6 +229,7 @@ prs
 |> Podium.add_slide(s7)
 |> Podium.add_slide(s8)
 |> Podium.add_slide(s9)
+|> Podium.add_slide(s10)
 |> Podium.save("demos/output/charts.pptx")
 
 IO.puts("Generated demos/output/charts.pptx")
