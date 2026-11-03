@@ -36,6 +36,7 @@ SLIDES=(
   "charts|6|core/charts|scatter-chart"
   "charts|7|core/charts|bubble-chart"
   "charts|8|core/charts|pattern-fills-per-point"
+  "charts|9|core/charts|chart-fonts"
 
   "combo-charts|1|advanced/combo-charts|column-line-overlay"
   "combo-charts|2|advanced/combo-charts|stacked-column-line"

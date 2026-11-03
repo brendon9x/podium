@@ -188,6 +188,19 @@ slide =
     data_labels: [:category, :percent])
 ```
 
+### Chart fonts
+
+```elixir
+slide =
+  Podium.add_chart(slide, :column_clustered, data,
+    x: {1, :inches}, y: {1, :inches},
+    width: {10, :inches}, height: {5, :inches},
+    text: [font_size: 11, font: "Arial"],
+    legend: [position: :bottom, bold: true],
+    category_axis: [font_size: 9, color: "666666"],
+    data_labels: [show: [:value], italic: true])
+```
+
 ### Scatter chart
 
 ```elixir

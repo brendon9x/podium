@@ -2,6 +2,27 @@
 
 ## Unreleased
 
+### Added
+
+- Chart text takes the same font options as a text run everywhere it appears:
+  the title, axis titles, legend, tick labels and data labels (chart-wide and
+  per point). That adds `:underline`, `:strikethrough`, `:superscript`,
+  `:subscript` and `:lang` to the existing keys, and lets `bold: false` and
+  `italic: false` turn a style off.
+- `:text` on a chart sets the font of all chart text, for `Podium.add_chart/4`,
+  `Podium.add_combo_chart/4` and `Podium.set_chart_placeholder/6`. Chart text
+  stays 18pt unless it gives a `:font_size`. The chart and axis titles follow
+  it too, keeping their own size.
+- Tick labels on any axis take font options directly on the axis keyword list,
+  alongside `:label_rotation`.
+- Per-point data labels take font options.
+
+### Changed
+
+- A legend keyword list no longer needs `:position`; it defaults to `:right`.
+- A data label keyword list without `:show` labels the values instead of
+  dropping its options.
+
 ### Fixed
 
 - `<c:dLbls>` and `<c:dLbl>` wrote `<c:txPr>` and `<c:showLegendKey>` after

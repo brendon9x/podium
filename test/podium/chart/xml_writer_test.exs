@@ -931,6 +931,193 @@ defmodule Podium.Chart.XmlWriterTest do
     end
   end
 
+  describe "chart text" do
+    @full_font [
+      font_size: 11,
+      bold: false,
+      italic: true,
+      underline: :double,
+      strikethrough: true,
+      superscript: true,
+      color: "123456",
+      font: "Georgia",
+      lang: "de-DE"
+    ]
+
+    @full_attrs [
+      ~s(lang="de-DE"),
+      ~s(sz="1100"),
+      ~s(b="0"),
+      ~s(i="1"),
+      ~s(u="dbl"),
+      ~s(strike="sngStrike"),
+      ~s(baseline="30000"),
+      ~s(<a:solidFill><a:srgbClr val="123456"/></a:solidFill>),
+      ~s(<a:latin typeface="Georgia"/>)
+    ]
+
+    test "every chart text element takes the full run vocabulary" do
+      chart_data =
+        ChartData.new()
+        |> ChartData.add_categories(["A", "B"])
+        |> ChartData.add_series("S1", [10, 20],
+          data_labels: %{1 => [show: [:value]] ++ @full_font}
+        )
+
+      chart = %Chart{
+        chart_type: :column_clustered,
+        chart_data: chart_data,
+        title: [text: "Title"] ++ @full_font,
+        legend: [position: :bottom] ++ @full_font,
+        data_labels: [show: [:value]] ++ @full_font,
+        category_axis: [title: [text: "Cat"] ++ @full_font] ++ @full_font,
+        value_axis: [title: [text: "Val"] ++ @full_font] ++ @full_font,
+        text: @full_font
+      }
+
+      xml = XmlWriter.to_xml(chart)
+
+      for {label, fragment} <- [
+            title: fragment(xml, "c:title"),
+            legend: fragment(xml, "c:legend"),
+            chart_labels: xml |> fragments("c:dLbls") |> List.last(),
+            point_label: fragment(xml, "c:dLbl"),
+            category_axis: fragment(xml, "c:catAx"),
+            value_axis: fragment(xml, "c:valAx"),
+            chart_space: xml |> fragments("c:txPr") |> List.last()
+          ],
+          attr <- @full_attrs do
+        assert fragment =~ attr, "#{label} is missing #{attr}"
+      end
+
+      # Axis title runs carry the formatting on their <a:rPr>
+      assert [_, _] =
+               Regex.scan(
+                 ~r/<a:rPr lang="de-DE" sz="1100" b="0" i="1"/,
+                 fragment(xml, "c:plotArea")
+               )
+    end
+
+    test "chart and axis titles follow :text, keeping their own size", %{chart_data: chart_data} do
+      chart = %Chart{
+        chart_type: :column_clustered,
+        chart_data: chart_data,
+        text: [font_size: 11, font: "Georgia", color: "404040"],
+        title: "Revenue",
+        category_axis: [title: [text: "Quarter", color: "C00000"]]
+      }
+
+      xml = XmlWriter.to_xml(chart)
+
+      assert fragment(xml, "c:title") =~
+               ~s(<a:rPr lang="en-US" dirty="0"><a:solidFill><a:srgbClr val="404040"/></a:solidFill><a:latin typeface="Georgia"/></a:rPr><a:t>Revenue</a:t>)
+
+      cat_title = xml |> fragment("c:catAx") |> then(&fragment(&1, "c:title"))
+      assert cat_title =~ ~s(<a:srgbClr val="C00000"/>)
+      assert cat_title =~ ~s(<a:latin typeface="Georgia"/>)
+      refute xml =~ ~s(sz="1100" dirty="0")
+    end
+
+    test "titles are unchanged when :text gives only a size", %{chart_data: chart_data} do
+      chart = %Chart{
+        chart_type: :column_clustered,
+        chart_data: chart_data,
+        text: [font_size: 11],
+        title: "Revenue"
+      }
+
+      assert fragment(XmlWriter.to_xml(chart), "c:title") =~
+               ~s(<a:rPr lang="en-US" dirty="0"/><a:t>Revenue</a:t>)
+    end
+
+    test "chart text is 18pt when :text is absent", %{chart_data: chart_data} do
+      xml = XmlWriter.to_xml(%Chart{chart_type: :column_clustered, chart_data: chart_data})
+
+      assert xml =~
+               ~s(</c:chart><c:txPr><a:bodyPr/><a:lstStyle/><a:p><a:pPr><a:defRPr sz="1800"/></a:pPr>)
+    end
+
+    test ":text without :font_size keeps the 18pt default", %{chart_data: chart_data} do
+      chart = %Chart{chart_type: :column_clustered, chart_data: chart_data, text: [bold: true]}
+
+      assert xml_after_chart(chart) =~ ~s(<a:defRPr sz="1800" b="1"/>)
+    end
+
+    test ":text sets the chart-wide size", %{chart_data: chart_data} do
+      chart = %Chart{
+        chart_type: :column_clustered,
+        chart_data: chart_data,
+        text: [font_size: 10.5]
+      }
+
+      assert xml_after_chart(chart) =~ ~s(<a:defRPr sz="1050"/>)
+    end
+
+    test "an element turns off what :text turns on", %{chart_data: chart_data} do
+      chart = %Chart{
+        chart_type: :column_clustered,
+        chart_data: chart_data,
+        text: [bold: true],
+        legend: [bold: false]
+      }
+
+      xml = XmlWriter.to_xml(chart)
+      assert fragment(xml, "c:legend") =~ ~s(<a:defRPr b="0"/>)
+      assert xml_after_chart(chart) =~ ~s(b="1")
+    end
+
+    test "a legend styled without a position sits on the right", %{chart_data: chart_data} do
+      chart = %Chart{
+        chart_type: :column_clustered,
+        chart_data: chart_data,
+        legend: [font_size: 9]
+      }
+
+      legend = fragment(XmlWriter.to_xml(chart), "c:legend")
+      assert legend =~ ~s(<c:legendPos val="r"/>)
+      assert legend =~ ~s(<a:defRPr sz="900"/>)
+    end
+
+    test "styled data labels without :show label the values", %{chart_data: chart_data} do
+      chart = %Chart{
+        chart_type: :column_clustered,
+        chart_data: chart_data,
+        data_labels: [font_size: 9, color: "FFFFFF"]
+      }
+
+      labels = fragment(XmlWriter.to_xml(chart), "c:dLbls")
+      assert labels =~ ~s(<c:showVal val="1"/>)
+      assert labels =~ ~s(<a:defRPr sz="900"><a:solidFill><a:srgbClr val="FFFFFF"/>)
+    end
+
+    test "tick labels take rotation and font together", %{chart_data: chart_data} do
+      chart = %Chart{
+        chart_type: :column_clustered,
+        chart_data: chart_data,
+        category_axis: [label_rotation: -45, font_size: 8, italic: true, font: "Arial"]
+      }
+
+      assert fragment(XmlWriter.to_xml(chart), "c:catAx") =~
+               ~s(<c:txPr><a:bodyPr rot="-2700000"/><a:lstStyle/><a:p><a:pPr><a:defRPr sz="800" i="1"><a:latin typeface="Arial"/></a:defRPr>)
+    end
+
+    test "date axis tick labels take a font", %{chart_data: chart_data} do
+      chart = %Chart{
+        chart_type: :column_clustered,
+        chart_data: chart_data,
+        category_axis: [type: :date, font_size: 8, underline: true]
+      }
+
+      assert fragment(XmlWriter.to_xml(chart), "c:dateAx") =~ ~s(<a:defRPr sz="800" u="sng"/>)
+    end
+
+    test "an unstyled axis writes no txPr", %{chart_data: chart_data} do
+      xml = XmlWriter.to_xml(%Chart{chart_type: :column_clustered, chart_data: chart_data})
+      refute fragment(xml, "c:catAx") =~ "c:txPr"
+      refute fragment(xml, "c:valAx") =~ "c:txPr"
+    end
+  end
+
   describe "schema order" do
     test "chart-level dLbls writes numFmt, txPr and dLblPos before the show flags",
          %{chart_data: chart_data} do
@@ -1088,6 +1275,17 @@ defmodule Podium.Chart.XmlWriterTest do
 
       assert XmlWriter.to_xml(chart) =~ ~s(<a:latin typeface="Fish &amp; Chips"/>)
     end
+  end
+
+  # The first <tag>...</tag> in xml, and all of them.
+  defp fragment(xml, tag), do: xml |> fragments(tag) |> hd()
+
+  defp fragments(xml, tag) do
+    ~r{<#{tag}>.*?</#{tag}>}s |> Regex.scan(xml) |> List.flatten()
+  end
+
+  defp xml_after_chart(chart) do
+    chart |> XmlWriter.to_xml() |> String.split("</c:chart>") |> List.last()
   end
 
   # Element names of the direct children of the first <c:local_name>.
