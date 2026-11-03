@@ -11,7 +11,7 @@ defmodule Podium.Drawing do
   @doc """
   Generates fill XML for shape properties.
 
-  - `nil` → `<a:noFill/>`
+  - `nil` or `:none` → `<a:noFill/>`
   - `"FF0000"` → solid fill with that RGB hex color
   - `{:gradient, stops, opts}` → gradient fill
   - `{:pattern, preset, opts}` → pattern fill
@@ -22,6 +22,7 @@ defmodule Podium.Drawing do
           | {:picture_fill, non_neg_integer()}
         ) :: String.t()
   def fill_xml(nil), do: "<a:noFill/>"
+  def fill_xml(:none), do: "<a:noFill/>"
 
   def fill_xml(color) when is_binary(color),
     do: ~s(<a:solidFill><a:srgbClr val="#{color}"/></a:solidFill>)
@@ -70,15 +71,25 @@ defmodule Podium.Drawing do
       ~s(</a:pattFill>)
   end
 
+  def fill_xml(other) do
+    raise ArgumentError,
+          "fill must be a hex colour, :none, {:gradient, stops, opts} or " <>
+            "{:pattern, preset, opts}, got: #{inspect(other)}"
+  end
+
   @doc """
   Generates line XML for shape properties.
 
-  - `nil` → `""`
+  - `nil` → `""` (the default line)
+  - `:none` → no line
   - `"000000"` → line with default width
-  - `[color: "000000", width: {2, :pt}, dash_style: :dash]` → line with width and dash style
+  - `[color: "000000", width: {2, :pt}, dash_style: :dash]` → line with width and dash style.
+    `:fill` takes any fill in place of `:color`, and either may be `:none`. With
+    neither, the line keeps its default colour.
   """
   @spec line_xml(Podium.line()) :: String.t()
   def line_xml(nil), do: ""
+  def line_xml(:none), do: ~s(<a:ln><a:noFill/></a:ln>)
 
   def line_xml(color) when is_binary(color) do
     ~s(<a:ln><a:solidFill><a:srgbClr val="#{color}"/></a:solidFill></a:ln>)
@@ -94,9 +105,15 @@ defmodule Podium.Drawing do
       cond do
         fill -> fill_xml(fill)
         color -> fill_xml(color)
+        true -> ""
       end
 
     ~s(<a:ln#{width_attr}>#{fill_content}#{dash_xml}</a:ln>)
+  end
+
+  def line_xml(other) do
+    raise ArgumentError,
+          "line must be a hex colour, :none or a keyword list, got: #{inspect(other)}"
   end
 
   defp line_width_attr(nil), do: ""

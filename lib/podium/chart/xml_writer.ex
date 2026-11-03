@@ -102,10 +102,12 @@ defmodule Podium.Chart.XmlWriter do
       ~s(<c:plotArea>) <>
       plot_xml(chart, config) <>
       axes_xml(chart, config) <>
+      sp_pr_xml(chart.plot_area) <>
       ~s(</c:plotArea>) <>
       legend_xml(chart.legend) <>
       ~s(<c:dispBlanksAs val="gap"/>) <>
       ~s(</c:chart>) <>
+      chart_area_xml(chart.background) <>
       chart_text_xml(chart.text) <>
       ~s(<c:externalData r:id="rId1"><c:autoUpdate val="0"/></c:externalData>) <>
       ~s(</c:chartSpace>)
@@ -116,7 +118,7 @@ defmodule Podium.Chart.XmlWriter do
   defp title_xml(nil), do: ~s(<c:autoTitleDeleted val="1"/>)
 
   defp title_xml(title) do
-    ~s(<c:title>#{title_text_xml(title)}<c:overlay val="0"/></c:title>)
+    ~s(<c:title>#{title_text_xml(title)}<c:overlay val="0"/>#{title_sp_pr_xml(title)}</c:title>)
   end
 
   # -- Legend --
@@ -133,7 +135,7 @@ defmodule Podium.Chart.XmlWriter do
     pos = legend_pos_value(Keyword.get(opts, :position, :right))
 
     ~s(<c:legend><c:legendPos val="#{pos}"/><c:overlay val="0"/>) <>
-      text_props_xml(font_opts(opts)) <> ~s(</c:legend>)
+      sp_pr_xml(opts) <> text_props_xml(font_opts(opts)) <> ~s(</c:legend>)
   end
 
   defp legend_pos_value(:left), do: "l"
@@ -251,6 +253,7 @@ defmodule Podium.Chart.XmlWriter do
     # showCatName, showSerName, showPercent
     ~s(<c:dLbls>) <>
       dlbl_num_fmt_xml(number_format) <>
+      sp_pr_xml(opts) <>
       text_props_xml(font_opts(opts)) <>
       dlbl_position_xml(position) <>
       dlbl_show_flags_xml(show_atoms) <>
@@ -527,6 +530,7 @@ defmodule Podium.Chart.XmlWriter do
     ~s(<c:dLbl>) <>
       ~s(<c:idx val="#{idx}"/>) <>
       dlbl_num_fmt_xml(Keyword.get(opts, :number_format)) <>
+      sp_pr_xml(opts) <>
       text_props_xml(font_opts(opts)) <>
       dlbl_position_xml(Keyword.get(opts, :position)) <>
       dlbl_show_flags_xml(Keyword.get(opts, :show, [])) <>
@@ -726,7 +730,6 @@ defmodule Podium.Chart.XmlWriter do
     axis_opts = chart.category_axis || []
     axis_title = Keyword.get(axis_opts, :title)
     crosses = Keyword.get(axis_opts, :crosses, :auto_zero)
-    line_color = Keyword.get(axis_opts, :line_color)
     reverse = Keyword.get(axis_opts, :reverse, false)
     visible = Keyword.get(axis_opts, :visible, true)
     major_tick = Keyword.get(axis_opts, :major_tick_mark, :out)
@@ -740,11 +743,12 @@ defmodule Podium.Chart.XmlWriter do
       ~s(<c:scaling><c:orientation val="#{orientation}"/></c:scaling>) <>
       ~s(<c:delete val="#{delete_val}"/>) <>
       ~s(<c:axPos val="#{pos}"/>) <>
+      category_gridlines_xml(axis_opts) <>
       axis_title_xml(axis_title) <>
       ~s(<c:majorTickMark val="#{tick_mark_value(major_tick)}"/>) <>
       ~s(<c:minorTickMark val="#{tick_mark_value(minor_tick)}"/>) <>
       ~s(<c:tickLblPos val="nextTo"/>) <>
-      line_sppr_xml(line_color) <>
+      sp_pr_xml(axis_opts) <>
       tick_label_format_xml(axis_opts) <>
       ~s(<c:crossAx val="#{cross_ax_id}"/>) <>
       crosses_xml(crosses) <>
@@ -760,7 +764,6 @@ defmodule Podium.Chart.XmlWriter do
     axis_opts = chart.category_axis || []
     axis_title = Keyword.get(axis_opts, :title)
     crosses = Keyword.get(axis_opts, :crosses, :auto_zero)
-    line_color = Keyword.get(axis_opts, :line_color)
     reverse = Keyword.get(axis_opts, :reverse, false)
     visible = Keyword.get(axis_opts, :visible, true)
     major_tick = Keyword.get(axis_opts, :major_tick_mark, :out)
@@ -797,11 +800,12 @@ defmodule Podium.Chart.XmlWriter do
       ~s(<c:scaling><c:orientation val="#{orientation}"/></c:scaling>) <>
       ~s(<c:delete val="#{delete_val}"/>) <>
       ~s(<c:axPos val="#{pos}"/>) <>
+      category_gridlines_xml(axis_opts) <>
       axis_title_xml(axis_title) <>
       ~s(<c:majorTickMark val="#{tick_mark_value(major_tick)}"/>) <>
       ~s(<c:minorTickMark val="#{tick_mark_value(minor_tick)}"/>) <>
       ~s(<c:tickLblPos val="nextTo"/>) <>
-      line_sppr_xml(line_color) <>
+      sp_pr_xml(axis_opts) <>
       tick_label_format_xml(axis_opts) <>
       ~s(<c:crossAx val="#{cross_ax_id}"/>) <>
       crosses_xml(crosses) <>
@@ -833,15 +837,12 @@ defmodule Podium.Chart.XmlWriter do
     axis_title = Keyword.get(axis_opts, :title)
     num_fmt = Keyword.get(axis_opts, :number_format)
     gridlines = Keyword.get(axis_opts, :major_gridlines, true)
-    gridlines_color = Keyword.get(axis_opts, :major_gridlines_color)
     minor_gridlines = Keyword.get(axis_opts, :minor_gridlines, false)
-    minor_gridlines_color = Keyword.get(axis_opts, :minor_gridlines_color)
     min_val = Keyword.get(axis_opts, :min)
     max_val = Keyword.get(axis_opts, :max)
     major_unit = Keyword.get(axis_opts, :major_unit)
     minor_unit = Keyword.get(axis_opts, :minor_unit)
     crosses = Keyword.get(axis_opts, :crosses, :auto_zero)
-    line_color = Keyword.get(axis_opts, :line_color)
     reverse = Keyword.get(axis_opts, :reverse, false)
     visible = Keyword.get(axis_opts, :visible, true)
     major_tick = Keyword.get(axis_opts, :major_tick_mark, :out)
@@ -864,14 +865,14 @@ defmodule Podium.Chart.XmlWriter do
       scaling_xml <>
       ~s(<c:delete val="#{delete_val}"/>) <>
       ~s(<c:axPos val="#{pos}"/>) <>
-      gridlines_xml(gridlines, gridlines_color) <>
-      minor_gridlines_xml(minor_gridlines, minor_gridlines_color) <>
+      gridlines_xml("majorGridlines", gridlines) <>
+      gridlines_xml("minorGridlines", minor_gridlines) <>
       axis_title_xml(axis_title) <>
       num_fmt_xml <>
       ~s(<c:majorTickMark val="#{tick_mark_value(major_tick)}"/>) <>
       ~s(<c:minorTickMark val="#{tick_mark_value(minor_tick)}"/>) <>
       ~s(<c:tickLblPos val="nextTo"/>) <>
-      line_sppr_xml(line_color) <>
+      sp_pr_xml(axis_opts) <>
       tick_label_format_xml(axis_opts) <>
       ~s(<c:crossAx val="#{cross_ax_id}"/>) <>
       crosses_xml(crosses) <>
@@ -905,8 +906,14 @@ defmodule Podium.Chart.XmlWriter do
   defp axis_title_xml(nil), do: ""
 
   defp axis_title_xml(title) do
-    ~s(<c:title>#{title_text_xml(title)}<c:overlay val="0"/></c:title>)
+    ~s(<c:title>#{title_text_xml(title)}<c:overlay val="0"/>#{title_sp_pr_xml(title)}</c:title>)
   end
+
+  defp title_sp_pr_xml(title) when is_list(title) and title != [] do
+    if Keyword.keyword?(title), do: sp_pr_xml(title), else: ""
+  end
+
+  defp title_sp_pr_xml(_title), do: ""
 
   # The <c:tx> of a chart or axis title. A title is a string, rich text (a
   # list of paragraphs, as for a text box), or a keyword list with `:text`
@@ -944,24 +951,31 @@ defmodule Podium.Chart.XmlWriter do
     %{run | opts: Keyword.merge(font, opts)}
   end
 
-  defp line_sppr_xml(nil), do: ""
+  # Gridlines are off (false or nil), on (true), or on and formatted by a
+  # keyword list with :line.
+  defp gridlines_xml(_tag, off) when off in [false, nil], do: ""
+  defp gridlines_xml(tag, true), do: ~s(<c:#{tag}/>)
 
-  defp line_sppr_xml(color) do
-    ~s(<c:spPr><a:ln><a:solidFill><a:srgbClr val="#{color}"/></a:solidFill></a:ln></c:spPr>)
+  defp gridlines_xml(tag, opts) when is_list(opts),
+    do: ~s(<c:#{tag}>#{sp_pr_xml(opts)}</c:#{tag}>)
+
+  # Category axes draw no gridlines unless asked.
+  defp category_gridlines_xml(axis_opts) do
+    gridlines_xml("majorGridlines", Keyword.get(axis_opts, :major_gridlines, false)) <>
+      gridlines_xml("minorGridlines", Keyword.get(axis_opts, :minor_gridlines, false))
   end
 
-  defp gridlines_xml(false, _color), do: ""
-  defp gridlines_xml(true, nil), do: ~s(<c:majorGridlines/>)
+  # <c:spPr> from the :fill and :line in opts, or "" when it has neither.
+  defp sp_pr_xml(opts) do
+    fill = Keyword.get(opts, :fill)
+    line = Keyword.get(opts, :line)
 
-  defp gridlines_xml(true, color) do
-    ~s(<c:majorGridlines>#{line_sppr_xml(color)}</c:majorGridlines>)
-  end
-
-  defp minor_gridlines_xml(false, _color), do: ""
-  defp minor_gridlines_xml(true, nil), do: ~s(<c:minorGridlines/>)
-
-  defp minor_gridlines_xml(true, color) do
-    ~s(<c:minorGridlines>#{line_sppr_xml(color)}</c:minorGridlines>)
+    if is_nil(fill) and is_nil(line) do
+      ""
+    else
+      fill_xml = if is_nil(fill), do: "", else: Drawing.fill_xml(fill)
+      ~s(<c:spPr>#{fill_xml}#{Drawing.line_xml(line)}</c:spPr>)
+    end
   end
 
   defp tick_label_format_xml(axis_opts) do
@@ -1040,10 +1054,12 @@ defmodule Podium.Chart.XmlWriter do
       ~s(<c:plotArea>) <>
       combo_plots_xml(chart) <>
       combo_axes_xml(chart, has_secondary) <>
+      sp_pr_xml(chart.plot_area) <>
       ~s(</c:plotArea>) <>
       legend_xml(chart.legend) <>
       ~s(<c:dispBlanksAs val="gap"/>) <>
       ~s(</c:chart>) <>
+      chart_area_xml(chart.background) <>
       chart_text_xml(chart.text) <>
       ~s(<c:externalData r:id="rId1"><c:autoUpdate val="0"/></c:externalData>) <>
       ~s(</c:chartSpace>)
@@ -1213,7 +1229,6 @@ defmodule Podium.Chart.XmlWriter do
     axis_opts = chart.category_axis || []
     axis_title = Keyword.get(axis_opts, :title)
     crosses = Keyword.get(axis_opts, :crosses, :auto_zero)
-    line_color = Keyword.get(axis_opts, :line_color)
     reverse = Keyword.get(axis_opts, :reverse, false)
     visible = Keyword.get(axis_opts, :visible, true)
 
@@ -1228,11 +1243,12 @@ defmodule Podium.Chart.XmlWriter do
       ~s(<c:scaling><c:orientation val="#{orientation}"/></c:scaling>) <>
       ~s(<c:delete val="#{delete_val}"/>) <>
       ~s(<c:axPos val="#{pos}"/>) <>
+      category_gridlines_xml(axis_opts) <>
       axis_title_xml(axis_title) <>
       ~s(<c:majorTickMark val="out"/>) <>
       ~s(<c:minorTickMark val="none"/>) <>
       ~s(<c:tickLblPos val="nextTo"/>) <>
-      line_sppr_xml(line_color) <>
+      sp_pr_xml(axis_opts) <>
       tick_label_format_xml(axis_opts) <>
       ~s(<c:crossAx val="#{cross_ax_id}"/>) <>
       crosses_xml(crosses) <>
@@ -1248,15 +1264,12 @@ defmodule Podium.Chart.XmlWriter do
     axis_title = Keyword.get(axis_opts, :title)
     num_fmt = Keyword.get(axis_opts, :number_format)
     gridlines = Keyword.get(axis_opts, :major_gridlines, pos == "l")
-    gridlines_color = Keyword.get(axis_opts, :major_gridlines_color)
     minor_gridlines = Keyword.get(axis_opts, :minor_gridlines, false)
-    minor_gridlines_color = Keyword.get(axis_opts, :minor_gridlines_color)
     min_val = Keyword.get(axis_opts, :min)
     max_val = Keyword.get(axis_opts, :max)
     major_unit = Keyword.get(axis_opts, :major_unit)
     minor_unit = Keyword.get(axis_opts, :minor_unit)
     crosses = Keyword.get(axis_opts, :crosses, :auto_zero)
-    line_color = Keyword.get(axis_opts, :line_color)
     reverse = Keyword.get(axis_opts, :reverse, false)
     visible = Keyword.get(axis_opts, :visible, true)
 
@@ -1281,14 +1294,14 @@ defmodule Podium.Chart.XmlWriter do
       scaling_xml <>
       ~s(<c:delete val="#{delete_val}"/>) <>
       ~s(<c:axPos val="#{pos}"/>) <>
-      gridlines_xml(gridlines, gridlines_color) <>
-      minor_gridlines_xml(minor_gridlines, minor_gridlines_color) <>
+      gridlines_xml("majorGridlines", gridlines) <>
+      gridlines_xml("minorGridlines", minor_gridlines) <>
       axis_title_xml(axis_title) <>
       num_fmt_xml <>
       ~s(<c:majorTickMark val="out"/>) <>
       ~s(<c:minorTickMark val="none"/>) <>
       ~s(<c:tickLblPos val="nextTo"/>) <>
-      line_sppr_xml(line_color) <>
+      sp_pr_xml(axis_opts) <>
       tick_label_format_xml(axis_opts) <>
       ~s(<c:crossAx val="#{cross_ax_id}"/>) <>
       crosses_out <>
@@ -1304,6 +1317,12 @@ defmodule Podium.Chart.XmlWriter do
   defp combo_axis_ids(%ComboChart.PlotSpec{secondary_axis: false}) do
     {@combo_cat_ax_id, @combo_val_ax_id}
   end
+
+  # The chart area: transparent with :none, a fill, or [fill: ..., line: ...].
+  defp chart_area_xml(nil), do: ""
+  defp chart_area_xml(:none), do: sp_pr_xml(fill: :none, line: :none)
+  defp chart_area_xml(opts) when is_list(opts), do: sp_pr_xml(opts)
+  defp chart_area_xml(fill), do: sp_pr_xml(fill: fill)
 
   # Chart-wide text formatting. Chart text is 18pt unless `:text` gives
   # another size.

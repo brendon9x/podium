@@ -520,6 +520,59 @@ defmodule Podium.Chart.ComboChartTest do
     end
   end
 
+  describe "fill and line" do
+    test "combo charts take background, plot area, legend, axis and gridline formatting" do
+      combo =
+        ComboChart.new(sample_chart_data(), [
+          {:column_clustered, series: [0, 1]},
+          {:line_markers, series: [2], secondary_axis: true}
+        ])
+
+      xml =
+        combo
+        |> Podium.Chart.new_combo(
+          x: 0,
+          y: 0,
+          width: 100,
+          height: 100,
+          background: :none,
+          plot_area: [fill: "F2F2F2"],
+          legend: [position: :bottom, line: "000000"],
+          category_axis: [line: :none, major_gridlines: true],
+          value_axis: [major_gridlines: [line: "D9D9D9"]],
+          secondary_value_axis: [line: [color: "C00000", width: {1, :pt}]]
+        )
+        |> Podium.Chart.XmlWriter.to_xml()
+
+      [_, after_chart] = String.split(xml, "</c:chart>")
+      assert after_chart =~ ~s(<c:spPr><a:noFill/><a:ln><a:noFill/></a:ln></c:spPr>)
+
+      assert xml =~
+               ~s(<c:spPr><a:solidFill><a:srgbClr val="F2F2F2"/></a:solidFill></c:spPr></c:plotArea>)
+
+      assert xml =~ ~r{<c:legend>.*<c:spPr><a:ln>.*</c:legend>}s
+
+      assert xml =~
+               ~r{<c:catAx>.*<c:majorGridlines/>.*<c:spPr><a:ln><a:noFill/></a:ln></c:spPr>.*</c:catAx>}s
+
+      [primary, secondary] = Regex.scan(~r{<c:valAx>.*?</c:valAx>}s, xml) |> List.flatten()
+      assert primary =~ ~s(<c:majorGridlines><c:spPr><a:ln><a:solidFill><a:srgbClr val="D9D9D9"/>)
+      assert secondary =~ ~s(<c:spPr><a:ln w="12700"><a:solidFill><a:srgbClr val="C00000"/>)
+    end
+
+    test "an invalid background raises" do
+      combo =
+        ComboChart.new(sample_chart_data(), [
+          {:column_clustered, series: [0, 1]},
+          {:line, series: [2]}
+        ])
+
+      assert_raise ArgumentError, ~r/:background/, fn ->
+        Podium.Chart.new_combo(combo, x: 0, y: 0, width: 1, height: 1, background: :transparent)
+      end
+    end
+  end
+
   describe "schema order" do
     test "combo axes write txPr between spPr and crossAx" do
       data = sample_chart_data()
@@ -536,9 +589,9 @@ defmodule Podium.Chart.ComboChartTest do
           y: 0,
           width: 100,
           height: 100,
-          category_axis: [label_rotation: 45, line_color: "000000"],
-          value_axis: [color: "FF0000", line_color: "000000"],
-          secondary_value_axis: [color: "00FF00", line_color: "000000"]
+          category_axis: [label_rotation: 45, line: "000000"],
+          value_axis: [color: "FF0000", line: "000000"],
+          secondary_value_axis: [color: "00FF00", line: "000000"]
         )
 
       elements =

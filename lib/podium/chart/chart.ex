@@ -21,11 +21,13 @@ defmodule Podium.Chart do
     :title,
     :legend,
     :combo,
+    :background,
     data_labels: [],
     category_axis: [],
     value_axis: [],
     secondary_value_axis: [],
-    text: []
+    text: [],
+    plot_area: []
   ]
 
   @type t :: %__MODULE__{
@@ -39,11 +41,13 @@ defmodule Podium.Chart do
           title: String.t() | keyword() | nil,
           legend: atom() | keyword() | false | nil,
           combo: Podium.Chart.ComboChart.t() | nil,
+          background: Podium.fill() | keyword() | nil,
           data_labels: keyword() | [atom()],
           category_axis: keyword(),
           value_axis: keyword(),
           secondary_value_axis: keyword(),
-          text: keyword()
+          text: keyword(),
+          plot_area: keyword()
         }
 
   @doc """
@@ -64,7 +68,9 @@ defmodule Podium.Chart do
       data_labels: Keyword.get(opts, :data_labels, []),
       category_axis: Keyword.get(opts, :category_axis, []),
       value_axis: Keyword.get(opts, :value_axis, []),
-      text: Keyword.get(opts, :text, [])
+      text: Keyword.get(opts, :text, []),
+      background: validate_background!(Keyword.get(opts, :background)),
+      plot_area: validate_plot_area!(Keyword.get(opts, :plot_area, []))
     }
   end
 
@@ -88,8 +94,27 @@ defmodule Podium.Chart do
       category_axis: Keyword.get(opts, :category_axis, []),
       value_axis: Keyword.get(opts, :value_axis, []),
       secondary_value_axis: Keyword.get(opts, :secondary_value_axis, []),
-      text: Keyword.get(opts, :text, [])
+      text: Keyword.get(opts, :text, []),
+      background: validate_background!(Keyword.get(opts, :background)),
+      plot_area: validate_plot_area!(Keyword.get(opts, :plot_area, []))
     }
+  end
+
+  defp validate_background!(background)
+       when is_nil(background) or background == :none or is_binary(background) or
+              is_list(background) or is_tuple(background),
+       do: background
+
+  defp validate_background!(other) do
+    raise ArgumentError,
+          "chart :background must be :none, a fill or a keyword list with :fill and :line, " <>
+            "got: #{inspect(other)}"
+  end
+
+  defp validate_plot_area!(opts) when is_list(opts), do: opts
+
+  defp validate_plot_area!(other) do
+    raise ArgumentError, "chart :plot_area must be a keyword list, got: #{inspect(other)}"
   end
 
   @doc """

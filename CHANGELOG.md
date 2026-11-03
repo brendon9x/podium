@@ -16,11 +16,26 @@
 - Tick labels on any axis take font options directly on the axis keyword list,
   alongside `:label_rotation`.
 - Per-point data labels take font options.
+- Chart elements take `:fill` and `:line`: the chart area (`:background`,
+  where `:none` makes it transparent), the plot area (`:plot_area`), the title,
+  axis titles, the legend, each axis line and data labels (chart-wide and per
+  point).
+- Gridlines take a formatted line, `major_gridlines: [line: ...]`, and category
+  and date axes can show gridlines, which they could not before.
+- `:none` is a fill and a line everywhere one is accepted, shapes included,
+  and a line keyword list may give only `:width` or `:dash_style`. An invalid
+  fill or line raises `ArgumentError` naming the accepted forms.
 - Chart titles and axis titles take rich text, in the form a text box takes:
   several runs, several paragraphs, paragraph alignment and line breaks. Font
   options given alongside `:text` apply to every run.
 
 ### Changed
+
+- Axis `:line_color` is replaced by `:line`, which takes any line format:
+  `line_color: "AAAAAA"` becomes `line: "AAAAAA"`.
+- Axis `:major_gridlines_color` and `:minor_gridlines_color` are replaced by a
+  keyword list on the gridlines option: `major_gridlines_color: "D9D9D9"`
+  becomes `major_gridlines: [line: "D9D9D9"]`.
 
 - A legend keyword list no longer needs `:position`; it defaults to `:right`.
 - A data label keyword list without `:show` labels the values instead of

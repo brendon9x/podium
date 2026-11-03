@@ -539,11 +539,11 @@ defmodule Podium.Integration.ChartGalleryTest do
           y: {1, :inches},
           width: {12, :inches},
           height: {5.5, :inches},
-          category_axis: [color: "FFFFFF", line_color: "555555"],
+          category_axis: [color: "FFFFFF", line: "555555"],
           value_axis: [
             color: "FFFFFF",
-            line_color: "555555",
-            major_gridlines_color: "333333"
+            line: "555555",
+            major_gridlines: [line: "333333"]
           ],
           data_labels: [show: [:value], color: "FFFFFF"]
         )

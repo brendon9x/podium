@@ -175,4 +175,107 @@ defmodule Podium.Integration.ChartFormattingTest do
       assert parts["ppt/charts/chart2.xml"] =~ "<a:br/>"
     end
   end
+
+  describe "fill and line" do
+    test "chart area, plot area, title, legend, axes, gridlines and labels" do
+      backdrop = fn slide ->
+        Podium.add_auto_shape(slide, :rectangle,
+          x: {0.5, :inches},
+          y: {1.4, :inches},
+          width: {12, :inches},
+          height: {5.6, :inches},
+          fill: {:gradient, [{0, "FCE4D6"}, {100_000, "DDEBF7"}], angle: 0},
+          line: :none
+        )
+      end
+
+      slides = [
+        slide_with(
+          "the orange-to-blue backdrop shows through the chart (background :none, " <>
+            "no chart border); plot area pale grey with a thin grey border",
+          fn slide, pos ->
+            slide
+            |> backdrop.()
+            |> Podium.add_chart(
+              :column_clustered,
+              regional_data(),
+              pos ++ [background: :none, plot_area: [fill: "F2F2F2", line: "A6A6A6"]]
+            )
+          end
+        ),
+        slide_with(
+          "title white on navy; legend boxed in grey at the top; value axis line hidden; " <>
+            "dashed light grey major gridlines; category axis line thick dark grey",
+          &Podium.add_chart(
+            &1,
+            :column_clustered,
+            regional_data(),
+            &2 ++
+              [
+                title: [text: "Fill and Line", fill: "1F3864", color: "FFFFFF"],
+                legend: [position: :top, line: [color: "808080", width: {1, :pt}]],
+                value_axis: [
+                  line: :none,
+                  major_gridlines: [line: [color: "BFBFBF", dash_style: :dash]]
+                ],
+                category_axis: [line: [color: "404040", width: {2.5, :pt}]]
+              ]
+          )
+        ),
+        slide_with(
+          "category gridlines (vertical, light blue) and minor value gridlines (dotted)",
+          &Podium.add_chart(
+            &1,
+            :line_markers,
+            regional_data(),
+            &2 ++
+              [
+                category_axis: [major_gridlines: [line: "BDD7EE"]],
+                value_axis: [minor_gridlines: [line: [color: "D9D9D9", dash_style: :sys_dot]]]
+              ]
+          )
+        ),
+        slide_with(
+          "every data label in a white box with a blue border; the South 2026 label yellow",
+          &Podium.add_chart(
+            &1,
+            :column_clustered,
+            regional_data()
+            |> ChartData.add_series("Target", [50, 60, 45, 60],
+              color: "A5A5A5",
+              data_labels: %{1 => [show: [:value], fill: "FFFF00"]}
+            ),
+            &2 ++
+              [
+                data_labels: [
+                  show: [:value],
+                  position: :outside_end,
+                  fill: "FFFFFF",
+                  line: "4472C4",
+                  font_size: 9
+                ]
+              ]
+          )
+        ),
+        slide_with(
+          "axis titles boxed: 'Region' with a red outline, 'Sales' on a grey fill",
+          &Podium.add_chart(
+            &1,
+            :column_clustered,
+            regional_data(),
+            &2 ++
+              [
+                category_axis: [title: [text: "Region", line: "C00000"]],
+                value_axis: [title: [text: "Sales", fill: "D9D9D9"]]
+              ]
+          )
+        )
+      ]
+
+      parts = save_deck(slides, "chart_fill_and_line.pptx")
+      assert parts["ppt/charts/chart1.xml"] =~ "<a:noFill/><a:ln><a:noFill/></a:ln>"
+      assert parts["ppt/charts/chart3.xml"] =~ "<c:catAx>"
+      assert parts["ppt/charts/chart4.xml"] =~ ~s(<a:srgbClr val="FFFF00"/>)
+    end
+  end
 end
