@@ -1614,6 +1614,121 @@ defmodule Podium.Chart.XmlWriterTest do
     end
   end
 
+  describe "manual layout" do
+    defp chart_with(chart_data, opts) do
+      Chart.new(:column_clustered, chart_data, [x: 0, y: 0, width: 100, height: 100] ++ opts)
+    end
+
+    test "plot area layout positions the inner plot area", %{chart_data: chart_data} do
+      xml =
+        chart_data
+        |> chart_with(plot_area: [x: 0.1, y: 0.05, w: 0.8, h: 0.75])
+        |> XmlWriter.to_xml()
+
+      assert hd(child_names(xml, "plotArea")) == "c:layout"
+
+      assert xml =~
+               ~s(<c:plotArea><c:layout><c:manualLayout><c:layoutTarget val="inner"/>) <>
+                 ~s(<c:xMode val="edge"/><c:yMode val="edge"/><c:x val="0.1"/><c:y val="0.05"/>) <>
+                 ~s(<c:w val="0.8"/><c:h val="0.75"/></c:manualLayout></c:layout>)
+    end
+
+    test "plot area layout can target the outer area", %{chart_data: chart_data} do
+      xml =
+        chart_data
+        |> chart_with(plot_area: [x: 0, y: 0, w: 1, h: 1, target: :outer])
+        |> XmlWriter.to_xml()
+
+      assert xml =~ ~s(<c:layoutTarget val="outer"/>)
+    end
+
+    test "plot area layout and fill together", %{chart_data: chart_data} do
+      xml =
+        chart_data
+        |> chart_with(plot_area: [x: 0.1, y: 0.1, w: 0.8, h: 0.8, fill: "F2F2F2"])
+        |> XmlWriter.to_xml()
+
+      names = child_names(xml, "plotArea")
+      assert hd(names) == "c:layout"
+      assert List.last(names) == "c:spPr"
+    end
+
+    test "legend takes a position and an optional size", %{chart_data: chart_data} do
+      xml = chart_data |> chart_with(legend: [x: 0.8, y: 0.1]) |> XmlWriter.to_xml()
+      legend = fragment(xml, "c:legend")
+      assert legend =~ ~s(<c:x val="0.8"/><c:y val="0.1"/></c:manualLayout>)
+      refute legend =~ "layoutTarget"
+
+      xml =
+        chart_data |> chart_with(legend: [x: 0.8, y: 0.1, w: 0.15, h: 0.3]) |> XmlWriter.to_xml()
+
+      assert fragment(xml, "c:legend") =~ ~s(<c:w val="0.15"/><c:h val="0.3"/>)
+    end
+
+    test "legend children keep schema order", %{chart_data: chart_data} do
+      xml =
+        chart_data
+        |> chart_with(
+          legend: [position: :right, x: 0.8, y: 0.1, overlay: true, fill: "FFFFFF", bold: true]
+        )
+        |> XmlWriter.to_xml()
+
+      assert child_names(xml, "legend") ==
+               ["c:legendPos", "c:layout", "c:overlay", "c:spPr", "c:txPr"]
+
+      assert fragment(xml, "c:legend") =~ ~s(<c:overlay val="1"/>)
+    end
+
+    test "chart title takes a position and overlay", %{chart_data: chart_data} do
+      xml =
+        chart_data
+        |> chart_with(title: [text: "T", x: 0.05, y: 0.02, overlay: true, fill: "FFFFFF"])
+        |> XmlWriter.to_xml()
+
+      assert child_names(xml, "title") == ["c:tx", "c:layout", "c:overlay", "c:spPr"]
+      assert fragment(xml, "c:title") =~ ~s(<c:x val="0.05"/><c:y val="0.02"/></c:manualLayout>)
+      assert fragment(xml, "c:title") =~ ~s(<c:overlay val="1"/>)
+    end
+
+    test "axis titles take a position", %{chart_data: chart_data} do
+      xml =
+        chart_data
+        |> chart_with(value_axis: [title: [text: "Sales", x: 0.0, y: 0.4]])
+        |> XmlWriter.to_xml()
+
+      assert fragment(xml, "c:valAx") =~ ~s(<c:x val="0.0"/><c:y val="0.4"/>)
+    end
+
+    test "no layout is written by default", %{chart_data: chart_data} do
+      xml =
+        chart_data
+        |> chart_with(
+          title: [text: "T"],
+          legend: [position: :bottom],
+          plot_area: [fill: "FFFFFF"]
+        )
+        |> XmlWriter.to_xml()
+
+      refute xml =~ "c:layout"
+    end
+
+    test "layout errors", %{chart_data: chart_data} do
+      for {opts, message} <- [
+            {[plot_area: [x: 0.1, y: 0.1]], ~r/:plot_area needs all of :x, :y, :w and :h/},
+            {[plot_area: [x: 0.1, y: 0.1, w: 1.2, h: 0.5]], ~r/fractions between 0 and 1/},
+            {[plot_area: [x: 0, y: 0, w: 1, h: 1, target: :middle]], ~r/:target must be/},
+            {[legend: [x: 0.5]], ~r/:legend needs :x and :y together/},
+            {[legend: [x: 0.5, y: 0.5, w: 0.2]], ~r/:legend needs :w and :h together/},
+            {[title: [text: "T", x: 0.1, y: 0.1, w: 0.5, h: 0.1]],
+             ~r/:title takes :x and :y only/},
+            {[value_axis: [title: [text: "V", y: 0.5]]], ~r/:value_axis :title needs :x and :y/},
+            {[legend: [x: -0.1, y: 0.5]], ~r/fractions between 0 and 1/}
+          ] do
+        assert_raise ArgumentError, message, fn -> chart_with(chart_data, opts) end
+      end
+    end
+  end
+
   describe "schema order" do
     test "chart-level dLbls writes numFmt, txPr and dLblPos before the show flags",
          %{chart_data: chart_data} do

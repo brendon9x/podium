@@ -374,4 +374,59 @@ defmodule Podium.Integration.ChartFormattingTest do
       assert parts["ppt/charts/chart5.xml"] =~ "<c:dPt>"
     end
   end
+
+  describe "manual layout" do
+    test "plot area, legend and titles placed by hand" do
+      slides = [
+        slide_with(
+          "title in the top-left corner; plot area (shaded) on the left two-thirds; " <>
+            "legend boxed in the right third, upper half",
+          &Podium.add_chart(
+            &1,
+            :column_clustered,
+            regional_data(),
+            &2 ++
+              [
+                title: [text: "Manual Layout", x: 0.02, y: 0.02],
+                legend: [x: 0.72, y: 0.15, w: 0.25, h: 0.35, line: "808080"],
+                plot_area: [x: 0.06, y: 0.15, w: 0.62, h: 0.75, fill: "F2F2F2"]
+              ]
+          )
+        ),
+        slide_with(
+          "legend floats over the top-right of the plot area (overlay), plot area full width",
+          &Podium.add_chart(
+            &1,
+            :line_markers,
+            regional_data(),
+            &2 ++ [legend: [position: :right, x: 0.8, y: 0.05, overlay: true, fill: "FFFFFF"]]
+          )
+        ),
+        slide_with(
+          "plot area with :outer target: the tick labels sit inside the shaded box",
+          &Podium.add_chart(
+            &1,
+            :column_clustered,
+            regional_data(),
+            &2 ++
+              [plot_area: [x: 0.1, y: 0.1, w: 0.8, h: 0.8, target: :outer, fill: "FFF2CC"]]
+          )
+        ),
+        slide_with(
+          "value axis title 'Sales' at the far left, half-way up",
+          &Podium.add_chart(
+            &1,
+            :column_clustered,
+            regional_data(),
+            &2 ++ [value_axis: [title: [text: "Sales", x: 0.0, y: 0.45]]]
+          )
+        )
+      ]
+
+      parts = save_deck(slides, "chart_manual_layout.pptx")
+      assert parts["ppt/charts/chart1.xml"] =~ "<c:manualLayout>"
+      assert parts["ppt/charts/chart2.xml"] =~ ~s(<c:overlay val="1"/>)
+      assert parts["ppt/charts/chart3.xml"] =~ ~s(<c:layoutTarget val="outer"/>)
+    end
+  end
 end

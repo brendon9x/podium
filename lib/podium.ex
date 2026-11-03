@@ -339,11 +339,13 @@ defmodule Podium do
       Chart text is 18pt unless this gives another `:font_size`; titles take every
       option but the size
     * `:title` - chart title as a string, rich text (a list of paragraphs, as for
-      `add_text_box/3`), or keyword list with `:text` (either form), `:fill`, `:line`
-      and font options that apply to every run
+      `add_text_box/3`), or keyword list with `:text` (either form), `:fill`, `:line`,
+      font options that apply to every run, a manual position `:x`, `:y` (fractions
+      of the chart frame) and `:overlay`
     * `:legend` - legend position atom (`:left`, `:right`, `:top`, `:bottom`) or `false`
-      to hide, or keyword list with `:position` (default `:right`), `:fill`, `:line` and
-      font options
+      to hide, or keyword list with `:position` (default `:right`), a manual position
+      `:x`, `:y` and optional `:w`, `:h` (fractions of the chart frame), `:overlay`,
+      `:fill`, `:line` and font options
     * `:data_labels` - list of atoms to show (`:value`, `:category`, `:series`, `:percent`)
       or keyword list with `:show` (list, default `[:value]`), `:position` (`:center`,
       `:inside_end`, `:inside_base`, `:outside_end`, `:top`, `:bottom`, `:left`, `:right`,
@@ -351,7 +353,9 @@ defmodule Podium do
       options
     * `:background` - chart area: `:none` for transparent with no border, a fill, or a
       keyword list with `:fill` and `:line`
-    * `:plot_area` - keyword list with `:fill` and `:line` for the plot area
+    * `:plot_area` - keyword list with `:fill` and `:line` for the plot area, and a
+      manual position `:x`, `:y`, `:w`, `:h` (fractions of the chart frame, all four
+      together) with `:target` (`:inner`, the default, or `:outer`)
     * `:category_axis` - keyword list with `:title` (same forms as the chart `:title`),
       `:type` (`:date` for date axis),
       `:number_format`, `:major_gridlines`, `:minor_gridlines`, `:visible`, `:reverse`,
@@ -396,7 +400,7 @@ defmodule Podium do
     * `:data_labels` - data label configuration
     * `:text` - font options for all chart text
     * `:background` - chart area fill and line
-    * `:plot_area` - plot area fill and line
+    * `:plot_area` - plot area fill, line and manual position
     * `:category_axis` - category axis options
     * `:value_axis` - primary value axis options
     * `:secondary_value_axis` - secondary value axis options (same keys as `:value_axis`)

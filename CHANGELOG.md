@@ -32,6 +32,10 @@
   in place of `:color` for the fill. `color: :none` leaves a series unfilled.
 - `:invert_if_negative` on bar and bubble series draws negative values in
   inverted colours. It stays off by default.
+- The plot area, legend, chart title and axis titles take a manual position
+  as fractions of the chart frame (`:x`, `:y`, and `:w`, `:h` where the
+  element has a size), and the legend and titles take `:overlay`. A partial or
+  out-of-range position raises `ArgumentError`.
 - Chart titles and axis titles take rich text, in the form a text box takes:
   several runs, several paragraphs, paragraph alignment and line breaks. Font
   options given alongside `:text` apply to every run.

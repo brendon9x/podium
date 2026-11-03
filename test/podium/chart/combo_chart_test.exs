@@ -598,6 +598,46 @@ defmodule Podium.Chart.ComboChartTest do
     end
   end
 
+  describe "manual layout" do
+    test "combo plot area, legend and title take a layout" do
+      xml =
+        sample_chart_data()
+        |> ComboChart.new([{:column_clustered, series: [0, 1]}, {:line, series: [2]}])
+        |> Podium.Chart.new_combo(
+          x: 0,
+          y: 0,
+          width: 100,
+          height: 100,
+          title: [text: "T", x: 0.4, y: 0.0],
+          legend: [x: 0.85, y: 0.2, w: 0.12, h: 0.4],
+          plot_area: [x: 0.05, y: 0.12, w: 0.75, h: 0.75]
+        )
+        |> Podium.Chart.XmlWriter.to_xml()
+
+      assert xml =~ ~s(<c:plotArea><c:layout><c:manualLayout><c:layoutTarget val="inner"/>)
+      assert xml =~ ~s(<c:x val="0.85"/><c:y val="0.2"/><c:w val="0.12"/><c:h val="0.4"/>)
+      assert xml =~ ~s(<c:x val="0.4"/><c:y val="0.0"/></c:manualLayout>)
+    end
+
+    test "combo layout errors raise" do
+      combo =
+        ComboChart.new(sample_chart_data(), [
+          {:column_clustered, series: [0, 1]},
+          {:line, series: [2]}
+        ])
+
+      assert_raise ArgumentError, ~r/:plot_area needs all/, fn ->
+        Podium.Chart.new_combo(combo,
+          x: 0,
+          y: 0,
+          width: 1,
+          height: 1,
+          plot_area: [x: 0.1, y: 0.1]
+        )
+      end
+    end
+  end
+
   describe "schema order" do
     test "combo axes write txPr between spPr and crossAx" do
       data = sample_chart_data()

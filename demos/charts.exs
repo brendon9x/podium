@@ -266,6 +266,19 @@ s12 =
     legend: :bottom
   )
 
+# Slide 13: Manual layout of the title, legend and plot area
+s13 =
+  Podium.Slide.new()
+  |> Podium.add_chart(:column_clustered, font_data,
+    x: {0.5, :inches},
+    y: {0.5, :inches},
+    width: {12, :inches},
+    height: {6, :inches},
+    title: [text: "Manual Layout", x: 0.02, y: 0.02],
+    legend: [x: 0.82, y: 0.15, w: 0.16, h: 0.3, line: "BFBFBF"],
+    plot_area: [x: 0.06, y: 0.15, w: 0.72, h: 0.72, fill: "F7F9FC"]
+  )
+
 prs
 |> Podium.add_slide(s1)
 |> Podium.add_slide(s2)
@@ -279,6 +292,7 @@ prs
 |> Podium.add_slide(s10)
 |> Podium.add_slide(s11)
 |> Podium.add_slide(s12)
+|> Podium.add_slide(s13)
 |> Podium.save("demos/output/charts.pptx")
 
 IO.puts("Generated demos/output/charts.pptx")
