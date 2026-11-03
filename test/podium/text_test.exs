@@ -100,6 +100,22 @@ defmodule Podium.TextTest do
       assert xml =~ ~s(<a:solidFill><a:srgbClr val="FF0000"/></a:solidFill>)
     end
 
+    test "escapes the typeface" do
+      paragraphs = Text.normalize([[{"Custom", font: "Fish & Chips"}]])
+      xml = Text.paragraphs_xml(paragraphs)
+      assert xml =~ ~s(<a:latin typeface="Fish &amp; Chips"/>)
+    end
+
+    test "fractional font size and spacing write whole hundredths" do
+      paragraphs =
+        Text.normalize([{[{"Text", font_size: 10.5}], space_before: 4.5, space_after: 1.25}])
+
+      xml = Text.paragraphs_xml(paragraphs)
+      assert xml =~ ~s(sz="1050")
+      assert xml =~ ~s(<a:spcPts val="450"/>)
+      assert xml =~ ~s(<a:spcPts val="125"/>)
+    end
+
     test "includes font as latin typeface" do
       paragraphs = Text.normalize([[{"Custom", font: "Calibri"}]])
       xml = Text.paragraphs_xml(paragraphs)

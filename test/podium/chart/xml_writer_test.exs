@@ -4,6 +4,8 @@ defmodule Podium.Chart.XmlWriterTest do
   alias Podium.Chart
   alias Podium.Chart.{ChartData, XmlWriter}
 
+  import SweetXml, only: [sigil_x: 2]
+
   setup do
     chart_data =
       ChartData.new()
@@ -927,5 +929,183 @@ defmodule Podium.Chart.XmlWriterTest do
       xml = XmlWriter.to_xml(chart)
       assert xml =~ ~s(<a:latin typeface="Arial"/>)
     end
+  end
+
+  describe "schema order" do
+    test "chart-level dLbls writes numFmt, txPr and dLblPos before the show flags",
+         %{chart_data: chart_data} do
+      chart = %Chart{
+        chart_type: :column_clustered,
+        chart_data: chart_data,
+        data_labels: [show: [:value], position: :outside_end, number_format: "0%", font_size: 9]
+      }
+
+      assert child_names(XmlWriter.to_xml(chart), "dLbls") == [
+               "c:numFmt",
+               "c:txPr",
+               "c:dLblPos",
+               "c:showLegendKey",
+               "c:showVal",
+               "c:showCatName",
+               "c:showSerName",
+               "c:showPercent"
+             ]
+    end
+
+    test "per-point dLbl writes numFmt and dLblPos before the show flags" do
+      chart_data =
+        ChartData.new()
+        |> ChartData.add_categories(["A", "B"])
+        |> ChartData.add_series("S1", [10, 20],
+          data_labels: %{1 => [show: [:value], position: :center, number_format: "0.0"]}
+        )
+
+      xml = XmlWriter.to_xml(%Chart{chart_type: :column_clustered, chart_data: chart_data})
+
+      assert child_names(xml, "dLbl") == [
+               "c:idx",
+               "c:numFmt",
+               "c:dLblPos",
+               "c:showLegendKey",
+               "c:showVal",
+               "c:showCatName",
+               "c:showSerName",
+               "c:showPercent"
+             ]
+    end
+
+    test "series dLbls of per-point labels closes with the show flags" do
+      chart_data =
+        ChartData.new()
+        |> ChartData.add_categories(["A", "B", "C"])
+        |> ChartData.add_series("S1", [10, 20, 30],
+          data_labels: %{0 => [show: [:value]], 2 => [show: [:value]]}
+        )
+
+      xml = XmlWriter.to_xml(%Chart{chart_type: :column_clustered, chart_data: chart_data})
+
+      assert child_names(xml, "dLbls") == [
+               "c:dLbl",
+               "c:dLbl",
+               "c:showLegendKey",
+               "c:showVal",
+               "c:showCatName",
+               "c:showSerName",
+               "c:showPercent"
+             ]
+
+      # The other points stay unlabelled
+      assert xml =~
+               ~s(</c:dLbl><c:showLegendKey val="0"/><c:showVal val="0"/>)
+    end
+
+    for {axis, local_name, opts} <- [
+          {"category", "catAx", [category_axis: [label_rotation: 45, line_color: "000000"]]},
+          {"date", "dateAx",
+           [category_axis: [type: :date, label_rotation: 45, line_color: "000000"]]},
+          {"value", "valAx", [value_axis: [color: "FF0000", line_color: "000000"]]}
+        ] do
+      test "#{axis} axis writes txPr between spPr and crossAx", %{chart_data: chart_data} do
+        chart =
+          struct(%Chart{chart_type: :column_clustered, chart_data: chart_data}, unquote(opts))
+
+        names = child_names(XmlWriter.to_xml(chart), unquote(local_name))
+
+        assert ["c:spPr", "c:txPr", "c:crossAx"] ==
+                 Enum.filter(names, &(&1 in ["c:spPr", "c:txPr", "c:crossAx"]))
+      end
+    end
+
+    test "value axis scaling writes max before min", %{chart_data: chart_data} do
+      chart = %Chart{
+        chart_type: :column_clustered,
+        chart_data: chart_data,
+        value_axis: [min: 0, max: 100]
+      }
+
+      value_scaling = chart |> XmlWriter.to_xml() |> elements("c:scaling") |> List.last()
+      assert children(value_scaling) == ["c:orientation", "c:max", "c:min"]
+    end
+
+    test "a coloured bar point states invertIfNegative before its spPr" do
+      chart_data =
+        ChartData.new()
+        |> ChartData.add_categories(["A", "B"])
+        |> ChartData.add_series("S1", [10, -20],
+          point_colors: %{1 => "FF0000"},
+          point_formats: %{0 => [line: "000000"]}
+        )
+
+      xml = XmlWriter.to_xml(%Chart{chart_type: :bar_clustered, chart_data: chart_data})
+
+      assert child_names(xml, "dPt") == ["c:idx", "c:invertIfNegative", "c:spPr"]
+      assert xpath_count(xml, "//*[local-name()='dPt']/*[local-name()='invertIfNegative']") == 2
+    end
+
+    test "a coloured line point carries no invertIfNegative" do
+      chart_data =
+        ChartData.new()
+        |> ChartData.add_categories(["A", "B"])
+        |> ChartData.add_series("S1", [10, -20], point_colors: %{1 => "FF0000"})
+
+      xml = XmlWriter.to_xml(%Chart{chart_type: :line_markers, chart_data: chart_data})
+
+      assert child_names(xml, "dPt") == ["c:idx", "c:spPr"]
+    end
+  end
+
+  describe "number formatting" do
+    test "fractional font sizes write whole hundredths", %{chart_data: chart_data} do
+      chart = %Chart{
+        chart_type: :column_clustered,
+        chart_data: chart_data,
+        title: [text: "T", font_size: 10.5],
+        data_labels: [show: [:value], font_size: 8.5]
+      }
+
+      xml = XmlWriter.to_xml(chart)
+      assert xml =~ ~s(sz="1050")
+      assert xml =~ ~s(sz="850")
+      refute xml =~ ~r/sz="[0-9]+\.[0-9]+"/
+    end
+
+    test "fractional label rotation writes whole 60000ths", %{chart_data: chart_data} do
+      chart = %Chart{
+        chart_type: :column_clustered,
+        chart_data: chart_data,
+        category_axis: [label_rotation: -22.5]
+      }
+
+      assert XmlWriter.to_xml(chart) =~ ~s(<a:bodyPr rot="-1350000"/>)
+    end
+
+    test "typefaces are escaped", %{chart_data: chart_data} do
+      chart = %Chart{
+        chart_type: :column_clustered,
+        chart_data: chart_data,
+        legend: [position: :bottom, font: "Fish & Chips"]
+      }
+
+      assert XmlWriter.to_xml(chart) =~ ~s(<a:latin typeface="Fish &amp; Chips"/>)
+    end
+  end
+
+  # Element names of the direct children of the first <c:local_name>.
+  defp child_names(xml, local_name), do: xml |> elements("c:" <> local_name) |> hd() |> children()
+
+  defp elements(xml, name) do
+    xml
+    |> SweetXml.parse()
+    |> SweetXml.xpath(~x"//*"l)
+    |> Enum.filter(&(to_string(elem(&1, 1)) == name))
+  end
+
+  defp children(element) do
+    for {:xmlElement, _, _, _, _, _, _, _, _, _, _, _} = child <- elem(element, 8),
+        do: to_string(elem(child, 1))
+  end
+
+  defp xpath_count(xml, path) do
+    xml |> SweetXml.parse() |> SweetXml.xpath(~x"#{path}"l) |> length()
   end
 end
