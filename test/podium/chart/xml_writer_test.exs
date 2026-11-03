@@ -2,7 +2,7 @@ defmodule Podium.Chart.XmlWriterTest do
   use ExUnit.Case, async: true
 
   alias Podium.Chart
-  alias Podium.Chart.{ChartData, XmlWriter}
+  alias Podium.Chart.{BubbleChartData, ChartData, XmlWriter, XyChartData}
 
   import SweetXml, only: [sigil_x: 2]
 
@@ -304,7 +304,7 @@ defmodule Podium.Chart.XmlWriterTest do
         ChartData.new()
         |> ChartData.add_categories(["A", "B"])
         |> ChartData.add_series("S1", [10, 20],
-          pattern: [type: :dn_diag, foreground: "FF0000", background: "FFFFFF"]
+          fill: {:pattern, :dn_diag, foreground: "FF0000", background: "FFFFFF"}
         )
 
       chart = %Chart{chart_type: :column_clustered, chart_data: chart_data}
@@ -1411,6 +1411,209 @@ defmodule Podium.Chart.XmlWriterTest do
     end
   end
 
+  describe "series fill and line" do
+    defp one_series(chart_type, opts) do
+      chart_data =
+        ChartData.new()
+        |> ChartData.add_categories(["A", "B", "C"])
+        |> ChartData.add_series("S1", [10, -20, 30], opts)
+
+      XmlWriter.to_xml(%Chart{chart_type: chart_type, chart_data: chart_data})
+    end
+
+    defp xy_series(chart_type, opts) do
+      chart_data = XyChartData.add_series(XyChartData.new(), "S1", [1, 2, 3], [4, 5, 6], opts)
+      XmlWriter.to_xml(%Chart{chart_type: chart_type, chart_data: chart_data})
+    end
+
+    defp bubble_series(opts) do
+      chart_data =
+        BubbleChartData.add_series(BubbleChartData.new(), "S1", [1, 2], [3, -4], [5, 6], opts)
+
+      XmlWriter.to_xml(%Chart{chart_type: :bubble, chart_data: chart_data})
+    end
+
+    defp series_sp_pr(xml),
+      do: xml |> elements("c:ser") |> hd() |> children() |> Enum.count(&(&1 == "c:spPr"))
+
+    test "a plain colour is unchanged on bars and lines" do
+      assert one_series(:column_clustered, color: "4472C4") =~
+               ~s(</c:tx><c:spPr><a:solidFill><a:srgbClr val="4472C4"/></a:solidFill></c:spPr>)
+
+      assert one_series(:line, color: "4472C4") =~
+               ~s(</c:tx><c:spPr><a:ln><a:solidFill><a:srgbClr val="4472C4"/></a:solidFill></a:ln></c:spPr>)
+    end
+
+    test "color: :none leaves a bar unfilled and a line undrawn" do
+      assert one_series(:column_clustered, color: :none) =~ ~s(<c:spPr><a:noFill/></c:spPr>)
+      assert one_series(:line, color: :none) =~ ~s(<c:spPr><a:ln><a:noFill/></a:ln></c:spPr>)
+      refute one_series(:line, color: :none) =~ ~s(srgbClr val="none")
+    end
+
+    test ":fill takes a gradient on a bar series" do
+      xml =
+        one_series(:column_clustered, fill: {:gradient, [{0, "FFFFFF"}, {100_000, "4472C4"}], []})
+
+      assert xml =~ ~s(<c:spPr><a:gradFill)
+    end
+
+    test ":fill wins over :color for the fill" do
+      xml = one_series(:column_clustered, color: "FF0000", fill: "00FF00")
+      assert xml =~ ~s(<c:spPr><a:solidFill><a:srgbClr val="00FF00"/></a:solidFill></c:spPr>)
+    end
+
+    test "a bar series takes an outline in the same spPr as its fill" do
+      xml =
+        one_series(:column_clustered, color: :none, line: [color: "4472C4", width: {1.5, :pt}])
+
+      assert xml =~
+               ~s(<c:spPr><a:noFill/><a:ln w="19050"><a:solidFill><a:srgbClr val="4472C4"/></a:solidFill></a:ln></c:spPr>)
+
+      assert series_sp_pr(xml) == 1
+    end
+
+    test "a line series with line: :none shows markers only" do
+      xml = one_series(:line_markers, color: "4472C4", line: :none, marker: [style: :dash])
+      assert xml =~ ~s(<c:spPr><a:ln><a:noFill/></a:ln></c:spPr><c:marker><c:symbol val="dash"/>)
+      refute xml =~ ~s(<a:srgbClr val="4472C4"/>)
+    end
+
+    test "a line series takes width and dash, in place of :color" do
+      xml =
+        one_series(:line,
+          color: "FF0000",
+          line: [color: "0000FF", width: {3, :pt}, dash_style: :dash]
+        )
+
+      assert xml =~ ~s(<a:ln w="38100"><a:solidFill><a:srgbClr val="0000FF"/>)
+      refute xml =~ ~s(val="FF0000")
+    end
+
+    test "area, pie and doughnut series take an outline" do
+      for type <- [:area, :pie, :doughnut] do
+        xml = one_series(type, color: "4472C4", line: "FFFFFF")
+
+        assert xml =~
+                 ~s(<c:spPr><a:solidFill><a:srgbClr val="4472C4"/></a:solidFill><a:ln><a:solidFill><a:srgbClr val="FFFFFF"/>),
+               "#{type}"
+      end
+    end
+
+    test "a radar line series' colour is its line, a filled radar's its fill" do
+      assert one_series(:radar, color: "4472C4") =~
+               ~s(<c:spPr><a:ln><a:solidFill><a:srgbClr val="4472C4"/>)
+
+      assert one_series(:radar_markers, color: "4472C4") =~ ~s(<c:spPr><a:ln><a:solidFill>)
+
+      assert one_series(:radar_filled, color: "4472C4") =~
+               ~s(<c:spPr><a:solidFill><a:srgbClr val="4472C4"/>)
+    end
+
+    test "markers and points take :none" do
+      xml =
+        one_series(:line_markers,
+          marker: [style: :circle, fill: :none, line: "4472C4"],
+          point_formats: %{1 => [line: :none]}
+        )
+
+      assert xml =~ ~s(<c:marker><c:symbol val="circle"/><c:spPr><a:noFill/><a:ln>)
+
+      assert xml =~
+               ~s(<c:dPt><c:idx val="1"/><c:marker><c:spPr><a:ln><a:noFill/></a:ln></c:spPr></c:marker></c:dPt>)
+    end
+
+    test "invert_if_negative: true on a bar series and its points" do
+      xml = one_series(:bar_clustered, invert_if_negative: true, point_colors: %{1 => "FF0000"})
+      assert [_, _] = Regex.scan(~r/<c:invertIfNegative val="1"\/>/, xml)
+      refute xml =~ ~s(<c:invertIfNegative val="0"/>)
+    end
+
+    test "scatter_lines series take :line and :none" do
+      xml = xy_series(:scatter_lines, line: [color: "4472C4", width: {2, :pt}])
+      assert xml =~ ~s(<c:spPr><a:ln w="25400"><a:solidFill><a:srgbClr val="4472C4"/>)
+
+      assert xy_series(:scatter_lines, line: :none) =~
+               ~s(<c:spPr><a:ln><a:noFill/></a:ln></c:spPr>)
+    end
+
+    test "a markers-only scatter series with a colour draws coloured markers and no line" do
+      xml = xy_series(:scatter, color: "C00000")
+      assert series_sp_pr(xml) == 1
+      assert xml =~ ~s(<c:spPr><a:ln><a:noFill/></a:ln></c:spPr><c:marker><c:spPr>)
+
+      assert xml =~
+               ~s(<c:marker><c:spPr><a:solidFill><a:srgbClr val="C00000"/></a:solidFill><a:ln><a:solidFill><a:srgbClr val="C00000"/>)
+    end
+
+    test "a markers-only scatter marker keeps its own fill" do
+      xml = xy_series(:scatter, color: "C00000", marker: [style: :square, fill: "FFFFFF"])
+      assert xml =~ ~s(<c:symbol val="square"/><c:spPr><a:solidFill><a:srgbClr val="FFFFFF"/>)
+    end
+
+    test "scatter series render point colours" do
+      xml = xy_series(:scatter_lines, point_colors: %{2 => "FF0000"})
+      names = xml |> elements("c:ser") |> hd() |> children()
+      assert Enum.take_while(names, &(&1 != "c:xVal")) |> Enum.take(-1) == ["c:dPt"]
+
+      assert xml =~
+               ~s(<c:dPt><c:idx val="2"/><c:marker><c:spPr><a:solidFill><a:srgbClr val="FF0000"/></a:solidFill><a:ln><a:solidFill><a:srgbClr val="FF0000"/>)
+    end
+
+    test "a point colour on a line, scatter or radar series colours its marker" do
+      for {xml, type} <- [
+            {one_series(:line_markers, point_colors: %{1 => "70AD47"}), :line_markers},
+            {one_series(:radar_markers, point_colors: %{1 => "70AD47"}), :radar_markers},
+            {xy_series(:scatter, color: "C00000", point_colors: %{1 => "70AD47"}), :scatter}
+          ] do
+        point = fragment(xml, "c:dPt")
+        assert point =~ ~s(<c:marker><c:spPr><a:solidFill><a:srgbClr val="70AD47"/>), "#{type}"
+        refute point =~ "</c:marker><c:spPr>", "#{type}"
+      end
+    end
+
+    test "a point format sets its marker's style, size, fill and line" do
+      xml =
+        one_series(:line_markers,
+          point_formats: %{
+            2 => [fill: "FFFFFF", line: "C00000", marker: [style: :diamond, size: 12]]
+          }
+        )
+
+      assert fragment(xml, "c:dPt") ==
+               ~s(<c:dPt><c:idx val="2"/><c:marker><c:symbol val="diamond"/><c:size val="12"/>) <>
+                 ~s(<c:spPr><a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill>) <>
+                 ~s(<a:ln><a:solidFill><a:srgbClr val="C00000"/></a:solidFill></a:ln></c:spPr></c:marker></c:dPt>)
+    end
+
+    test "a point colour on a bar, pie, area or bubble still fills the shape" do
+      for type <- [:column_clustered, :pie, :area, :radar_filled] do
+        point = one_series(type, point_colors: %{1 => "70AD47"}) |> fragment("c:dPt")
+        assert point =~ ~s(<c:spPr><a:solidFill><a:srgbClr val="70AD47"/>), "#{type}"
+        refute point =~ "c:marker", "#{type}"
+      end
+    end
+
+    test "bubble series take fill, line, point colours and invert_if_negative" do
+      xml =
+        bubble_series(
+          fill: "4472C4",
+          line: :none,
+          invert_if_negative: true,
+          point_colors: %{0 => "FF0000"}
+        )
+
+      names = xml |> elements("c:ser") |> hd() |> children()
+
+      assert Enum.take(names, 6) ==
+               ~w(c:idx c:order c:tx c:spPr c:invertIfNegative c:dPt)
+
+      assert xml =~
+               ~s(<c:spPr><a:solidFill><a:srgbClr val="4472C4"/></a:solidFill><a:ln><a:noFill/></a:ln></c:spPr>)
+
+      assert xml =~ ~s(<c:dPt><c:idx val="0"/><c:invertIfNegative val="1"/>)
+    end
+  end
+
   describe "schema order" do
     test "chart-level dLbls writes numFmt, txPr and dLblPos before the show flags",
          %{chart_data: chart_data} do
@@ -1529,7 +1732,7 @@ defmodule Podium.Chart.XmlWriterTest do
 
       xml = XmlWriter.to_xml(%Chart{chart_type: :line_markers, chart_data: chart_data})
 
-      assert child_names(xml, "dPt") == ["c:idx", "c:spPr"]
+      assert child_names(xml, "dPt") == ["c:idx", "c:marker"]
     end
   end
 

@@ -51,9 +51,11 @@ Each series accepts these options:
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `:color` | `String.t()` | `nil` | Hex RGB color for the series |
-| `:pattern` | `keyword` | `nil` | Pattern fill (see [Series Formatting](#series-formatting)) |
+| `:color` | `String.t()` or `:none` | `nil` | Series colour: the fill of bars, areas and slices, the line of line and radar series |
+| `:fill` | fill | `nil` | Any fill, in place of `:color` for the fill (see [Series Formatting](#series-formatting)) |
+| `:line` | line | `nil` | The series line, or the outline of bars, areas and slices |
 | `:marker` | `keyword` | `nil` | Marker options for line/scatter charts |
+| `:invert_if_negative` | `boolean` | `false` | Draw negative bars in inverted colours |
 | `:point_colors` | `map` | `%{}` | Per-point color overrides by index |
 | `:point_formats` | `map` | `%{}` | Per-point fill/line overrides by index |
 | `:data_labels` | `map` | `nil` | Per-point data label overrides by index |
@@ -456,19 +458,53 @@ Set a series color with the `:color` option on `ChartData.add_series/4`:
 ChartData.add_series(data, "Revenue", [100, 200, 300], color: "4472C4")
 ```
 
-### Pattern Fills
+`:color` fills bars, areas, slices, bubbles and filled radar shapes, and colours
+the line of line, scatter and radar series. `color: :none` leaves the fill (or
+line) empty.
 
-Use pattern fills instead of solid colors:
+### Fills
+
+`:fill` takes any fill a shape takes, in place of `:color` for the fill: a hex
+colour, a gradient, a pattern, or `:none`.
 
 ```elixir
 ChartData.add_series(data, "Email", [250, 230, 210],
-  pattern: [type: :dn_diag, foreground: "4472C4", background: "FFFFFF"])
+  fill: {:pattern, :dn_diag, foreground: "4472C4", background: "FFFFFF"})
+
+ChartData.add_series(data, "Web", [180, 210, 260],
+  fill: {:gradient, [{0, "BDD7EE"}, {100_000, "1F4E79"}], angle: 5_400_000})
 ```
 
 ![Pattern fills and per-point formatting on columns](assets/core/charts/pattern-fills-per-point.png)
 
-The `:type` must be one of the 54 pattern presets from `Podium.Pattern` (e.g.
-`:dn_diag`, `:lt_horz`, `:dk_vert`, `:sm_grid`, `:cross`).
+The pattern preset must be one of the 54 from `Podium.Pattern` (e.g. `:dn_diag`,
+`:lt_horz`, `:dk_vert`, `:sm_grid`, `:cross`).
+
+### Lines and Outlines
+
+`:line` is the series line on line, scatter and radar series, and the outline of
+bars, areas, slices and bubbles. It takes a hex colour, a keyword list with
+`:color`, `:width` and `:dash_style`, or `:none`.
+
+```elixir
+# Outlined bars with no fill
+ChartData.add_series(data, "Target", [300, 300, 300],
+  color: :none, line: [color: "404040", width: {1.5, :pt}, dash_style: :dash])
+
+# A line series drawn as markers only
+ChartData.add_series(data, "Norm", [62, 58, 60],
+  line: :none, marker: [style: :dash, size: 20, fill: "404040", line: "404040"])
+```
+
+On a markers-only `:scatter` series, which draws no line, `:color` colours the
+markers.
+
+![Outlined bars and a markers-only norm line](assets/core/charts/series-lines.png)
+
+### Negative Values
+
+Bar and bubble series keep their colour for negative values. Pass
+`invert_if_negative: true` to draw negative bars in inverted colours instead.
 
 ### Markers
 
@@ -481,7 +517,8 @@ ChartData.add_series(data, "Trend", [20, 35, 45, 50, 55, 70],
 ```
 
 Marker styles: `:circle`, `:square`, `:diamond`, `:triangle`, `:star`, `:x`,
-`:plus`, `:dash`, `:dot`, `:none`.
+`:plus`, `:dash`, `:dot`, `:none`. Marker `:fill` and `:line` take the same forms
+as elsewhere, including `:none` for a hollow marker.
 
 ## Per-Point Formatting
 
@@ -496,9 +533,20 @@ ChartData.add_series(data, "Revenue", [42, 28, 18, 35, 22],
   point_colors: %{0 => "2E75B6", 3 => "ED7D31"})
 ```
 
+On line, scatter and radar series a point is drawn as its marker, so a point colour
+fills and outlines the marker.
+
 ### Point Formats
 
-Apply fill and line formatting to specific points:
+Apply fill and line formatting to specific points. On bars, slices, areas and
+bubbles they format the shape; on line, scatter and radar series they format the
+point's marker, and `:marker` also sets its `:style` and `:size`:
+
+```elixir
+ChartData.add_series(data, "Trend", [20, 35, 45, 50],
+  point_formats: %{3 => [fill: "FFFFFF", line: "C00000", marker: [style: :diamond, size: 12]]})
+```
+
 
 ```elixir
 ChartData.add_series(data, "Revenue", [42, 28, 18, 35, 22],
@@ -555,6 +603,9 @@ slide = Podium.add_chart(slide, :scatter, xy_data,
 | `:scatter_smooth` | Points connected with smooth curves |
 | `:scatter_smooth_no_markers` | Smooth curves, no point markers |
 
+XY series take `:color`, `:fill`, `:line`, `:marker`, `:point_colors`,
+`:point_formats` and `:data_labels`, as category series do.
+
 `XyChartData.add_series/5` takes the series name, X values list, Y values list, and
 optional formatting options. The X and Y lists must have the same length, and all values
 must be numbers.
@@ -588,6 +639,9 @@ slide = Podium.add_chart(slide, :bubble, bubble_data,
 |------|-------------|
 | `:bubble` | Standard bubble chart |
 | `:bubble_3d` | Bubble chart with 3D effect |
+
+Bubble series take `:color`, `:fill`, `:line` (the bubble outline),
+`:invert_if_negative`, `:point_colors`, `:point_formats` and `:data_labels`.
 
 `BubbleChartData.add_series/6` takes the series name, X values, Y values, bubble sizes,
 and optional formatting options. All three lists must have the same length.

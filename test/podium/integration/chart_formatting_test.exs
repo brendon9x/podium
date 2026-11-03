@@ -278,4 +278,100 @@ defmodule Podium.Integration.ChartFormattingTest do
       assert parts["ppt/charts/chart4.xml"] =~ ~s(<a:srgbClr val="FFFF00"/>)
     end
   end
+
+  describe "series fill and line" do
+    test "outlines, markers-only lines, gradients and inverted negatives" do
+      score_data =
+        ChartData.new()
+        |> ChartData.add_categories(["Ad A", "Ad B", "Ad C", "Ad D"])
+        |> ChartData.add_series("Score", [72, 58, 64, 81], color: "4472C4")
+        |> ChartData.add_series("Target", [70, 70, 70, 70],
+          color: :none,
+          line: [color: "404040", width: {1.5, :pt}, dash_style: :dash]
+        )
+        |> ChartData.add_series("Norm", [62, 60, 61, 63],
+          line: :none,
+          marker: [style: :dash, size: 20, fill: "ED7D31", line: "ED7D31"]
+        )
+
+      change_data =
+        ChartData.new()
+        |> ChartData.add_categories(["Q1", "Q2", "Q3", "Q4"])
+        |> ChartData.add_series("Inverted", [12, -8, 5, -15],
+          color: "4472C4",
+          invert_if_negative: true
+        )
+        |> ChartData.add_series("Gradient", [9, -4, 11, 6],
+          fill: {:gradient, [{0, "BDD7EE"}, {100_000, "1F4E79"}], angle: 5_400_000},
+          line: "1F4E79"
+        )
+
+      xy_data =
+        Podium.Chart.XyChartData.new()
+        |> Podium.Chart.XyChartData.add_series("Coloured markers", [1, 2, 3, 4], [3, 5, 4, 6],
+          color: "C00000",
+          point_colors: %{3 => "70AD47"}
+        )
+
+      bubble_data =
+        Podium.Chart.BubbleChartData.new()
+        |> Podium.Chart.BubbleChartData.add_series("Regions", [1, 2, 3], [4, 6, 5], [10, 20, 15],
+          fill: "BDD7EE",
+          line: [color: "1F4E79", width: {2, :pt}],
+          point_colors: %{1 => "F4B183"}
+        )
+
+      slides = [
+        slide_with(
+          "blue Score bars; Target drawn as dashed dark grey outlined boxes with no fill; " <>
+            "Norm as orange dashes only, with no connecting line",
+          &Podium.add_combo_chart(
+            &1,
+            score_data,
+            [{:column_clustered, series: [0, 1]}, {:line_markers, series: [2]}],
+            &2 ++ [legend: :bottom]
+          )
+        ),
+        slide_with(
+          "Inverted: negative Q2 and Q4 bars drawn inverted (white or light); " <>
+            "Gradient: bars shading light to dark blue with a dark blue outline",
+          &Podium.add_chart(&1, :column_clustered, change_data, &2 ++ [legend: :bottom])
+        ),
+        slide_with(
+          "red markers with no connecting line; the fourth point green",
+          &Podium.add_chart(&1, :scatter, xy_data, &2)
+        ),
+        slide_with(
+          "blue line with blue markers; South's marker green; West's marker a large " <>
+            "white diamond with a red outline",
+          &Podium.add_chart(
+            &1,
+            :line_markers,
+            ChartData.new()
+            |> ChartData.add_categories(["North", "South", "East", "West"])
+            |> ChartData.add_series("2026", [52, 58, 44, 63],
+              color: "4472C4",
+              marker: [style: :circle, size: 8, fill: "4472C4", line: "4472C4"],
+              point_colors: %{1 => "70AD47"},
+              point_formats: %{
+                3 => [fill: "FFFFFF", line: "C00000", marker: [style: :diamond, size: 14]]
+              }
+            ),
+            &2
+          )
+        ),
+        slide_with(
+          "pale blue bubbles with a thick dark blue outline; the middle bubble orange",
+          &Podium.add_chart(&1, :bubble, bubble_data, &2)
+        )
+      ]
+
+      parts = save_deck(slides, "chart_series_fill_and_line.pptx")
+      assert parts["ppt/charts/chart1.xml"] =~ "<a:ln><a:noFill/></a:ln>"
+      assert parts["ppt/charts/chart2.xml"] =~ ~s(<c:invertIfNegative val="1"/>)
+      assert parts["ppt/charts/chart3.xml"] =~ "<c:dPt><c:idx val=\"3\"/><c:marker>"
+      assert parts["ppt/charts/chart4.xml"] =~ ~s(<c:symbol val="diamond"/><c:size val="14"/>)
+      assert parts["ppt/charts/chart5.xml"] =~ "<c:dPt>"
+    end
+  end
 end

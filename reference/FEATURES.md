@@ -64,7 +64,7 @@ Comprehensive list of Podium's features. Podium uses [python-pptx](https://githu
 | Chart and plot area | `background` (`:none`, any fill, or fill and line) on the chart area; `plot_area` fill and line |
 | Element fill and line | Titles, axis titles, legend and data labels take `fill` and `line`; `:none` everywhere a fill or line is accepted, shapes included |
 | Date axis | `type: :date` with base/major/minor time units |
-| Series formatting | Solid color, pattern fill (54 presets), per-point colors, per-point line format, markers (10 symbols with size/fill/line) |
+| Series formatting | Colour (`:none` for unfilled or undrawn), any fill via `fill` (solid, gradient, pattern), line control (`:none` for markers only, colour, width, dash), outlines on bars/areas/slices/bubbles, invert_if_negative; per-point colours and fill/line formats; markers (10 symbols with size/fill/line); the same options on category, XY and bubble series |
 | Editable charts | Embedded Excel workbook via elixlsx with externalData link |
 | Combo charts | Multi-plot via `add_combo_chart/5`: column+line, bar+line, area+line, stacked+line; secondary value axis; shared categories |
 

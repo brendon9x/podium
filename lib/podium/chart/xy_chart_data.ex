@@ -29,7 +29,8 @@ defmodule Podium.Chart.XyChartData do
       :name,
       :index,
       :color,
-      :pattern,
+      :fill,
+      :line,
       :marker,
       x_values: [],
       y_values: [],
@@ -47,8 +48,11 @@ defmodule Podium.Chart.XyChartData do
   Adds a scatter series with paired X and Y values.
 
   ## Options
-    * `:color` - series color (hex RGB string)
-    * `:pattern` - pattern fill keyword list
+    * `:color` - series colour (hex or `:none`): the line colour, and the marker colour
+      of a markers-only `:scatter` series
+    * `:fill` - any fill for the series (see "Fill types" in `Podium`)
+    * `:line` - the series line: hex, keyword list with `:color`, `:width` and
+      `:dash_style`, or `:none`
     * `:marker` - marker options keyword list
     * `:point_colors` - `%{index => color}` map for per-point colors
     * `:point_formats` - `%{index => opts}` map for per-point formatting
@@ -75,7 +79,8 @@ defmodule Podium.Chart.XyChartData do
       x_values: x_values,
       y_values: y_values,
       color: Keyword.get(opts, :color),
-      pattern: Keyword.get(opts, :pattern),
+      fill: Keyword.get(opts, :fill),
+      line: Keyword.get(opts, :line),
       marker: Keyword.get(opts, :marker),
       point_colors: Keyword.get(opts, :point_colors, %{}),
       point_formats: Keyword.get(opts, :point_formats, %{}),
