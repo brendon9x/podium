@@ -54,6 +54,26 @@ Each plot spec is a tuple of `{chart_type, options}`:
 |--------|------|---------|-------------|
 | `:series` | `[integer]` | required | Zero-based indices into the chart data series list |
 | `:secondary_axis` | `boolean` | `false` | Plot this group against a secondary value axis |
+| `:gap_width` | `0..500` | chart's | Bar plots: space between bar groups, as a percentage of bar width |
+| `:overlap` | `-100..100` | chart's | Bar plots: how far bars in a group overlap |
+| `:vary_by_categories` | `boolean` | chart's | Colour each category differently |
+| `:data_labels` | as on the chart | chart's | Data labels for this plot only; `[]` turns them off |
+
+A plot without its own value takes the chart-level option of the same name, so
+`gap_width: 80` on `add_combo_chart/4` applies to every bar plot that does not
+set one. `:gap_width` and `:overlap` on a line or area plot raise `ArgumentError`.
+
+```elixir
+Podium.add_combo_chart(slide, data,
+  [
+    {:column_clustered, series: [0], gap_width: 40},
+    {:column_clustered, series: [1], secondary_axis: true, gap_width: 250, overlap: -20},
+    {:line_markers, series: [2], data_labels: [show: [:value], position: :top]}
+  ],
+  x: {0.5, :inches}, y: {1, :inches}, width: {12, :inches}, height: {5, :inches})
+```
+
+![Two column plots with different bar widths and a labelled line](assets/advanced/combo-charts/per-plot-options.png)
 
 ## Allowed Chart Types
 

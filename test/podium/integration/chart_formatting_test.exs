@@ -429,4 +429,75 @@ defmodule Podium.Integration.ChartFormattingTest do
       assert parts["ppt/charts/chart3.xml"] =~ ~s(<c:layoutTarget val="outer"/>)
     end
   end
+
+  describe "plot options" do
+    test "bar width, overlap, colour by category, bubble scale and per-plot combo options" do
+      single =
+        ChartData.new()
+        |> ChartData.add_categories(["North", "South", "East", "West"])
+        |> ChartData.add_series("2026", [52, 58, 44, 63])
+
+      bubbles =
+        Podium.Chart.BubbleChartData.new()
+        |> Podium.Chart.BubbleChartData.add_series("Regions", [1, 2, 3], [4, 6, 5], [10, 20, 15])
+
+      combo_data =
+        regional_data()
+        |> ChartData.add_series("Growth %", [8, -5, 19, 15], color: "70AD47")
+
+      slides = [
+        slide_with(
+          "left: thin bars far apart (gap 400); right: wide bars that overlap by half (gap 20, overlap 50)",
+          fn slide, pos ->
+            [x: x, y: y, width: _, height: h] = pos
+
+            slide
+            |> Podium.add_chart(:column_clustered, regional_data(),
+              x: x,
+              y: y,
+              width: {5.9, :inches},
+              height: h,
+              gap_width: 400
+            )
+            |> Podium.add_chart(:column_clustered, regional_data(),
+              x: {6.6, :inches},
+              y: y,
+              width: {5.9, :inches},
+              height: h,
+              gap_width: 20,
+              overlap: 50
+            )
+          end
+        ),
+        slide_with(
+          "each of the four columns a different colour (vary_by_categories)",
+          &Podium.add_chart(&1, :column_clustered, single, &2 ++ [vary_by_categories: true])
+        ),
+        slide_with(
+          "bubbles about half their default size (bubble_scale 50)",
+          &Podium.add_chart(&1, :bubble, bubbles, &2 ++ [bubble_scale: 50])
+        ),
+        slide_with(
+          "2025 columns wide (gap 30) on the left axis; 2026 columns narrow (gap 300) " <>
+            "on the right axis; green line labelled with its values, columns unlabelled",
+          &Podium.add_combo_chart(
+            &1,
+            combo_data,
+            [
+              {:column_clustered, series: [0], gap_width: 30},
+              {:column_clustered, series: [1], secondary_axis: true, gap_width: 300},
+              {:line_markers, series: [2], data_labels: [show: [:value], position: :top]}
+            ],
+            &2 ++ [legend: :bottom]
+          )
+        )
+      ]
+
+      parts = save_deck(slides, "chart_plot_options.pptx")
+      assert parts["ppt/charts/chart2.xml"] =~ ~s(<c:overlap val="50"/>)
+      assert parts["ppt/charts/chart3.xml"] =~ ~s(<c:varyColors val="1"/>)
+      assert parts["ppt/charts/chart4.xml"] =~ ~s(<c:bubbleScale val="50"/>)
+      assert parts["ppt/charts/chart5.xml"] =~ ~s(<c:gapWidth val="300"/>)
+    end
+  end
 end

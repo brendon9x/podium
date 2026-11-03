@@ -638,6 +638,100 @@ defmodule Podium.Chart.ComboChartTest do
     end
   end
 
+  describe "per-plot options" do
+    defp two_bar_combo(plots, opts \\ []) do
+      data =
+        ChartData.new()
+        |> ChartData.add_categories(["A", "B"])
+        |> ChartData.add_series("S1", [1, 2])
+        |> ChartData.add_series("S2", [3, 4])
+        |> ChartData.add_series("S3", [5, 6])
+
+      data
+      |> ComboChart.new(plots)
+      |> Podium.Chart.new_combo([x: 0, y: 0, width: 100, height: 100] ++ opts)
+      |> Podium.Chart.XmlWriter.to_xml()
+    end
+
+    test "each bar plot takes its own gap width and overlap" do
+      xml =
+        two_bar_combo([
+          {:column_clustered, series: [0], gap_width: 50, overlap: -10},
+          {:column_clustered, series: [1], secondary_axis: true, gap_width: 300},
+          {:line, series: [2]}
+        ])
+
+      [primary, secondary] = Regex.scan(~r{<c:barChart>.*?</c:barChart>}s, xml) |> List.flatten()
+      assert primary =~ ~s(<c:gapWidth val="50"/><c:overlap val="-10"/>)
+      assert secondary =~ ~s(<c:gapWidth val="300"/>)
+      refute secondary =~ "c:overlap"
+    end
+
+    test "chart-level options are the default for plots without their own" do
+      xml =
+        two_bar_combo(
+          [
+            {:column_clustered, series: [0]},
+            {:column_clustered, series: [1], secondary_axis: true, gap_width: 300},
+            {:line, series: [2]}
+          ],
+          gap_width: 80
+        )
+
+      [primary, secondary] = Regex.scan(~r{<c:barChart>.*?</c:barChart>}s, xml) |> List.flatten()
+      assert primary =~ ~s(<c:gapWidth val="80"/>)
+      assert secondary =~ ~s(<c:gapWidth val="300"/>)
+      refute xml =~ ~r{<c:lineChart>.*gapWidth.*</c:lineChart>}s
+    end
+
+    test "each plot takes its own data labels and vary_by_categories" do
+      xml =
+        two_bar_combo(
+          [
+            {:column_clustered,
+             series: [0, 1], data_labels: [show: [:value], position: :inside_end]},
+            {:line_markers, series: [2], data_labels: [], vary_by_categories: true}
+          ],
+          data_labels: [show: [:category]]
+        )
+
+      [bar] = Regex.scan(~r{<c:barChart>.*?</c:barChart>}s, xml) |> List.flatten()
+      [line] = Regex.scan(~r{<c:lineChart>.*?</c:lineChart>}s, xml) |> List.flatten()
+      assert bar =~ ~s(<c:dLblPos val="inEnd"/>)
+      refute bar =~ ~s(<c:showCatName val="1"/>)
+      refute line =~ "<c:dLbls>"
+      assert line =~ ~s(<c:varyColors val="1"/>)
+    end
+
+    test "chart-level data labels apply to plots without their own" do
+      xml =
+        two_bar_combo(
+          [{:column_clustered, series: [0, 1]}, {:line, series: [2]}],
+          data_labels: [:value]
+        )
+
+      assert [_, _] = Regex.scan(~r/<c:dLbls>/, xml)
+    end
+
+    test "bar-only options on a line plot raise" do
+      assert_raise ArgumentError, ~r/:line plot :gap_width applies to bar and column/, fn ->
+        two_bar_combo([{:column_clustered, series: [0, 1]}, {:line, series: [2], gap_width: 50}])
+      end
+    end
+
+    test "a chart-level gap width with no bar plot raises" do
+      assert_raise ArgumentError, ~r/chart :gap_width applies to bar and column/, fn ->
+        two_bar_combo([{:area, series: [0, 1]}, {:line, series: [2]}], gap_width: 50)
+      end
+    end
+
+    test "per-plot range errors raise" do
+      assert_raise ArgumentError, ~r/:overlap must be an integer between -100 and 100/, fn ->
+        two_bar_combo([{:column_clustered, series: [0, 1], overlap: 200}, {:line, series: [2]}])
+      end
+    end
+  end
+
   describe "schema order" do
     test "combo axes write txPr between spPr and crossAx" do
       data = sample_chart_data()

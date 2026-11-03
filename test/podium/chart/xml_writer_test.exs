@@ -1729,6 +1729,88 @@ defmodule Podium.Chart.XmlWriterTest do
     end
   end
 
+  describe "plot options" do
+    defp plot_chart(chart_type, chart_data, opts) do
+      Chart.new(chart_type, chart_data, [x: 0, y: 0, width: 100, height: 100] ++ opts)
+    end
+
+    test "gap width and overlap follow dLbls in the bar plot", %{chart_data: chart_data} do
+      xml =
+        :column_clustered
+        |> plot_chart(chart_data, gap_width: 70, overlap: -20, data_labels: [:value])
+        |> XmlWriter.to_xml()
+
+      names = child_names(xml, "barChart")
+
+      assert Enum.drop_while(names, &(&1 != "c:dLbls")) ==
+               ~w(c:dLbls c:gapWidth c:overlap c:axId c:axId)
+
+      assert xml =~ ~s(<c:gapWidth val="70"/><c:overlap val="-20"/>)
+    end
+
+    test "overlap replaces a stacked chart's own", %{chart_data: chart_data} do
+      default = :column_stacked |> plot_chart(chart_data, []) |> XmlWriter.to_xml()
+      assert default =~ ~s(<c:overlap val="100"/>)
+
+      xml = :bar_stacked |> plot_chart(chart_data, overlap: 50) |> XmlWriter.to_xml()
+      assert xml =~ ~s(<c:overlap val="50"/>)
+      refute xml =~ ~s(<c:overlap val="100"/>)
+    end
+
+    test "bar plots write no gapWidth, overlap or varyColors by default",
+         %{chart_data: chart_data} do
+      xml = :column_clustered |> plot_chart(chart_data, []) |> XmlWriter.to_xml()
+      refute xml =~ "c:gapWidth"
+      refute xml =~ "c:overlap"
+      refute xml =~ "c:varyColors"
+    end
+
+    test "vary_by_categories on bar, line and pie plots", %{chart_data: chart_data} do
+      bar =
+        :column_clustered
+        |> plot_chart(chart_data, vary_by_categories: true)
+        |> XmlWriter.to_xml()
+
+      assert child_names(bar, "barChart") |> Enum.take(3) == ~w(c:barDir c:grouping c:varyColors)
+      assert bar =~ ~s(<c:varyColors val="1"/>)
+
+      line = :line |> plot_chart(chart_data, vary_by_categories: true) |> XmlWriter.to_xml()
+      assert line =~ ~s(<c:varyColors val="1"/>)
+
+      pie = :pie |> plot_chart(chart_data, vary_by_categories: false) |> XmlWriter.to_xml()
+      assert pie =~ ~s(<c:varyColors val="0"/>)
+
+      assert :pie |> plot_chart(chart_data, []) |> XmlWriter.to_xml() =~
+               ~s(<c:varyColors val="1"/>)
+    end
+
+    test "bubble scale" do
+      data = BubbleChartData.add_series(BubbleChartData.new(), "S", [1, 2], [3, 4], [5, 6])
+      xml = :bubble |> plot_chart(data, bubble_scale: 50) |> XmlWriter.to_xml()
+      assert xml =~ ~s(<c:bubbleScale val="50"/>)
+
+      assert :bubble |> plot_chart(data, []) |> XmlWriter.to_xml() =~
+               ~s(<c:bubbleScale val="100"/>)
+    end
+
+    test "plot option errors", %{chart_data: chart_data} do
+      for {type, opts, message} <- [
+            {:column_clustered, [gap_width: 501],
+             ~r/:gap_width must be an integer between 0 and 500/},
+            {:column_clustered, [gap_width: 1.5], ~r/:gap_width must be an integer/},
+            {:bar_clustered, [overlap: -101],
+             ~r/:overlap must be an integer between -100 and 100/},
+            {:line, [gap_width: 50], ~r/:gap_width applies to bar and column charts only/},
+            {:pie, [overlap: 10], ~r/:overlap applies to bar and column charts only/},
+            {:column_clustered, [bubble_scale: 50],
+             ~r/:bubble_scale applies to bubble charts only/},
+            {:column_clustered, [vary_by_categories: :yes], ~r/must be a boolean/}
+          ] do
+        assert_raise ArgumentError, message, fn -> plot_chart(type, chart_data, opts) end
+      end
+    end
+  end
+
   describe "schema order" do
     test "chart-level dLbls writes numFmt, txPr and dLblPos before the show flags",
          %{chart_data: chart_data} do

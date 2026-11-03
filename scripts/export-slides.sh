@@ -41,10 +41,12 @@ SLIDES=(
   "charts|11|core/charts|fill-and-line"
   "charts|12|core/charts|series-lines"
   "charts|13|core/charts|manual-layout"
+  "charts|14|core/charts|plot-options"
 
   "combo-charts|1|advanced/combo-charts|column-line-overlay"
   "combo-charts|2|advanced/combo-charts|stacked-column-line"
   "combo-charts|3|advanced/combo-charts|area-line-secondary-axis"
+  "combo-charts|4|advanced/combo-charts|per-plot-options"
 
   "connectors-and-freeforms|1|advanced/connectors-and-freeforms|flowchart-connectors"
   "connectors-and-freeforms|2|advanced/connectors-and-freeforms|freeform-triangle-star"

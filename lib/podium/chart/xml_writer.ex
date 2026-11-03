@@ -195,9 +195,11 @@ defmodule Podium.Chart.XmlWriter do
     ~s(<c:barChart>) <>
       ~s(<c:barDir val="#{config.bar_dir}"/>) <>
       ~s(<c:grouping val="#{config.grouping}"/>) <>
+      bar_vary_colors_xml(chart.vary_by_categories) <>
       series_xml(chart) <>
       data_labels_xml(chart.data_labels) <>
-      overlap_xml(config) <>
+      gap_width_xml(chart.gap_width) <>
+      overlap_xml(config, chart.overlap) <>
       ~s(<c:axId val="#{@cat_ax_id}"/>) <>
       ~s(<c:axId val="#{@val_ax_id}"/>) <>
       ~s(</c:barChart>)
@@ -206,7 +208,7 @@ defmodule Podium.Chart.XmlWriter do
   defp plot_xml(chart, %{element: "c:lineChart"} = config) do
     ~s(<c:lineChart>) <>
       ~s(<c:grouping val="#{config.grouping}"/>) <>
-      ~s(<c:varyColors val="0"/>) <>
+      vary_colors_xml(chart.vary_by_categories, false) <>
       series_xml(chart) <>
       data_labels_xml(chart.data_labels) <>
       ~s(<c:marker val="1"/>) <>
@@ -218,7 +220,7 @@ defmodule Podium.Chart.XmlWriter do
 
   defp plot_xml(chart, %{element: "c:pieChart"}) do
     ~s(<c:pieChart>) <>
-      ~s(<c:varyColors val="1"/>) <>
+      vary_colors_xml(chart.vary_by_categories, true) <>
       series_xml(chart) <>
       data_labels_xml(chart.data_labels) <>
       ~s(</c:pieChart>)
@@ -227,7 +229,7 @@ defmodule Podium.Chart.XmlWriter do
   defp plot_xml(chart, %{element: "c:areaChart"} = config) do
     ~s(<c:areaChart>) <>
       ~s(<c:grouping val="#{config.grouping}"/>) <>
-      ~s(<c:varyColors val="0"/>) <>
+      vary_colors_xml(chart.vary_by_categories, false) <>
       series_xml(chart) <>
       data_labels_xml(chart.data_labels) <>
       ~s(<c:axId val="#{@area_cat_ax_id}"/>) <>
@@ -237,7 +239,7 @@ defmodule Podium.Chart.XmlWriter do
 
   defp plot_xml(chart, %{element: "c:doughnutChart"}) do
     ~s(<c:doughnutChart>) <>
-      ~s(<c:varyColors val="1"/>) <>
+      vary_colors_xml(chart.vary_by_categories, true) <>
       series_xml(chart) <>
       data_labels_xml(chart.data_labels) <>
       ~s(<c:firstSliceAng val="0"/>) <>
@@ -248,7 +250,7 @@ defmodule Podium.Chart.XmlWriter do
   defp plot_xml(chart, %{element: "c:radarChart"} = config) do
     ~s(<c:radarChart>) <>
       ~s(<c:radarStyle val="#{config.radar_style}"/>) <>
-      ~s(<c:varyColors val="0"/>) <>
+      vary_colors_xml(chart.vary_by_categories, false) <>
       series_xml(chart) <>
       data_labels_xml(chart.data_labels) <>
       ~s(<c:axId val="#{@radar_cat_ax_id}"/>) <>
@@ -259,7 +261,7 @@ defmodule Podium.Chart.XmlWriter do
   defp plot_xml(chart, %{element: "c:scatterChart"} = config) do
     ~s(<c:scatterChart>) <>
       ~s(<c:scatterStyle val="#{config.scatter_style}"/>) <>
-      ~s(<c:varyColors val="0"/>) <>
+      vary_colors_xml(chart.vary_by_categories, false) <>
       series_xml(chart) <>
       data_labels_xml(chart.data_labels) <>
       ~s(<c:axId val="#{@scatter_x_ax_id}"/>) <>
@@ -269,10 +271,10 @@ defmodule Podium.Chart.XmlWriter do
 
   defp plot_xml(chart, %{element: "c:bubbleChart"}) do
     ~s(<c:bubbleChart>) <>
-      ~s(<c:varyColors val="0"/>) <>
+      vary_colors_xml(chart.vary_by_categories, false) <>
       series_xml(chart) <>
       data_labels_xml(chart.data_labels) <>
-      ~s(<c:bubbleScale val="100"/>) <>
+      ~s(<c:bubbleScale val="#{chart.bubble_scale || 100}"/>) <>
       ~s(<c:showNegBubbles val="0"/>) <>
       ~s(<c:axId val="#{@scatter_x_ax_id}"/>) <>
       ~s(<c:axId val="#{@scatter_y_ax_id}"/>) <>
@@ -348,8 +350,21 @@ defmodule Podium.Chart.XmlWriter do
     ~s(<c:numFmt formatCode="#{Builder.escape(fmt)}" sourceLinked="0"/>)
   end
 
-  defp overlap_xml(%{overlap: nil}), do: ""
-  defp overlap_xml(%{overlap: val}), do: ~s(<c:overlap val="#{val}"/>)
+  # A given :overlap replaces the chart type's own (100 for stacked bars).
+  defp overlap_xml(%{overlap: nil}, nil), do: ""
+  defp overlap_xml(%{overlap: val}, nil), do: ~s(<c:overlap val="#{val}"/>)
+  defp overlap_xml(_config, val), do: ~s(<c:overlap val="#{val}"/>)
+
+  defp gap_width_xml(nil), do: ""
+  defp gap_width_xml(val), do: ~s(<c:gapWidth val="#{val}"/>)
+
+  defp vary_colors_xml(nil, default), do: vary_colors_xml(default, default)
+  defp vary_colors_xml(true, _default), do: ~s(<c:varyColors val="1"/>)
+  defp vary_colors_xml(false, _default), do: ~s(<c:varyColors val="0"/>)
+
+  # Bar plots have always left varyColors out, which PowerPoint reads as off.
+  defp bar_vary_colors_xml(nil), do: ""
+  defp bar_vary_colors_xml(vary), do: vary_colors_xml(vary, false)
 
   # -- Series --
 
@@ -1161,13 +1176,27 @@ defmodule Podium.Chart.XmlWriter do
             cat_ax_id,
             val_ax_id,
             plot.series_indices,
-            chart.data_labels
+            combo_plot_options(chart, plot)
           )
 
         {xml_acc <> plot_xml, global_offset + length(selected_series)}
       end)
 
     plots_xml
+  end
+
+  # A plot's own options, falling back to the chart's.
+  defp combo_plot_options(chart, plot) do
+    %{
+      gap_width: plot.gap_width || chart.gap_width,
+      overlap: plot.overlap || chart.overlap,
+      vary_by_categories:
+        if(is_nil(plot.vary_by_categories),
+          do: chart.vary_by_categories,
+          else: plot.vary_by_categories
+        ),
+      data_labels: if(is_nil(plot.data_labels), do: chart.data_labels, else: plot.data_labels)
+    }
   end
 
   defp combo_single_plot_xml(
@@ -1177,7 +1206,7 @@ defmodule Podium.Chart.XmlWriter do
          cat_ax_id,
          val_ax_id,
          global_indices,
-         data_labels
+         plot_opts
        ) do
     series_xml =
       series_list
@@ -1190,9 +1219,11 @@ defmodule Podium.Chart.XmlWriter do
     ~s(<c:barChart>) <>
       ~s(<c:barDir val="#{config.bar_dir}"/>) <>
       ~s(<c:grouping val="#{config.grouping}"/>) <>
+      bar_vary_colors_xml(plot_opts.vary_by_categories) <>
       series_xml <>
-      data_labels_xml(data_labels) <>
-      overlap_xml(config) <>
+      data_labels_xml(plot_opts.data_labels) <>
+      gap_width_xml(plot_opts.gap_width) <>
+      overlap_xml(config, plot_opts.overlap) <>
       ~s(<c:axId val="#{cat_ax_id}"/>) <>
       ~s(<c:axId val="#{val_ax_id}"/>) <>
       ~s(</c:barChart>)
@@ -1205,7 +1236,7 @@ defmodule Podium.Chart.XmlWriter do
          cat_ax_id,
          val_ax_id,
          global_indices,
-         data_labels
+         plot_opts
        ) do
     series_xml =
       series_list
@@ -1217,9 +1248,9 @@ defmodule Podium.Chart.XmlWriter do
 
     ~s(<c:lineChart>) <>
       ~s(<c:grouping val="#{config.grouping}"/>) <>
-      ~s(<c:varyColors val="0"/>) <>
+      vary_colors_xml(plot_opts.vary_by_categories, false) <>
       series_xml <>
-      data_labels_xml(data_labels) <>
+      data_labels_xml(plot_opts.data_labels) <>
       ~s(<c:marker val="1"/>) <>
       ~s(<c:smooth val="0"/>) <>
       ~s(<c:axId val="#{cat_ax_id}"/>) <>
@@ -1234,7 +1265,7 @@ defmodule Podium.Chart.XmlWriter do
          cat_ax_id,
          val_ax_id,
          global_indices,
-         data_labels
+         plot_opts
        ) do
     series_xml =
       series_list
@@ -1246,9 +1277,9 @@ defmodule Podium.Chart.XmlWriter do
 
     ~s(<c:areaChart>) <>
       ~s(<c:grouping val="#{config.grouping}"/>) <>
-      ~s(<c:varyColors val="0"/>) <>
+      vary_colors_xml(plot_opts.vary_by_categories, false) <>
       series_xml <>
-      data_labels_xml(data_labels) <>
+      data_labels_xml(plot_opts.data_labels) <>
       ~s(<c:axId val="#{cat_ax_id}"/>) <>
       ~s(<c:axId val="#{val_ax_id}"/>) <>
       ~s(</c:areaChart>)
