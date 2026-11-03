@@ -821,6 +821,64 @@ defmodule Podium.Chart.ComboChartTest do
     end
   end
 
+  describe "axis options" do
+    defp combo_xml(opts) do
+      sample_chart_data()
+      |> ComboChart.new([
+        {:column_clustered, series: [0, 1]},
+        {:line_markers, series: [2], secondary_axis: true}
+      ])
+      |> Podium.Chart.new_combo([x: 0, y: 0, width: 100, height: 100] ++ opts)
+      |> Podium.Chart.XmlWriter.to_xml()
+    end
+
+    test "combo axes take tick marks, tick label position and label offset" do
+      xml =
+        combo_xml(
+          category_axis: [major_tick_mark: :none, tick_label_position: :low, label_offset: 200],
+          value_axis: [major_tick_mark: :cross, minor_tick_mark: :in],
+          secondary_value_axis: [tick_label_position: :high, major_tick_mark: :in]
+        )
+
+      cat_ax = xml |> String.split("<c:catAx>") |> Enum.at(1)
+      assert cat_ax =~ ~s(<c:majorTickMark val="none"/>)
+      assert cat_ax =~ ~s(<c:tickLblPos val="low"/>)
+      assert cat_ax =~ ~s(<c:lblOffset val="200"/>)
+
+      [primary, secondary] = Regex.scan(~r{<c:valAx>.*?</c:valAx>}s, xml) |> List.flatten()
+      assert primary =~ ~s(<c:majorTickMark val="cross"/><c:minorTickMark val="in"/>)
+      assert secondary =~ ~s(<c:majorTickMark val="in"/>)
+      assert secondary =~ ~s(<c:tickLblPos val="high"/>)
+    end
+
+    test "combo charts take a date category axis" do
+      xml = combo_xml(category_axis: [type: :date, base_time_unit: :months, number_format: "mmm"])
+      assert xml =~ ~s(<c:dateAx>)
+      refute xml =~ "<c:catAx>"
+      assert xml =~ ~s(<c:baseTimeUnit val="months"/>)
+      assert xml =~ ~s(formatCode="mmm")
+    end
+
+    test "the secondary axis crosses at the maximum unless told otherwise" do
+      [_, secondary] =
+        combo_xml([]) |> then(&Regex.scan(~r{<c:valAx>.*?</c:valAx>}s, &1)) |> List.flatten()
+
+      assert secondary =~ ~s(<c:crosses val="max"/>)
+      refute secondary =~ "majorGridlines"
+
+      xml = combo_xml(secondary_value_axis: [crosses: :auto_zero, major_gridlines: true])
+      [_, secondary] = Regex.scan(~r{<c:valAx>.*?</c:valAx>}s, xml) |> List.flatten()
+      assert secondary =~ ~s(<c:crosses val="autoZero"/>)
+      assert secondary =~ "<c:majorGridlines/>"
+    end
+
+    test "combo axis option errors" do
+      assert_raise ArgumentError, ~r/:secondary_value_axis :tick_label_position/, fn ->
+        combo_xml(secondary_value_axis: [tick_label_position: :left])
+      end
+    end
+  end
+
   describe "schema order" do
     test "combo axes write txPr between spPr and crossAx" do
       data = sample_chart_data()

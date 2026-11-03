@@ -321,6 +321,9 @@ defmodule Podium do
   ## Options (required)
     * `:x`, `:y`, `:width`, `:height` - position and size
 
+  On scatter and bubble charts `:category_axis` sets the horizontal (X) value axis
+  and `:value_axis` the vertical (Y) one; both take the value axis options.
+
   ## Fill and line
 
   The chart and plot areas, titles, the legend, axes, gridlines and data labels
@@ -368,15 +371,17 @@ defmodule Podium do
     * `:category_axis` - keyword list with `:title` (same forms as the chart `:title`),
       `:type` (`:date` for date axis),
       `:number_format`, `:major_gridlines`, `:minor_gridlines`, `:visible`, `:reverse`,
-      `:crosses`, `:label_rotation`, `:major_tick_mark`, `:minor_tick_mark`,
+      `:crosses`, `:label_rotation`, `:tick_label_position` (`:next_to`, `:low`, `:high`,
+      `:none`), `:label_offset` (0..1000), `:major_tick_mark`, `:minor_tick_mark`,
       `:base_time_unit`, `:major_time_unit`, `:minor_time_unit`, `:major_unit`, `:minor_unit`,
       `:line` (the axis line), and font options for the tick labels. Gridlines are off
       by default; `true` turns them on and `[line: ...]` formats them
     * `:value_axis` - keyword list with `:title`, `:number_format`, `:major_gridlines`,
       `:minor_gridlines`, `:min`, `:max`, `:major_unit`, `:minor_unit`, `:visible`,
-      `:reverse`, `:crosses`, `:label_rotation`, `:major_tick_mark`, `:minor_tick_mark`,
-      `:line` (the axis line), and font options for the tick labels. Major gridlines
-      are on by default; `false` turns them off and `[line: ...]` formats them
+      `:reverse`, `:crosses`, `:label_rotation`, `:tick_label_position`, `:major_tick_mark`,
+      `:minor_tick_mark`, `:line` (the axis line), and font options for the tick labels.
+      Major gridlines are on by default; `false` turns them off and `[line: ...]`
+      formats them
   """
   @spec add_chart(
           Podium.Slide.t(),

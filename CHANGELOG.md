@@ -52,12 +52,23 @@
   point, each level giving only what it changes. A point override no longer
   hides the chart's labels on the series' other points, and keeps the
   position and font it does not set.
+- `:tick_label_position` on any axis places its labels `:next_to` the axis,
+  at the `:low` or `:high` end of the crossing axis, or nowhere with `:none`.
+  `:low` keeps category labels under a chart whose values run negative.
+- Category and date axes take `:number_format` and `:label_offset`.
+- Combo chart axes take every axis option: tick marks, `type: :date` and the
+  rest were ignored before. The secondary axis's `:crosses` and
+  `:major_gridlines` are honoured.
+- Axis options outside their allowed values raise `ArgumentError`.
 - Chart titles and axis titles take rich text, in the form a text box takes:
   several runs, several paragraphs, paragraph alignment and line breaks. Font
   options given alongside `:text` apply to every run.
 
 ### Changed
 
+- On scatter and bubble charts `:category_axis` now sets the horizontal (X)
+  axis and `:value_axis` the vertical (Y) axis, as python-pptx does. Before,
+  `:value_axis` set both and `:category_axis` was ignored.
 - The series `:pattern` keyword list is replaced by `:fill` with a pattern
   tuple: `pattern: [type: :dn_diag, foreground: "4472C4"]` becomes
   `fill: {:pattern, :dn_diag, foreground: "4472C4"}`.

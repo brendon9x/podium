@@ -2022,6 +2022,98 @@ defmodule Podium.Chart.XmlWriterTest do
     end
   end
 
+  describe "axis options" do
+    defp axis_chart(chart_type, chart_data, opts) do
+      Chart.new(chart_type, chart_data, [x: 0, y: 0, width: 100, height: 100] ++ opts)
+      |> XmlWriter.to_xml()
+    end
+
+    test "tick label position on category, date and value axes", %{chart_data: chart_data} do
+      for {value, xml_value} <- [next_to: "nextTo", low: "low", high: "high", none: "none"] do
+        xml =
+          axis_chart(:column_clustered, chart_data,
+            category_axis: [tick_label_position: value],
+            value_axis: [tick_label_position: value]
+          )
+
+        assert fragment(xml, "c:catAx") =~ ~s(<c:tickLblPos val="#{xml_value}"/>)
+        assert fragment(xml, "c:valAx") =~ ~s(<c:tickLblPos val="#{xml_value}"/>)
+      end
+
+      xml = axis_chart(:line, chart_data, category_axis: [type: :date, tick_label_position: :low])
+      assert fragment(xml, "c:dateAx") =~ ~s(<c:tickLblPos val="low"/>)
+    end
+
+    test "category and date axes take a number format in schema order", %{chart_data: chart_data} do
+      xml = axis_chart(:line, chart_data, category_axis: [title: "Q", number_format: "0.0"])
+      names = child_names(xml, "catAx")
+      assert Enum.slice(names, 4, 3) == ~w(c:title c:numFmt c:majorTickMark)
+      assert fragment(xml, "c:catAx") =~ ~s(<c:numFmt formatCode="0.0" sourceLinked="0"/>)
+
+      xml = axis_chart(:line, chart_data, category_axis: [type: :date, number_format: "mmm yy"])
+      assert fragment(xml, "c:dateAx") =~ ~s(<c:numFmt formatCode="mmm yy" sourceLinked="0"/>)
+    end
+
+    test "label offset on category and date axes", %{chart_data: chart_data} do
+      assert fragment(axis_chart(:column_clustered, chart_data, []), "c:catAx") =~
+               ~s(<c:lblOffset val="100"/>)
+
+      xml = axis_chart(:column_clustered, chart_data, category_axis: [label_offset: 300])
+      assert fragment(xml, "c:catAx") =~ ~s(<c:lblOffset val="300"/>)
+
+      xml = axis_chart(:line, chart_data, category_axis: [type: :date, label_offset: 50])
+      date_ax = fragment(xml, "c:dateAx")
+      assert date_ax =~ ~s(<c:crosses val="autoZero"/><c:lblOffset val="50"/>)
+    end
+
+    test "scatter charts take :category_axis for X and :value_axis for Y" do
+      data = XyChartData.add_series(XyChartData.new(), "S", [1, 2, 3], [10, 20, 30])
+
+      xml =
+        axis_chart(:scatter, data,
+          category_axis: [title: "Time", min: 0, max: 4, major_gridlines: false],
+          value_axis: [title: "Value", min: 0, max: 40, number_format: "0%"]
+        )
+
+      [x_axis, y_axis] = fragments(xml, "c:valAx")
+      assert x_axis =~ ~s(<c:axPos val="b"/>)
+      assert x_axis =~ ~s(<c:max val="4"/><c:min val="0"/>)
+      assert x_axis =~ "Time"
+      refute x_axis =~ "majorGridlines"
+      assert y_axis =~ ~s(<c:axPos val="l"/>)
+      assert y_axis =~ ~s(<c:max val="40"/>)
+      assert y_axis =~ "Value"
+      assert y_axis =~ ~s(formatCode="0%")
+    end
+
+    test "bubble charts take :category_axis for X" do
+      data = BubbleChartData.add_series(BubbleChartData.new(), "S", [1, 2], [3, 4], [5, 6])
+      xml = axis_chart(:bubble, data, category_axis: [min: -1, line: :none])
+      [x_axis, _y_axis] = fragments(xml, "c:valAx")
+      assert x_axis =~ ~s(<c:min val="-1"/>)
+      assert x_axis =~ "<a:ln><a:noFill/></a:ln>"
+    end
+
+    test "axis option errors", %{chart_data: chart_data} do
+      for {opts, message} <- [
+            {[category_axis: [tick_label_position: :bottom]],
+             ~r/:tick_label_position must be one of/},
+            {[value_axis: [major_tick_mark: :outside]], ~r/:major_tick_mark must be one of/},
+            {[category_axis: [type: :time]], ~r/:type must be one of \[:date\]/},
+            {[category_axis: [type: :date, base_time_unit: :weeks]],
+             ~r/:base_time_unit must be one of/},
+            {[value_axis: [crosses: :middle]],
+             ~r/:crosses must be :auto_zero, :min, :max or a number/},
+            {[category_axis: [label_offset: 2000]],
+             ~r/:label_offset must be an integer between 0 and 1000/}
+          ] do
+        assert_raise ArgumentError, message, fn ->
+          Chart.new(:column_clustered, chart_data, [x: 0, y: 0, width: 1, height: 1] ++ opts)
+        end
+      end
+    end
+  end
+
   describe "schema order" do
     test "chart-level dLbls writes numFmt, txPr and dLblPos before the show flags",
          %{chart_data: chart_data} do

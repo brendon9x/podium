@@ -375,7 +375,10 @@ slide = Podium.add_chart(slide, :column_clustered, data,
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `:title` | `String.t()` or `keyword` | `nil` | Axis title (plain string or formatted) |
+| `:number_format` | `String.t()` | `nil` | Excel-style format for the tick labels, e.g. `"mmm yy"` on a date axis |
 | `:label_rotation` | `number` | `nil` | Label rotation in degrees |
+| `:tick_label_position` | `atom` | `:next_to` | `:next_to` the axis, at the `:low` or `:high` end of the crossing axis, or `:none` |
+| `:label_offset` | `0..1000` | `100` | Distance of the labels from the axis, as a percentage of the default |
 | `:reverse` | `boolean` | `false` | Reverse axis direction |
 | `:visible` | `boolean` | `true` | Show or hide the axis |
 | `:major_tick_mark` | `atom` | `nil` | `:out`, `:in`, `:cross`, or `:none` |
@@ -388,6 +391,19 @@ slide = Podium.add_chart(slide, :column_clustered, data,
 
 Tick labels take the font options under [Chart Text](#chart-text) directly on the
 axis, for example `category_axis: [font_size: 9, color: "666666"]`.
+
+When values run negative, the category axis sits at zero and its labels overlap the
+bars below it. `tick_label_position: :low` keeps the labels at the bottom of the
+plot instead:
+
+```elixir
+category_axis: [tick_label_position: :low]
+```
+
+![Column chart with negative values and category labels kept at the bottom](assets/core/charts/axis-options.png)
+
+An option outside its allowed values raises `ArgumentError`. Combo charts take the
+same axis options on `:category_axis`, `:value_axis` and `:secondary_value_axis`.
 
 Axis titles take a string, rich text, or `:text` plus the same font options.
 
@@ -424,6 +440,7 @@ slide = Podium.add_chart(slide, :column_clustered, data,
 | `:minor_unit` | `number` | `nil` | Minor unit step |
 | `:crosses` | `atom` or `number` | `nil` | Where the category axis crosses |
 | `:label_rotation` | `number` | `nil` | Label rotation in degrees |
+| `:tick_label_position` | `atom` | `:next_to` | `:next_to`, `:low`, `:high` or `:none` |
 | `:reverse` | `boolean` | `false` | Reverse axis direction |
 | `:visible` | `boolean` | `true` | Show or hide the axis |
 | `:major_tick_mark` | `atom` | `nil` | `:out`, `:in`, `:cross`, or `:none` |
@@ -665,6 +682,10 @@ options, for example `2 => [show: [:value], bold: true, color: "C00000"]`.
 Scatter charts plot data as X/Y coordinate pairs. Use `Podium.Chart.XyChartData`
 instead of `ChartData` -- there are no shared categories, each series provides its
 own X and Y value lists.
+
+Scatter and bubble charts have two value axes. `:category_axis` sets the horizontal
+(X) axis and `:value_axis` the vertical (Y) axis, and both take the value axis
+options (`:min`, `:max`, `:major_unit`, `:number_format` and so on).
 
 ```elixir
 alias Podium.Chart.XyChartData

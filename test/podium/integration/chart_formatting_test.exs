@@ -587,4 +587,84 @@ defmodule Podium.Integration.ChartFormattingTest do
       assert parts["ppt/charts/chart4.xml"] =~ ~s(<c:showBubbleSize val="1"/>)
     end
   end
+
+  describe "axis options" do
+    test "tick label positions, offsets, scatter axes and combo axes" do
+      change =
+        ChartData.new()
+        |> ChartData.add_categories(["Brand A", "Brand B", "Brand C", "Brand D"])
+        |> ChartData.add_series("Change", [12, -8, 5, -15], color: "4472C4")
+
+      xy =
+        Podium.Chart.XyChartData.new()
+        |> Podium.Chart.XyChartData.add_series("Trend", [1, 2, 3, 4, 5], [10, 25, 18, 32, 28])
+
+      combo_data =
+        regional_data()
+        |> ChartData.add_series("Growth %", [8, -5, 19, 15], color: "70AD47")
+
+      slides = [
+        slide_with(
+          "brand names along the bottom edge of the plot, below the negative bars",
+          &Podium.add_chart(
+            &1,
+            :column_clustered,
+            change,
+            &2 ++ [category_axis: [tick_label_position: :low]]
+          )
+        ),
+        slide_with(
+          "category labels far from the axis (offset 600); value labels on the right " <>
+            "(tick_label_position :high)",
+          &Podium.add_chart(
+            &1,
+            :column_clustered,
+            regional_data(),
+            &2 ++
+              [
+                category_axis: [label_offset: 600],
+                value_axis: [tick_label_position: :high]
+              ]
+          )
+        ),
+        slide_with(
+          "X axis titled 'Week', running 0 to 6; Y axis titled 'Visits', 0 to 40 in steps of 10",
+          &Podium.add_chart(
+            &1,
+            :scatter_lines,
+            xy,
+            &2 ++
+              [
+                category_axis: [title: "Week", min: 0, max: 6, major_gridlines: false],
+                value_axis: [title: "Visits", min: 0, max: 40, major_unit: 10]
+              ]
+          )
+        ),
+        slide_with(
+          "combo: no category tick marks and labels along the bottom; secondary axis " <>
+            "labels on the right formatted '+8%', with inward tick marks",
+          &Podium.add_combo_chart(
+            &1,
+            combo_data,
+            [
+              {:column_clustered, series: [0, 1]},
+              {:line_markers, series: [2], secondary_axis: true}
+            ],
+            &2 ++
+              [
+                legend: :bottom,
+                category_axis: [major_tick_mark: :none, tick_label_position: :low],
+                secondary_value_axis: [number_format: "+0\\%;-0\\%", major_tick_mark: :in]
+              ]
+          )
+        )
+      ]
+
+      parts = save_deck(slides, "chart_axis_options.pptx")
+      assert parts["ppt/charts/chart1.xml"] =~ ~s(<c:tickLblPos val="low"/>)
+      assert parts["ppt/charts/chart2.xml"] =~ ~s(<c:lblOffset val="600"/>)
+      assert parts["ppt/charts/chart3.xml"] =~ "Week"
+      assert parts["ppt/charts/chart4.xml"] =~ ~s(<c:majorTickMark val="in"/>)
+    end
+  end
 end

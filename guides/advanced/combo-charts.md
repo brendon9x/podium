@@ -92,7 +92,10 @@ Pie, doughnut, radar, scatter, and bubble chart types cannot be used in combo ch
 
 When a plot spec sets `secondary_axis: true`, those series are plotted against a
 secondary Y-axis on the right side of the chart. Configure it with
-`:secondary_value_axis`.
+`:secondary_value_axis`, which takes the same options as `:value_axis`. It draws
+no gridlines and crosses at the maximum by default, so it sits on the right
+without crossing the primary axis; `:major_gridlines` and `:crosses` change that.
+The category axis takes every `:category_axis` option, `type: :date` included.
 
 ```elixir
 alias Podium.Chart.ChartData
