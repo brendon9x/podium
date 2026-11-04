@@ -135,4 +135,44 @@ defmodule Podium.Integration.ChartFormattingTest do
       assert parts["ppt/charts/chart4.xml"] =~ ~s(strike="sngStrike")
     end
   end
+
+  describe "rich-text titles" do
+    test "chart and axis titles with several runs and paragraphs" do
+      slides = [
+        slide_with(
+          "title line 1 'Revenue' bold + 'by Region' italic, 20pt; line 2 smaller grey, " <>
+            "right-aligned; value axis title 'Revenue ($M)' with '($M)' italic grey",
+          &Podium.add_chart(
+            &1,
+            :column_clustered,
+            regional_data(),
+            &2 ++
+              [
+                title: [
+                  text: [
+                    [{"Revenue ", bold: true}, {"by Region", italic: true}],
+                    {[{"FY2025 vs FY2026", font_size: 12, color: "808080"}], alignment: :right}
+                  ],
+                  font_size: 20
+                ],
+                value_axis: [title: [["Revenue ", {"($M)", italic: true, color: "808080"}]]]
+              ]
+          )
+        ),
+        slide_with(
+          "title on two lines from a line break: 'Quarterly' / 'Results'",
+          &Podium.add_chart(
+            &1,
+            :line_markers,
+            regional_data(),
+            &2 ++ [title: "Quarterly\nResults"]
+          )
+        )
+      ]
+
+      parts = save_deck(slides, "chart_rich_titles.pptx")
+      assert parts["ppt/charts/chart1.xml"] =~ ~s(<a:pPr algn="r"/>)
+      assert parts["ppt/charts/chart2.xml"] =~ "<a:br/>"
+    end
+  end
 end

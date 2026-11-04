@@ -16,6 +16,9 @@
 - Tick labels on any axis take font options directly on the axis keyword list,
   alongside `:label_rotation`.
 - Per-point data labels take font options.
+- Chart titles and axis titles take rich text, in the form a text box takes:
+  several runs, several paragraphs, paragraph alignment and line breaks. Font
+  options given alongside `:text` apply to every run.
 
 ### Changed
 
