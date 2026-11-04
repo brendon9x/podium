@@ -494,11 +494,11 @@ defmodule Podium.Chart.XmlWriterTest do
       assert xml =~ ~s(<a:solidFill><a:srgbClr val="FF0000"/></a:solidFill>)
     end
 
-    test "category axis line_color", %{chart_data: chart_data} do
+    test "category axis line", %{chart_data: chart_data} do
       chart = %Chart{
         chart_type: :column_clustered,
         chart_data: chart_data,
-        category_axis: [line_color: "AAAAAA"]
+        category_axis: [line: "AAAAAA"]
       }
 
       xml = XmlWriter.to_xml(chart)
@@ -507,11 +507,11 @@ defmodule Podium.Chart.XmlWriterTest do
                ~s(<c:spPr><a:ln><a:solidFill><a:srgbClr val="AAAAAA"/></a:solidFill></a:ln></c:spPr>)
     end
 
-    test "value axis line_color", %{chart_data: chart_data} do
+    test "value axis line", %{chart_data: chart_data} do
       chart = %Chart{
         chart_type: :column_clustered,
         chart_data: chart_data,
-        value_axis: [line_color: "BBBBBB"]
+        value_axis: [line: "BBBBBB"]
       }
 
       xml = XmlWriter.to_xml(chart)
@@ -524,7 +524,7 @@ defmodule Podium.Chart.XmlWriterTest do
       chart = %Chart{
         chart_type: :column_clustered,
         chart_data: chart_data,
-        value_axis: [major_gridlines: true, major_gridlines_color: "444444"]
+        value_axis: [major_gridlines: [line: "444444"]]
       }
 
       xml = XmlWriter.to_xml(chart)
@@ -537,7 +537,7 @@ defmodule Podium.Chart.XmlWriterTest do
       chart = %Chart{
         chart_type: :column_clustered,
         chart_data: chart_data,
-        value_axis: [minor_gridlines: true, minor_gridlines_color: "555555"]
+        value_axis: [minor_gridlines: [line: "555555"]]
       }
 
       xml = XmlWriter.to_xml(chart)
@@ -1223,6 +1223,194 @@ defmodule Podium.Chart.XmlWriterTest do
     end
   end
 
+  describe "fill and line" do
+    @red_fill ~s(<a:solidFill><a:srgbClr val="FF0000"/></a:solidFill>)
+    @blue_line ~s(<a:ln><a:solidFill><a:srgbClr val="0000FF"/></a:solidFill></a:ln>)
+
+    test "chart area background :none is transparent with no border",
+         %{chart_data: chart_data} do
+      chart = %Chart{chart_type: :column_clustered, chart_data: chart_data, background: :none}
+
+      assert xml_after_chart(chart) =~
+               ~s(<c:spPr><a:noFill/><a:ln><a:noFill/></a:ln></c:spPr><c:txPr>)
+    end
+
+    test "chart area background takes a fill, leaving the border",
+         %{chart_data: chart_data} do
+      chart = %Chart{chart_type: :column_clustered, chart_data: chart_data, background: "FF0000"}
+      assert xml_after_chart(chart) =~ ~s(<c:spPr>#{@red_fill}</c:spPr>)
+    end
+
+    test "chart area background takes a gradient", %{chart_data: chart_data} do
+      chart = %Chart{
+        chart_type: :column_clustered,
+        chart_data: chart_data,
+        background: {:gradient, [{0, "FFFFFF"}, {100_000, "D9E2F3"}], angle: 5_400_000}
+      }
+
+      assert xml_after_chart(chart) =~ ~s(<c:spPr><a:gradFill)
+    end
+
+    test "chart area background takes fill and line", %{chart_data: chart_data} do
+      chart = %Chart{
+        chart_type: :column_clustered,
+        chart_data: chart_data,
+        background: [fill: "FF0000", line: [color: "0000FF", width: {1, :pt}]]
+      }
+
+      assert xml_after_chart(chart) =~
+               ~s(<c:spPr>#{@red_fill}<a:ln w="12700"><a:solidFill><a:srgbClr val="0000FF"/>)
+    end
+
+    test "chartSpace children keep schema order", %{chart_data: chart_data} do
+      chart = %Chart{chart_type: :column_clustered, chart_data: chart_data, background: :none}
+
+      assert child_names(XmlWriter.to_xml(chart), "chartSpace") ==
+               ["c:date1904", "c:chart", "c:spPr", "c:txPr", "c:externalData"]
+    end
+
+    test "plot area takes fill and line as its last child", %{chart_data: chart_data} do
+      chart = %Chart{
+        chart_type: :column_clustered,
+        chart_data: chart_data,
+        plot_area: [fill: "FF0000", line: "0000FF"]
+      }
+
+      xml = XmlWriter.to_xml(chart)
+      assert List.last(child_names(xml, "plotArea")) == "c:spPr"
+      assert xml =~ ~s(<c:spPr>#{@red_fill}#{@blue_line}</c:spPr></c:plotArea>)
+    end
+
+    test "chart title takes fill and line after overlay", %{chart_data: chart_data} do
+      chart = %Chart{
+        chart_type: :column_clustered,
+        chart_data: chart_data,
+        title: [text: "T", fill: "FF0000", line: "0000FF"]
+      }
+
+      xml = XmlWriter.to_xml(chart)
+      assert child_names(xml, "title") == ["c:tx", "c:overlay", "c:spPr"]
+      assert fragment(xml, "c:title") =~ ~s(<c:spPr>#{@red_fill}#{@blue_line}</c:spPr>)
+    end
+
+    test "axis titles take fill and line", %{chart_data: chart_data} do
+      chart = %Chart{
+        chart_type: :column_clustered,
+        chart_data: chart_data,
+        value_axis: [title: [text: "V", fill: :none, line: "0000FF"]]
+      }
+
+      assert fragment(XmlWriter.to_xml(chart), "c:valAx") =~
+               ~s(<c:overlay val="0"/><c:spPr><a:noFill/>#{@blue_line}</c:spPr></c:title>)
+    end
+
+    test "legend takes fill and line between overlay and txPr", %{chart_data: chart_data} do
+      chart = %Chart{
+        chart_type: :column_clustered,
+        chart_data: chart_data,
+        legend: [position: :top, fill: "FF0000", line: "0000FF", font_size: 9]
+      }
+
+      xml = XmlWriter.to_xml(chart)
+      assert child_names(xml, "legend") == ["c:legendPos", "c:overlay", "c:spPr", "c:txPr"]
+    end
+
+    test "axes take a line with width and dash, and :none", %{chart_data: chart_data} do
+      chart = %Chart{
+        chart_type: :column_clustered,
+        chart_data: chart_data,
+        category_axis: [line: [color: "0000FF", width: {2, :pt}, dash_style: :dash]],
+        value_axis: [line: :none]
+      }
+
+      xml = XmlWriter.to_xml(chart)
+
+      assert fragment(xml, "c:catAx") =~
+               ~s(<c:spPr><a:ln w="25400"><a:solidFill><a:srgbClr val="0000FF"/></a:solidFill><a:prstDash val="dash"/></a:ln></c:spPr>)
+
+      assert fragment(xml, "c:valAx") =~ ~s(<c:spPr><a:ln><a:noFill/></a:ln></c:spPr>)
+    end
+
+    test "value axis gridlines take a formatted line", %{chart_data: chart_data} do
+      chart = %Chart{
+        chart_type: :column_clustered,
+        chart_data: chart_data,
+        value_axis: [
+          major_gridlines: [line: [color: "D9D9D9", width: {0.5, :pt}]],
+          minor_gridlines: [line: [color: "EEEEEE", dash_style: :sys_dot]]
+        ]
+      }
+
+      val_ax = fragment(XmlWriter.to_xml(chart), "c:valAx")
+
+      assert val_ax =~
+               ~s(<c:majorGridlines><c:spPr><a:ln w="6350"><a:solidFill><a:srgbClr val="D9D9D9"/>)
+
+      assert val_ax =~ ~s(<c:minorGridlines><c:spPr><a:ln><a:solidFill><a:srgbClr val="EEEEEE"/>)
+      assert val_ax =~ ~s(<a:prstDash val="sysDot"/>)
+    end
+
+    test "category axis gridlines are off by default and can be turned on",
+         %{chart_data: chart_data} do
+      plain = XmlWriter.to_xml(%Chart{chart_type: :column_clustered, chart_data: chart_data})
+      refute fragment(plain, "c:catAx") =~ "Gridlines"
+
+      chart = %Chart{
+        chart_type: :column_clustered,
+        chart_data: chart_data,
+        category_axis: [major_gridlines: [line: "D9D9D9"], minor_gridlines: true, title: "Q"]
+      }
+
+      names = child_names(XmlWriter.to_xml(chart), "catAx")
+
+      assert Enum.take(names, 7) ==
+               ~w(c:axId c:scaling c:delete c:axPos c:majorGridlines c:minorGridlines c:title)
+    end
+
+    test "date axis gridlines", %{chart_data: chart_data} do
+      chart = %Chart{
+        chart_type: :line,
+        chart_data: chart_data,
+        category_axis: [type: :date, major_gridlines: true]
+      }
+
+      assert fragment(XmlWriter.to_xml(chart), "c:dateAx") =~ "<c:majorGridlines/>"
+    end
+
+    test "chart-level data labels take fill and line before txPr", %{chart_data: chart_data} do
+      chart = %Chart{
+        chart_type: :column_clustered,
+        chart_data: chart_data,
+        data_labels: [show: [:value], fill: "FFFFFF", line: "0000FF", font_size: 9]
+      }
+
+      assert Enum.take(child_names(XmlWriter.to_xml(chart), "dLbls"), 3) ==
+               ["c:spPr", "c:txPr", "c:showLegendKey"]
+    end
+
+    test "per-point data labels take fill and line" do
+      chart_data =
+        ChartData.new()
+        |> ChartData.add_categories(["A", "B"])
+        |> ChartData.add_series("S1", [10, 20],
+          data_labels: %{1 => [show: [:value], fill: "FF0000", number_format: "0"]}
+        )
+
+      xml = XmlWriter.to_xml(%Chart{chart_type: :column_clustered, chart_data: chart_data})
+      assert Enum.take(child_names(xml, "dLbl"), 3) == ["c:idx", "c:numFmt", "c:spPr"]
+    end
+
+    test "an invalid fill raises", %{chart_data: chart_data} do
+      chart = %Chart{
+        chart_type: :column_clustered,
+        chart_data: chart_data,
+        legend: [fill: :transparent]
+      }
+
+      assert_raise ArgumentError, ~r/fill must be/, fn -> XmlWriter.to_xml(chart) end
+    end
+  end
+
   describe "schema order" do
     test "chart-level dLbls writes numFmt, txPr and dLblPos before the show flags",
          %{chart_data: chart_data} do
@@ -1292,10 +1480,9 @@ defmodule Podium.Chart.XmlWriterTest do
     end
 
     for {axis, local_name, opts} <- [
-          {"category", "catAx", [category_axis: [label_rotation: 45, line_color: "000000"]]},
-          {"date", "dateAx",
-           [category_axis: [type: :date, label_rotation: 45, line_color: "000000"]]},
-          {"value", "valAx", [value_axis: [color: "FF0000", line_color: "000000"]]}
+          {"category", "catAx", [category_axis: [label_rotation: 45, line: "000000"]]},
+          {"date", "dateAx", [category_axis: [type: :date, label_rotation: 45, line: "000000"]]},
+          {"value", "valAx", [value_axis: [color: "FF0000", line: "000000"]]}
         ] do
       test "#{axis} axis writes txPr between spPr and crossAx", %{chart_data: chart_data} do
         chart =

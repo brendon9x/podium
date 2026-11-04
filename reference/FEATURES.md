@@ -59,8 +59,10 @@ Comprehensive list of Podium's features. Podium uses [python-pptx](https://githu
 | Titles | Chart and axis titles: plain string, rich text (runs and paragraphs), or keyword list with text and font options |
 | Legends | Position atom or keyword list with position (default right) and font options |
 | Data labels | Simple list or keyword list with show, position (9 options), number_format and font options; per-point overrides (with font options) via series `data_labels` map |
-| Category axis | title, gridlines, number_format, label_rotation, tick marks, reverse order, visibility, tick label font options, axis line color |
-| Value axis | title, gridlines, number_format, min/max, major/minor unit, crosses, tick marks, reverse order, visibility, tick label font options, axis line color, major/minor gridlines color |
+| Category axis | title, gridlines (off by default, line formatting), number_format, label_rotation, tick marks, reverse order, visibility, tick label font options, axis line (any line format) |
+| Value axis | title, gridlines (line formatting), number_format, min/max, major/minor unit, crosses, tick marks, reverse order, visibility, tick label font options, axis line (any line format) |
+| Chart and plot area | `background` (`:none`, any fill, or fill and line) on the chart area; `plot_area` fill and line |
+| Element fill and line | Titles, axis titles, legend and data labels take `fill` and `line`; `:none` everywhere a fill or line is accepted, shapes included |
 | Date axis | `type: :date` with base/major/minor time units |
 | Series formatting | Solid color, pattern fill (54 presets), per-point colors, per-point line format, markers (10 symbols with size/fill/line) |
 | Editable charts | Embedded Excel workbook via elixlsx with externalData link |

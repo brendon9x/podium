@@ -106,8 +106,9 @@ Common presets include `:dn_diag`, `:up_diag`, `:lt_horz`, `:lt_vert`, `:cross`,
 
 ### No Fill
 
-Omitting `:fill` on an auto shape lets the theme's default styling apply. Setting
-`fill: nil` on a text box explicitly removes the fill, producing a transparent shape.
+Omitting `:fill` on an auto shape lets the theme's default styling apply.
+`fill: :none` removes the fill, producing a transparent shape. On a text box
+`fill: nil` does the same.
 
 ![Solid, dashed, dotted, and gradient line styles](assets/core/shapes-and-styling/line-styles.png)
 
@@ -132,7 +133,9 @@ slide = Podium.add_auto_shape(slide, :oval,
   line: [color: "FF0000", width: {2, :pt}, dash_style: :dash])
 ```
 
-**Line options:** `:color` (hex string), `:width` (e.g. `{1.5, :pt}`), `:dash_style`
+**Line options:** `:color` (hex string or `:none`), `:width` (e.g. `{1.5, :pt}`),
+`:dash_style`. A list with only `:width` or `:dash_style` keeps the theme's line
+colour. `line: :none` removes the outline.
 
 **Dash styles:** `:solid`, `:dash`, `:dot`, `:dash_dot`, `:long_dash`, `:long_dash_dot`,
 `:long_dash_dot_dot`, `:sys_dot`, `:sys_dash`, `:sys_dash_dot`, `:sys_dash_dot_dot`

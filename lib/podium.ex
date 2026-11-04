@@ -69,12 +69,16 @@ defmodule Podium do
       and opts include `:angle` (default `5_400_000` = 90 degrees in 60,000ths)
     * `{:pattern, preset, opts}` - pattern fill, see `Podium.Pattern` for presets;
       opts: `:foreground`, `:background` (hex color strings)
-    * `{:picture, binary}` - picture fill from image binary data
+    * `{:picture, binary}` - picture fill from image binary data (shapes only)
+    * `:none` - no fill
 
   ### Line types
 
     * Hex string - `"000000"` for a line with default width
-    * Keyword list - `[color: "000000", width: {2, :pt}, dash_style: :dash]`
+    * Keyword list - `[color: "000000", width: {2, :pt}, dash_style: :dash]`. `:color`
+      may be `:none`, `:fill` takes any fill type in its place, and a list with only
+      `:width` or `:dash_style` keeps the default colour
+    * `:none` - no line
     * Dash styles: `:solid`, `:dash`, `:dot`, `:dash_dot`, `:long_dash`,
       `:long_dash_dot`, `:long_dash_dot_dot`, `:sys_dot`, `:sys_dash`,
       `:sys_dash_dot`, `:sys_dash_dot_dot`
@@ -88,8 +92,9 @@ defmodule Podium do
           | {:gradient, [{non_neg_integer(), hex_color()}], keyword()}
           | {:pattern, atom(), keyword()}
           | {:picture, binary()}
+          | :none
           | nil
-  @type line :: hex_color() | keyword() | nil
+  @type line :: hex_color() | keyword() | :none | nil
   @type alignment :: :left | :center | :right | :justify
   @type anchor :: :top | :middle | :bottom
   @type run :: String.t() | {String.t(), keyword()}
@@ -316,6 +321,12 @@ defmodule Podium do
   ## Options (required)
     * `:x`, `:y`, `:width`, `:height` - position and size
 
+  ## Fill and line
+
+  The chart and plot areas, titles, the legend, axes, gridlines and data labels
+  take `:fill` and `:line` in the forms listed under "Fill types" and "Line types"
+  in the module docs, including `:none`.
+
   ## Font options
 
   Every piece of chart text takes the font options of a text run: `:font_size`,
@@ -328,26 +339,31 @@ defmodule Podium do
       Chart text is 18pt unless this gives another `:font_size`; titles take every
       option but the size
     * `:title` - chart title as a string, rich text (a list of paragraphs, as for
-      `add_text_box/3`), or keyword list with `:text` (either form) and font options
-      that apply to every run
+      `add_text_box/3`), or keyword list with `:text` (either form), `:fill`, `:line`
+      and font options that apply to every run
     * `:legend` - legend position atom (`:left`, `:right`, `:top`, `:bottom`) or `false`
-      to hide, or keyword list with `:position` (default `:right`) and font options
+      to hide, or keyword list with `:position` (default `:right`), `:fill`, `:line` and
+      font options
     * `:data_labels` - list of atoms to show (`:value`, `:category`, `:series`, `:percent`)
       or keyword list with `:show` (list, default `[:value]`), `:position` (`:center`,
       `:inside_end`, `:inside_base`, `:outside_end`, `:top`, `:bottom`, `:left`, `:right`,
-      `:best_fit`), `:number_format` (Excel format string) and font options
+      `:best_fit`), `:number_format` (Excel format string), `:fill`, `:line` and font
+      options
+    * `:background` - chart area: `:none` for transparent with no border, a fill, or a
+      keyword list with `:fill` and `:line`
+    * `:plot_area` - keyword list with `:fill` and `:line` for the plot area
     * `:category_axis` - keyword list with `:title` (same forms as the chart `:title`),
       `:type` (`:date` for date axis),
       `:number_format`, `:major_gridlines`, `:minor_gridlines`, `:visible`, `:reverse`,
       `:crosses`, `:label_rotation`, `:major_tick_mark`, `:minor_tick_mark`,
       `:base_time_unit`, `:major_time_unit`, `:minor_time_unit`, `:major_unit`, `:minor_unit`,
-      `:line_color` (hex color for axis line), and font options for the tick labels
+      `:line` (the axis line), and font options for the tick labels. Gridlines are off
+      by default; `true` turns them on and `[line: ...]` formats them
     * `:value_axis` - keyword list with `:title`, `:number_format`, `:major_gridlines`,
       `:minor_gridlines`, `:min`, `:max`, `:major_unit`, `:minor_unit`, `:visible`,
       `:reverse`, `:crosses`, `:label_rotation`, `:major_tick_mark`, `:minor_tick_mark`,
-      `:line_color` (hex color for axis line),
-      `:major_gridlines_color`, `:minor_gridlines_color` (hex colors for gridlines),
-      and font options for the tick labels
+      `:line` (the axis line), and font options for the tick labels. Major gridlines
+      are on by default; `false` turns them off and `[line: ...]` formats them
   """
   @spec add_chart(
           Podium.Slide.t(),
@@ -379,6 +395,8 @@ defmodule Podium do
     * `:legend` - legend position or keyword list
     * `:data_labels` - data label configuration
     * `:text` - font options for all chart text
+    * `:background` - chart area fill and line
+    * `:plot_area` - plot area fill and line
     * `:category_axis` - category axis options
     * `:value_axis` - primary value axis options
     * `:secondary_value_axis` - secondary value axis options (same keys as `:value_axis`)

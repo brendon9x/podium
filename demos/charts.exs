@@ -219,6 +219,23 @@ s10 =
     value_axis: [title: [["Revenue ", {"($M)", italic: true, color: "808080"}]]]
   )
 
+# Slide 11: Fill and line on chart elements
+s11 =
+  Podium.Slide.new()
+  |> Podium.add_chart(:column_clustered, col_data,
+    x: {0.5, :inches},
+    y: {0.5, :inches},
+    width: {12, :inches},
+    height: {6, :inches},
+    title: [text: "Fill and Line", fill: "1F3864", line: :none, color: "FFFFFF", bold: true],
+    background: :none,
+    plot_area: [fill: "F7F9FC", line: [color: "D9D9D9", width: {0.75, :pt}]],
+    legend: [position: :top, line: "BFBFBF"],
+    value_axis: [line: :none, major_gridlines: [line: [color: "D9D9D9", dash_style: :dash]]],
+    category_axis: [line: [color: "404040", width: {1.5, :pt}]],
+    data_labels: [show: [:value], position: :inside_end, fill: "FFFFFF", line: "4472C4", font_size: 9]
+  )
+
 prs
 |> Podium.add_slide(s1)
 |> Podium.add_slide(s2)
@@ -230,6 +247,7 @@ prs
 |> Podium.add_slide(s8)
 |> Podium.add_slide(s9)
 |> Podium.add_slide(s10)
+|> Podium.add_slide(s11)
 |> Podium.save("demos/output/charts.pptx")
 
 IO.puts("Generated demos/output/charts.pptx")

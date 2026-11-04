@@ -38,6 +38,7 @@ SLIDES=(
   "charts|8|core/charts|pattern-fills-per-point"
   "charts|9|core/charts|chart-fonts"
   "charts|10|core/charts|rich-titles"
+  "charts|11|core/charts|fill-and-line"
 
   "combo-charts|1|advanced/combo-charts|column-line-overlay"
   "combo-charts|2|advanced/combo-charts|stacked-column-line"

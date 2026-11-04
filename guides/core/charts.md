@@ -363,7 +363,9 @@ slide = Podium.add_chart(slide, :column_clustered, data,
 | `:major_tick_mark` | `atom` | `nil` | `:out`, `:in`, `:cross`, or `:none` |
 | `:minor_tick_mark` | `atom` | `nil` | `:out`, `:in`, `:cross`, or `:none` |
 | `:crosses` | `atom` or `number` | `nil` | Where the value axis crosses: `:auto_zero`, `:min`, `:max`, or a number |
-| `:line_color` | `String.t()` | `nil` | Hex color for the axis line |
+| `:line` | line | `nil` | The axis line: hex, keyword list or `:none` (see [Fill and Line](#fill-and-line)) |
+| `:major_gridlines` | `boolean` or `keyword` | `false` | Show major gridlines; `[line: ...]` formats them |
+| `:minor_gridlines` | `boolean` or `keyword` | `false` | Show minor gridlines; `[line: ...]` formats them |
 | `:type` | `:date` | `nil` | Set to `:date` for date axis mode |
 
 Tick labels take the font options under [Chart Text](#chart-text) directly on the
@@ -396,8 +398,8 @@ slide = Podium.add_chart(slide, :column_clustered, data,
 |--------|------|---------|-------------|
 | `:title` | `String.t()` or `keyword` | `nil` | Axis title |
 | `:number_format` | `String.t()` | `nil` | Excel-style number format (e.g. `"$#,##0"`) |
-| `:major_gridlines` | `boolean` | `true` | Show major gridlines |
-| `:minor_gridlines` | `boolean` | `false` | Show minor gridlines |
+| `:major_gridlines` | `boolean` or `keyword` | `true` | Show major gridlines; `[line: ...]` formats them |
+| `:minor_gridlines` | `boolean` or `keyword` | `false` | Show minor gridlines; `[line: ...]` formats them |
 | `:min` | `number` | `nil` | Minimum axis value |
 | `:max` | `number` | `nil` | Maximum axis value |
 | `:major_unit` | `number` | `nil` | Major unit step |
@@ -408,12 +410,41 @@ slide = Podium.add_chart(slide, :column_clustered, data,
 | `:visible` | `boolean` | `true` | Show or hide the axis |
 | `:major_tick_mark` | `atom` | `nil` | `:out`, `:in`, `:cross`, or `:none` |
 | `:minor_tick_mark` | `atom` | `nil` | `:out`, `:in`, `:cross`, or `:none` |
-| `:line_color` | `String.t()` | `nil` | Hex color for the axis line |
-| `:major_gridlines_color` | `String.t()` | `nil` | Hex color for major gridlines |
-| `:minor_gridlines_color` | `String.t()` | `nil` | Hex color for minor gridlines |
+| `:line` | line | `nil` | The axis line: hex, keyword list or `:none` |
 
 Tick labels on the value axis take the font options under [Chart Text](#chart-text)
 in the same way as the category axis.
+
+## Fill and Line
+
+Chart elements take `:fill` and `:line` in the same forms as shapes (see the
+Shapes and Styling guide): a hex colour, a gradient or pattern tuple, or `:none`
+for a fill; a hex colour, a keyword list with `:color`, `:width` and
+`:dash_style`, or `:none` for a line.
+
+| Element | Option |
+|---------|--------|
+| Chart area | `background: :none` (transparent, no border), a fill, or `[fill: ..., line: ...]` |
+| Plot area | `plot_area: [fill: ..., line: ...]` |
+| Chart title | `title: [text: "...", fill: ..., line: ...]` |
+| Axis title | `category_axis: [title: [text: "...", fill: ..., line: ...]]` |
+| Legend | `legend: [position: :bottom, fill: ..., line: ...]` |
+| Axis line | `value_axis: [line: ...]` |
+| Gridlines | `value_axis: [major_gridlines: [line: ...]]`, also on category axes |
+| Data labels | `data_labels: [fill: ..., line: ...]`, or per point |
+
+```elixir
+Podium.add_chart(slide, :column_clustered, data,
+  x: {0.5, :inches}, y: {1, :inches}, width: {12, :inches}, height: {5, :inches},
+  background: :none,
+  plot_area: [fill: "F7F9FC", line: [color: "D9D9D9", width: {0.75, :pt}]],
+  legend: [position: :top, line: "BFBFBF"],
+  value_axis: [line: :none, major_gridlines: [line: [color: "D9D9D9", dash_style: :dash]]],
+  category_axis: [line: [color: "404040", width: {1.5, :pt}]],
+  data_labels: [show: [:value], position: :inside_end, fill: "FFFFFF", line: "4472C4"])
+```
+
+![Chart with a shaded plot area, dashed gridlines, a boxed legend and boxed data labels](assets/core/charts/fill-and-line.png)
 
 ## Series Formatting
 
