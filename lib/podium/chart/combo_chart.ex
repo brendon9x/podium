@@ -10,12 +10,24 @@ defmodule Podium.Chart.ComboChart do
 
   defmodule PlotSpec do
     @moduledoc "Specification for a single plot within a combo chart."
-    defstruct [:chart_type, :series_indices, secondary_axis: false]
+    defstruct [
+      :chart_type,
+      :series_indices,
+      :gap_width,
+      :overlap,
+      :vary_by_categories,
+      :data_labels,
+      secondary_axis: false
+    ]
 
     @type t :: %__MODULE__{
             chart_type: atom(),
             series_indices: [non_neg_integer()],
-            secondary_axis: boolean()
+            secondary_axis: boolean(),
+            gap_width: 0..500 | nil,
+            overlap: -100..100 | nil,
+            vary_by_categories: boolean() | nil,
+            data_labels: keyword() | [atom()] | nil
           }
   end
 
@@ -65,7 +77,11 @@ defmodule Podium.Chart.ComboChart do
     %PlotSpec{
       chart_type: chart_type,
       series_indices: Keyword.fetch!(opts, :series),
-      secondary_axis: Keyword.get(opts, :secondary_axis, false)
+      secondary_axis: Keyword.get(opts, :secondary_axis, false),
+      gap_width: Keyword.get(opts, :gap_width),
+      overlap: Keyword.get(opts, :overlap),
+      vary_by_categories: Keyword.get(opts, :vary_by_categories),
+      data_labels: Keyword.get(opts, :data_labels)
     }
   end
 
@@ -107,9 +123,17 @@ defmodule Podium.Chart.ComboChart do
       raise ArgumentError, "cannot mix horizontal bar and vertical column in same combo chart"
     end
 
-    # Validate chart type configs exist
+    # Validate chart type configs and per-plot options
     Enum.each(plots, fn plot ->
       ChartType.config(plot.chart_type)
+
+      plot
+      |> Map.take([:gap_width, :overlap, :vary_by_categories])
+      |> Enum.to_list()
+      |> Podium.Chart.validate_plot_options!(
+        [plot.chart_type],
+        "#{inspect(plot.chart_type)} plot"
+      )
     end)
   end
 end

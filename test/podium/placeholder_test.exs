@@ -582,7 +582,7 @@ defmodule Podium.PlaceholderTest do
       assert slide_xml =~ ~s(cy="4525963")
     end
 
-    test "chart placeholder takes chart text, background and plot area options, layout included" do
+    test "chart placeholder takes chart text, area, layout and plot options" do
       prs = Podium.new()
 
       chart_data =
@@ -601,7 +601,9 @@ defmodule Podium.PlaceholderTest do
           legend: [font: "Arial"],
           category_axis: [bold: true],
           background: :none,
-          plot_area: [fill: "F2F2F2", x: 0.1, y: 0.1, w: 0.8, h: 0.8]
+          plot_area: [fill: "F2F2F2", x: 0.1, y: 0.1, w: 0.8, h: 0.8],
+          gap_width: 60,
+          overlap: -10
         )
 
       {:ok, binary} = prs |> Podium.add_slide(slide) |> Podium.save_to_memory()
@@ -613,6 +615,7 @@ defmodule Podium.PlaceholderTest do
       assert chart_xml =~ ~s(</c:chart><c:spPr><a:noFill/><a:ln><a:noFill/></a:ln></c:spPr>)
       assert chart_xml =~ ~s(<a:srgbClr val="F2F2F2"/></a:solidFill></c:spPr></c:plotArea>)
       assert chart_xml =~ ~s(<c:plotArea><c:layout><c:manualLayout>)
+      assert chart_xml =~ ~s(<c:gapWidth val="60"/><c:overlap val="-10"/>)
     end
 
     test "chart in :left_content and :right_content on :two_content have different positions" do

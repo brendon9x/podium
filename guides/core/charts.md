@@ -448,6 +448,28 @@ Podium.add_chart(slide, :column_clustered, data,
 
 ![Chart with a shaded plot area, dashed gridlines, a boxed legend and boxed data labels](assets/core/charts/fill-and-line.png)
 
+## Plot Options
+
+These options shape the plot itself rather than its text or colour.
+
+| Option | Applies to | Description |
+|--------|------------|-------------|
+| `:gap_width` | bar and column | Space between bar groups as a percentage of bar width, 0 to 500 (PowerPoint's default is 150) |
+| `:overlap` | bar and column | How far bars in a group overlap, -100 to 100. Replaces the chart type's own (100 for stacked) |
+| `:vary_by_categories` | all | Colour each category differently. On by default for pie and doughnut, off elsewhere |
+| `:bubble_scale` | bubble | Bubble size as a percentage of the default, 0 to 300 |
+
+An option given for a chart type it does not apply to raises `ArgumentError`.
+
+```elixir
+# Wide bars that touch within a group
+Podium.add_chart(slide, :column_clustered, data,
+  x: {0.5, :inches}, y: {1, :inches}, width: {12, :inches}, height: {5, :inches},
+  gap_width: 40, overlap: 0)
+```
+
+![Column chart with wide bars and a column chart with each category coloured differently](assets/core/charts/plot-options.png)
+
 ## Layout
 
 PowerPoint lays out the title, legend and plot area automatically. To place one

@@ -36,6 +36,13 @@
   as fractions of the chart frame (`:x`, `:y`, and `:w`, `:h` where the
   element has a size), and the legend and titles take `:overlay`. A partial or
   out-of-range position raises `ArgumentError`.
+- `:gap_width` (0 to 500) and `:overlap` (-100 to 100) set the bar width and
+  bar overlap of bar and column charts; `:overlap` replaces the chart type's
+  own. `:vary_by_categories` colours each category differently on any chart,
+  and `:bubble_scale` (0 to 300) sizes bubbles.
+- Each plot of a combo chart takes its own `:gap_width`, `:overlap`,
+  `:vary_by_categories` and `:data_labels`, falling back to the chart-level
+  option. Bar-only options on a non-bar plot raise `ArgumentError`.
 - Chart titles and axis titles take rich text, in the form a text box takes:
   several runs, several paragraphs, paragraph alignment and line breaks. Font
   options given alongside `:text` apply to every run.

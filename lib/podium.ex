@@ -353,6 +353,13 @@ defmodule Podium do
       options
     * `:background` - chart area: `:none` for transparent with no border, a fill, or a
       keyword list with `:fill` and `:line`
+    * `:gap_width` - bar and column charts: space between bar groups as a percentage
+      of bar width, 0..500
+    * `:overlap` - bar and column charts: how far bars in a group overlap, -100..100.
+      Replaces the chart type's own
+    * `:vary_by_categories` - colour each category differently (on by default for pie
+      and doughnut only)
+    * `:bubble_scale` - bubble charts: bubble size as a percentage of the default, 0..300
     * `:plot_area` - keyword list with `:fill` and `:line` for the plot area, and a
       manual position `:x`, `:y`, `:w`, `:h` (fractions of the chart frame, all four
       together) with `:target` (`:inner`, the default, or `:outer`)
@@ -390,6 +397,11 @@ defmodule Podium do
     * `plots` - list of `{chart_type, opts}` tuples where opts are:
       * `:series` - list of zero-based series indices to include in this plot
       * `:secondary_axis` - `true` to plot on secondary value axis (default `false`)
+      * `:gap_width`, `:overlap` - bar plots only, as in `add_chart/4`
+      * `:vary_by_categories` - as in `add_chart/4`
+      * `:data_labels` - labels for this plot, as in `add_chart/4`; `[]` turns them off
+
+      A plot without its own value for these takes the chart-level option.
 
   ## Options (required)
     * `:x`, `:y`, `:width`, `:height` - position and size
@@ -401,6 +413,7 @@ defmodule Podium do
     * `:text` - font options for all chart text
     * `:background` - chart area fill and line
     * `:plot_area` - plot area fill, line and manual position
+    * `:gap_width`, `:overlap`, `:vary_by_categories` - defaults for every plot
     * `:category_axis` - category axis options
     * `:value_axis` - primary value axis options
     * `:secondary_value_axis` - secondary value axis options (same keys as `:value_axis`)

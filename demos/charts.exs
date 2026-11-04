@@ -279,6 +279,33 @@ s13 =
     plot_area: [x: 0.06, y: 0.15, w: 0.72, h: 0.72, fill: "F7F9FC"]
   )
 
+# Slide 14: Plot options - bar width and colour by category
+s14 =
+  Podium.Slide.new()
+  |> Podium.add_chart(:column_clustered, font_data,
+    x: {0.5, :inches},
+    y: {0.5, :inches},
+    width: {6, :inches},
+    height: {6, :inches},
+    title: "gap_width: 40, overlap: 0",
+    legend: :bottom,
+    gap_width: 40,
+    overlap: 0
+  )
+  |> Podium.add_chart(
+    :column_clustered,
+    ChartData.new()
+    |> ChartData.add_categories(["North", "South", "East", "West"])
+    |> ChartData.add_series("2026", [52, 58, 44, 63]),
+    x: {6.75, :inches},
+    y: {0.5, :inches},
+    width: {6, :inches},
+    height: {6, :inches},
+    title: "vary_by_categories: true",
+    vary_by_categories: true,
+    gap_width: 80
+  )
+
 prs
 |> Podium.add_slide(s1)
 |> Podium.add_slide(s2)
@@ -293,6 +320,7 @@ prs
 |> Podium.add_slide(s11)
 |> Podium.add_slide(s12)
 |> Podium.add_slide(s13)
+|> Podium.add_slide(s14)
 |> Podium.save("demos/output/charts.pptx")
 
 IO.puts("Generated demos/output/charts.pptx")

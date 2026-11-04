@@ -76,10 +76,36 @@ s3 =
     secondary_value_axis: [title: "Growth Rate %"]
   )
 
+# Slide 4: Per-plot options - two column plots with their own widths, a labelled line
+plot_data =
+  ChartData.new()
+  |> ChartData.add_categories(["Q1", "Q2", "Q3", "Q4"])
+  |> ChartData.add_series("Units", [120, 150, 135, 170], color: "4472C4")
+  |> ChartData.add_series("Revenue ($K)", [48, 61, 55, 72], color: "A5A5A5")
+  |> ChartData.add_series("Margin %", [18, 22, 20, 25], color: "ED7D31")
+
+s4 =
+  Podium.Slide.new()
+  |> Podium.add_combo_chart(
+    plot_data,
+    [
+      {:column_clustered, series: [0], gap_width: 40},
+      {:column_clustered, series: [1], secondary_axis: true, gap_width: 250},
+      {:line_markers, series: [2], data_labels: [show: [:value], position: :top]}
+    ],
+    x: {0.5, :inches},
+    y: {0.5, :inches},
+    width: {12, :inches},
+    height: {6, :inches},
+    title: "Per-Plot Options",
+    legend: :bottom
+  )
+
 prs
 |> Podium.add_slide(s1)
 |> Podium.add_slide(s2)
 |> Podium.add_slide(s3)
+|> Podium.add_slide(s4)
 |> Podium.save("demos/output/combo-charts.pptx")
 
 IO.puts("Generated demos/output/combo-charts.pptx")

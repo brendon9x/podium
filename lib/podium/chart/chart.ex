@@ -22,6 +22,10 @@ defmodule Podium.Chart do
     :legend,
     :combo,
     :background,
+    :gap_width,
+    :overlap,
+    :vary_by_categories,
+    :bubble_scale,
     data_labels: [],
     category_axis: [],
     value_axis: [],
@@ -42,6 +46,10 @@ defmodule Podium.Chart do
           legend: atom() | keyword() | false | nil,
           combo: Podium.Chart.ComboChart.t() | nil,
           background: Podium.fill() | keyword() | nil,
+          gap_width: 0..500 | nil,
+          overlap: -100..100 | nil,
+          vary_by_categories: boolean() | nil,
+          bubble_scale: 0..300 | nil,
           data_labels: keyword() | [atom()],
           category_axis: keyword(),
           value_axis: keyword(),
@@ -72,6 +80,7 @@ defmodule Podium.Chart do
       background: validate_background!(Keyword.get(opts, :background)),
       plot_area: validate_plot_area!(Keyword.get(opts, :plot_area, []))
     }
+    |> put_plot_options(opts, [chart_type])
   end
 
   @doc """
@@ -99,6 +108,67 @@ defmodule Podium.Chart do
       background: validate_background!(Keyword.get(opts, :background)),
       plot_area: validate_plot_area!(Keyword.get(opts, :plot_area, []))
     }
+    |> put_plot_options(opts, Enum.map(combo.plots, & &1.chart_type))
+  end
+
+  @plot_option_keys [:gap_width, :overlap, :vary_by_categories, :bubble_scale]
+
+  # Chart-level plot options apply to every plot of the chart (in a combo, to
+  # every plot that does not set its own).
+  defp put_plot_options(chart, opts, chart_types) do
+    plot_opts = Keyword.take(opts, @plot_option_keys)
+    validate_plot_options!(plot_opts, chart_types, "chart")
+    struct(chart, plot_opts)
+  end
+
+  @doc false
+  # Validates plot options (:gap_width, :overlap, :vary_by_categories,
+  # :bubble_scale) given for plots of `chart_types`. `where` names the
+  # option's owner in error messages.
+  @spec validate_plot_options!(keyword(), [atom()], String.t()) :: :ok
+  def validate_plot_options!(opts, chart_types, where) do
+    elements = Enum.map(chart_types, &Podium.Chart.ChartType.config(&1).element)
+
+    Enum.each(opts, fn
+      {_key, nil} ->
+        :ok
+
+      {:gap_width, value} ->
+        validate_int!(value, 0..500, where, :gap_width)
+        require_element!(elements, "c:barChart", where, :gap_width, "bar and column")
+
+      {:overlap, value} ->
+        validate_int!(value, -100..100, where, :overlap)
+        require_element!(elements, "c:barChart", where, :overlap, "bar and column")
+
+      {:bubble_scale, value} ->
+        validate_int!(value, 0..300, where, :bubble_scale)
+        require_element!(elements, "c:bubbleChart", where, :bubble_scale, "bubble")
+
+      {:vary_by_categories, value} when is_boolean(value) ->
+        :ok
+
+      {:vary_by_categories, value} ->
+        raise ArgumentError,
+              "#{where} :vary_by_categories must be a boolean, got: #{inspect(value)}"
+
+      _other ->
+        :ok
+    end)
+  end
+
+  defp validate_int!(value, range, where, key) do
+    unless is_integer(value) and value in range do
+      raise ArgumentError,
+            "#{where} #{inspect(key)} must be an integer between #{range.first} and " <>
+              "#{range.last}, got: #{inspect(value)}"
+    end
+  end
+
+  defp require_element!(elements, element, where, key, kind) do
+    unless element in elements do
+      raise ArgumentError, "#{where} #{inspect(key)} applies to #{kind} charts only"
+    end
   end
 
   defp validate_background!(background)
