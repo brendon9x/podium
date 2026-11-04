@@ -316,26 +316,36 @@ defmodule Podium do
   ## Options (required)
     * `:x`, `:y`, `:width`, `:height` - position and size
 
+  ## Font options
+
+  Every piece of chart text takes the font options of a text run: `:font_size`,
+  `:bold`, `:italic`, `:underline`, `:strikethrough`, `:superscript`, `:subscript`,
+  `:color`, `:font` and `:lang`. `bold: false` and `italic: false` turn off what
+  `:text` or the template turns on.
+
   ## Options (optional)
-    * `:title` - chart title as string, or keyword list with `:text`, `:font_size`,
-      `:bold`, `:italic`, `:color`, `:font`
+    * `:text` - font options for all chart text. Each element below overrides them.
+      Chart text is 18pt unless this gives another `:font_size`; titles take every
+      option but the size
+    * `:title` - chart title as string, or keyword list with `:text` and font options
     * `:legend` - legend position atom (`:left`, `:right`, `:top`, `:bottom`) or `false`
-      to hide, or keyword list with `:position`, `:font_size`, `:bold`, `:italic`,
-      `:color`, `:font`
+      to hide, or keyword list with `:position` (default `:right`) and font options
     * `:data_labels` - list of atoms to show (`:value`, `:category`, `:series`, `:percent`)
-      or keyword list with `:show` (list), `:position` (`:center`, `:inside_end`,
-      `:inside_base`, `:outside_end`, `:top`, `:bottom`, `:left`, `:right`, `:best_fit`),
-      `:number_format` (Excel format string), `:color` (hex color for label text)
-    * `:category_axis` - keyword list with `:title`, `:type` (`:date` for date axis),
+      or keyword list with `:show` (list, default `[:value]`), `:position` (`:center`,
+      `:inside_end`, `:inside_base`, `:outside_end`, `:top`, `:bottom`, `:left`, `:right`,
+      `:best_fit`), `:number_format` (Excel format string) and font options
+    * `:category_axis` - keyword list with `:title` (string, or keyword list with `:text`
+      and font options), `:type` (`:date` for date axis),
       `:number_format`, `:major_gridlines`, `:minor_gridlines`, `:visible`, `:reverse`,
       `:crosses`, `:label_rotation`, `:major_tick_mark`, `:minor_tick_mark`,
       `:base_time_unit`, `:major_time_unit`, `:minor_time_unit`, `:major_unit`, `:minor_unit`,
-      `:color` (hex color for tick label text), `:line_color` (hex color for axis line)
+      `:line_color` (hex color for axis line), and font options for the tick labels
     * `:value_axis` - keyword list with `:title`, `:number_format`, `:major_gridlines`,
       `:minor_gridlines`, `:min`, `:max`, `:major_unit`, `:minor_unit`, `:visible`,
       `:reverse`, `:crosses`, `:label_rotation`, `:major_tick_mark`, `:minor_tick_mark`,
-      `:color` (hex color for tick label text), `:line_color` (hex color for axis line),
-      `:major_gridlines_color`, `:minor_gridlines_color` (hex colors for gridlines)
+      `:line_color` (hex color for axis line),
+      `:major_gridlines_color`, `:minor_gridlines_color` (hex colors for gridlines),
+      and font options for the tick labels
   """
   @spec add_chart(
           Podium.Slide.t(),
@@ -366,9 +376,12 @@ defmodule Podium do
     * `:title` - chart title (string or keyword list)
     * `:legend` - legend position or keyword list
     * `:data_labels` - data label configuration
+    * `:text` - font options for all chart text
     * `:category_axis` - category axis options
     * `:value_axis` - primary value axis options
     * `:secondary_value_axis` - secondary value axis options (same keys as `:value_axis`)
+
+  Each option takes the same shape as in `add_chart/4`, including the font options.
   """
   @spec add_combo_chart(
           Podium.Slide.t(),

@@ -582,6 +582,34 @@ defmodule Podium.PlaceholderTest do
       assert slide_xml =~ ~s(cy="4525963")
     end
 
+    test "chart placeholder takes chart text options" do
+      prs = Podium.new()
+
+      chart_data =
+        Podium.Chart.ChartData.new()
+        |> Podium.Chart.ChartData.add_categories(["A", "B"])
+        |> Podium.Chart.ChartData.add_series("S1", [1, 2])
+
+      slide =
+        Podium.set_chart_placeholder(
+          prs,
+          Podium.Slide.new(:title_content),
+          :content,
+          :column_clustered,
+          chart_data,
+          text: [font_size: 12],
+          legend: [font: "Arial"],
+          category_axis: [bold: true]
+        )
+
+      {:ok, binary} = prs |> Podium.add_slide(slide) |> Podium.save_to_memory()
+      chart_xml = PptxHelpers.unzip_pptx_binary(binary)["ppt/charts/chart1.xml"]
+
+      assert chart_xml =~ ~s(<a:defRPr sz="1200"/>)
+      assert chart_xml =~ ~s(<a:latin typeface="Arial"/>)
+      assert chart_xml =~ ~s(<a:defRPr b="1"/>)
+    end
+
     test "chart in :left_content and :right_content on :two_content have different positions" do
       prs = Podium.new()
       slide = Podium.Slide.new(:two_content)

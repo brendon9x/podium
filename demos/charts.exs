@@ -171,6 +171,35 @@ s8 =
     legend: :bottom
   )
 
+# Slide 9: Chart fonts - chart-wide text, per-element overrides, tick label fonts
+font_data =
+  ChartData.new()
+  |> ChartData.add_categories(["North", "South", "East", "West"])
+  |> ChartData.add_series("2025", [48, 61, 37, 55], color: "4472C4")
+  |> ChartData.add_series("2026", [52, 58, 44, 63], color: "ED7D31")
+
+# The same figures with a target series, its West label styled on its own
+font_override_data =
+  ChartData.add_series(font_data, "Target", [50, 60, 45, 60],
+    color: "A5A5A5",
+    data_labels: %{3 => [show: [:value], bold: true, underline: true, color: "C00000"]}
+  )
+
+s9 =
+  Podium.Slide.new()
+  |> Podium.add_chart(:column_clustered, font_override_data,
+    x: {0.5, :inches},
+    y: {0.5, :inches},
+    width: {12, :inches},
+    height: {6, :inches},
+    text: [font_size: 12, font: "Georgia", color: "404040"],
+    title: [text: "Chart Fonts", font_size: 20, bold: true],
+    legend: [position: :bottom, italic: true],
+    data_labels: [position: :outside_end, font_size: 10],
+    category_axis: [font_size: 11, bold: true, title: [text: "Region", italic: true]],
+    value_axis: [font_size: 9, color: "808080"]
+  )
+
 prs
 |> Podium.add_slide(s1)
 |> Podium.add_slide(s2)
@@ -180,6 +209,7 @@ prs
 |> Podium.add_slide(s6)
 |> Podium.add_slide(s7)
 |> Podium.add_slide(s8)
+|> Podium.add_slide(s9)
 |> Podium.save("demos/output/charts.pptx")
 
 IO.puts("Generated demos/output/charts.pptx")

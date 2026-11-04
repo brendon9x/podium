@@ -212,6 +212,46 @@ slide = Podium.add_chart(slide, :radar_filled, skill_data,
 
 ![Filled radar chart comparing two models](assets/core/charts/radar-filled.png)
 
+## Chart Text
+
+Every piece of chart text takes the same font options as a text run (see the
+Text guide):
+
+| Option | Type | Description |
+|--------|------|-------------|
+| `:font_size` | `number` | Size in points |
+| `:bold` | `boolean` | `false` turns off bold set by `:text` or the template |
+| `:italic` | `boolean` | `false` turns off italic |
+| `:underline` | `boolean` or `atom` | `true` or an underline style such as `:double` |
+| `:strikethrough` | `boolean` | Single strikethrough |
+| `:superscript`, `:subscript` | `boolean` | Raise or lower the text |
+| `:color` | `String.t()` | Hex colour |
+| `:font` | `String.t()` | Typeface |
+| `:lang` | `String.t()` | Language tag, e.g. `"de-DE"` |
+
+The `:text` option sets these for the whole chart. Each element below can
+override them. Chart text is 18pt unless `:text` gives another size. Titles
+follow `:text` too but keep their own size, so a title stays larger than the
+labels unless it sets `:font_size`.
+
+```elixir
+Podium.add_chart(slide, :column_clustered, data,
+  x: {0.5, :inches}, y: {1, :inches}, width: {12, :inches}, height: {5, :inches},
+  text: [font_size: 11, font: "Arial", color: "404040"],
+  legend: [position: :bottom, bold: true])
+```
+
+![Column chart with Georgia chart text, a bold title, italic legend and styled tick labels](assets/core/charts/chart-fonts.png)
+
+| Element | Where the font options go |
+|---------|---------------------------|
+| Whole chart | `text: [...]` |
+| Chart title | `title: [text: "...", ...]` |
+| Legend | `legend: [...]` |
+| Data labels | `data_labels: [...]`, or per point in a series' `data_labels` map |
+| Axis title | `category_axis: [title: [text: "...", ...]]` |
+| Tick labels | flat on the axis: `category_axis: [font_size: 9, ...]` |
+
 ## Chart Titles
 
 Pass a string for a plain title, or a keyword list for formatted titles.
@@ -229,12 +269,14 @@ Podium.add_chart(slide, :column_clustered, data,
   title: [text: "Quarterly Revenue", font_size: 18, bold: true, color: "003366", font: "Arial"])
 ```
 
-Title formatting options: `:text`, `:font_size`, `:bold`, `:italic`, `:color`, `:font`.
+A formatted title takes `:text` plus any of the font options under
+[Chart Text](#chart-text).
 
 ## Legends
 
 Control legend visibility and position. Pass `false` or `nil` for no legend, an atom
-for position only, or a keyword list for full formatting.
+for position only, or a keyword list with `:position` and any of the font options
+under [Chart Text](#chart-text). Without `:position` the legend sits on the right.
 
 ```elixir
 # Position only
@@ -262,8 +304,9 @@ data_labels: [show: [:value], position: :outside_end, number_format: "$#,##0"]
 data_labels: [show: [:value], color: "FFFFFF"]
 ```
 
-Available label content: `:value`, `:category`, `:series`, `:percent`. Use `:color`
-with a hex string to set the text color (useful for charts on dark backgrounds).
+Available label content: `:value`, `:category`, `:series`, `:percent`. A keyword
+list without `:show` labels the values. Labels take any of the font options under
+[Chart Text](#chart-text), such as `:color` for labels on dark bars.
 
 | Position | Description |
 |----------|-------------|
@@ -301,12 +344,13 @@ slide = Podium.add_chart(slide, :column_clustered, data,
 | `:major_tick_mark` | `atom` | `nil` | `:out`, `:in`, `:cross`, or `:none` |
 | `:minor_tick_mark` | `atom` | `nil` | `:out`, `:in`, `:cross`, or `:none` |
 | `:crosses` | `atom` or `number` | `nil` | Where the value axis crosses: `:auto_zero`, `:min`, `:max`, or a number |
-| `:color` | `String.t()` | `nil` | Hex color for tick label text (e.g. `"FFFFFF"`) |
 | `:line_color` | `String.t()` | `nil` | Hex color for the axis line |
 | `:type` | `:date` | `nil` | Set to `:date` for date axis mode |
 
-Axis titles support the same formatting options as chart titles: `:text`, `:font_size`,
-`:bold`, `:italic`, `:color`, `:font`.
+Tick labels take the font options under [Chart Text](#chart-text) directly on the
+axis, for example `category_axis: [font_size: 9, color: "666666"]`.
+
+Axis titles take `:text` plus the same font options.
 
 ```elixir
 category_axis: [title: [text: "Quarter", font_size: 12, bold: true, color: "333333"]]
@@ -345,10 +389,12 @@ slide = Podium.add_chart(slide, :column_clustered, data,
 | `:visible` | `boolean` | `true` | Show or hide the axis |
 | `:major_tick_mark` | `atom` | `nil` | `:out`, `:in`, `:cross`, or `:none` |
 | `:minor_tick_mark` | `atom` | `nil` | `:out`, `:in`, `:cross`, or `:none` |
-| `:color` | `String.t()` | `nil` | Hex color for tick label text (e.g. `"FFFFFF"`) |
 | `:line_color` | `String.t()` | `nil` | Hex color for the axis line |
 | `:major_gridlines_color` | `String.t()` | `nil` | Hex color for major gridlines |
 | `:minor_gridlines_color` | `String.t()` | `nil` | Hex color for minor gridlines |
+
+Tick labels on the value axis take the font options under [Chart Text](#chart-text)
+in the same way as the category axis.
 
 ## Series Formatting
 
@@ -423,6 +469,9 @@ ChartData.add_series(data, "Revenue ($K)", [42, 28, 18, 35, 22],
     3 => [show: [:value, :category], position: :outside_end]
   })
 ```
+
+A point label takes the font options under [Chart Text](#chart-text) as well,
+for example `2 => [show: [:value], bold: true, color: "C00000"]`.
 
 ## XY (Scatter) Charts
 

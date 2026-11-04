@@ -24,7 +24,8 @@ defmodule Podium.Chart do
     data_labels: [],
     category_axis: [],
     value_axis: [],
-    secondary_value_axis: []
+    secondary_value_axis: [],
+    text: []
   ]
 
   @type t :: %__MODULE__{
@@ -41,7 +42,8 @@ defmodule Podium.Chart do
           data_labels: keyword() | [atom()],
           category_axis: keyword(),
           value_axis: keyword(),
-          secondary_value_axis: keyword()
+          secondary_value_axis: keyword(),
+          text: keyword()
         }
 
   @doc """
@@ -61,7 +63,8 @@ defmodule Podium.Chart do
       legend: Keyword.get(opts, :legend),
       data_labels: Keyword.get(opts, :data_labels, []),
       category_axis: Keyword.get(opts, :category_axis, []),
-      value_axis: Keyword.get(opts, :value_axis, [])
+      value_axis: Keyword.get(opts, :value_axis, []),
+      text: Keyword.get(opts, :text, [])
     }
   end
 
@@ -84,7 +87,8 @@ defmodule Podium.Chart do
       data_labels: Keyword.get(opts, :data_labels, []),
       category_axis: Keyword.get(opts, :category_axis, []),
       value_axis: Keyword.get(opts, :value_axis, []),
-      secondary_value_axis: Keyword.get(opts, :secondary_value_axis, [])
+      secondary_value_axis: Keyword.get(opts, :secondary_value_axis, []),
+      text: Keyword.get(opts, :text, [])
     }
   end
 

@@ -423,6 +423,78 @@ defmodule Podium.Chart.ComboChartTest do
     end
   end
 
+  describe "chart text" do
+    test "chart-wide text and per-axis tick label fonts" do
+      combo =
+        ComboChart.new(sample_chart_data(), [
+          {:column_clustered, series: [0, 1]},
+          {:line_markers, series: [2], secondary_axis: true}
+        ])
+
+      xml =
+        combo
+        |> Podium.Chart.new_combo(
+          x: 0,
+          y: 0,
+          width: 100,
+          height: 100,
+          text: [font_size: 11, font: "Arial"],
+          category_axis: [font_size: 9],
+          value_axis: [bold: true],
+          secondary_value_axis: [italic: true, color: "888888"]
+        )
+        |> Podium.Chart.XmlWriter.to_xml()
+
+      [_, after_chart] = String.split(xml, "</c:chart>")
+      assert after_chart =~ ~s(<a:defRPr sz="1100"><a:latin typeface="Arial"/></a:defRPr>)
+
+      assert xml =~ ~r{<c:catAx>.*<a:defRPr sz="900"/>.*</c:catAx>}s
+
+      [primary, secondary] = Regex.scan(~r{<c:valAx>.*?</c:valAx>}s, xml) |> List.flatten()
+      assert primary =~ ~s(<a:defRPr b="1"/>)
+
+      assert secondary =~
+               ~s(<a:defRPr i="1"><a:solidFill><a:srgbClr val="888888"/></a:solidFill></a:defRPr>)
+    end
+
+    test "combo titles and the secondary axis title follow :text" do
+      xml =
+        sample_chart_data()
+        |> ComboChart.new([
+          {:column_clustered, series: [0, 1]},
+          {:line_markers, series: [2], secondary_axis: true}
+        ])
+        |> Podium.Chart.new_combo(
+          x: 0,
+          y: 0,
+          width: 100,
+          height: 100,
+          text: [font: "Georgia"],
+          title: "Combo",
+          secondary_value_axis: [title: "Margin"]
+        )
+        |> Podium.Chart.XmlWriter.to_xml()
+
+      assert [_, _] = Regex.scan(~r/<a:latin typeface="Georgia"\/><\/a:rPr>/, xml)
+    end
+
+    test "combo chart text is 18pt by default" do
+      combo =
+        ComboChart.new(sample_chart_data(), [
+          {:column_clustered, series: [0, 1]},
+          {:line, series: [2]}
+        ])
+
+      xml =
+        combo
+        |> Podium.Chart.new_combo(x: 0, y: 0, width: 100, height: 100)
+        |> Podium.Chart.XmlWriter.to_xml()
+
+      assert xml =~
+               ~s(</c:chart><c:txPr><a:bodyPr/><a:lstStyle/><a:p><a:pPr><a:defRPr sz="1800"/>)
+    end
+  end
+
   describe "schema order" do
     test "combo axes write txPr between spPr and crossAx" do
       data = sample_chart_data()

@@ -214,10 +214,50 @@ defmodule Podium.Text do
     end
   end
 
+  @font_keys [
+    :font_size,
+    :bold,
+    :italic,
+    :underline,
+    :strikethrough,
+    :superscript,
+    :subscript,
+    :color,
+    :font,
+    :lang
+  ]
+
+  @doc false
+  # The character formatting keys a text run accepts, shared by every element
+  # that styles text (runs, chart titles, legends, axis and data labels).
+  @spec font_keys() :: [atom()]
+  def font_keys, do: @font_keys
+
+  @doc false
+  # `<a:rPr>` for a run carrying `opts` (no hyperlink).
+  @spec run_properties_xml(keyword()) :: String.t()
+  def run_properties_xml(opts), do: run_properties_xml(opts, %{})
+
+  @doc false
+  # `<a:defRPr>`, the default character formatting of a paragraph or a chart
+  # text body, carrying the same keys as a run. Unlike `<a:rPr>` it states no
+  # language unless one is given.
+  @spec default_run_properties_xml(keyword()) :: String.t()
+  def default_run_properties_xml(opts) do
+    lang = if lang = Keyword.get(opts, :lang), do: [~s(lang="#{lang}")], else: []
+    attrs = Enum.map_join(lang ++ char_attrs(opts), "", &(" " <> &1))
+    children = run_children_xml(opts, %{})
+
+    if children == "",
+      do: ~s(<a:defRPr#{attrs}/>),
+      else: ~s(<a:defRPr#{attrs}>#{children}</a:defRPr>)
+  end
+
   defp run_properties_xml([], _hyperlink_rids), do: ~s(<a:rPr lang="en-US" dirty="0"/>)
 
   defp run_properties_xml(opts, hyperlink_rids) do
-    attrs = base_run_attrs(opts)
+    lang = Keyword.get(opts, :lang, "en-US")
+    attrs = Enum.join([~s(lang="#{lang}")] ++ char_attrs(opts) ++ [~s(dirty="0")], " ")
     children = run_children_xml(opts, hyperlink_rids)
 
     if children == "" do
@@ -227,40 +267,31 @@ defmodule Podium.Text do
     end
   end
 
-  defp base_run_attrs(opts) do
-    lang = Keyword.get(opts, :lang, "en-US")
-    attrs = [~s(lang="#{lang}")]
+  defp char_attrs(opts) do
+    size =
+      if font_size = Keyword.get(opts, :font_size),
+        do: [~s(sz="#{round(font_size * 100)}")],
+        else: []
 
-    attrs =
-      if font_size = Keyword.get(opts, :font_size) do
-        attrs ++ [~s(sz="#{round(font_size * 100)}")]
-      else
-        attrs
-      end
-
-    attrs = attrs ++ toggle_attr("b", Keyword.get(opts, :bold))
-    attrs = attrs ++ toggle_attr("i", Keyword.get(opts, :italic))
-
-    attrs =
+    underline =
       case Keyword.get(opts, :underline) do
-        nil -> attrs
-        false -> attrs
-        value -> attrs ++ [~s(u="#{underline_value(value)}")]
+        nil -> []
+        false -> []
+        value -> [~s(u="#{underline_value(value)}")]
       end
 
-    attrs =
-      if Keyword.get(opts, :strikethrough), do: attrs ++ [~s(strike="sngStrike")], else: attrs
+    strike = if Keyword.get(opts, :strikethrough), do: [~s(strike="sngStrike")], else: []
 
-    attrs =
+    baseline =
       cond do
-        Keyword.get(opts, :superscript) -> attrs ++ [~s(baseline="30000")]
-        Keyword.get(opts, :subscript) -> attrs ++ [~s(baseline="-25000")]
-        true -> attrs
+        Keyword.get(opts, :superscript) -> [~s(baseline="30000")]
+        Keyword.get(opts, :subscript) -> [~s(baseline="-25000")]
+        true -> []
       end
 
-    attrs = attrs ++ [~s(dirty="0")]
-
-    Enum.join(attrs, " ")
+    size ++
+      toggle_attr("b", Keyword.get(opts, :bold)) ++
+      toggle_attr("i", Keyword.get(opts, :italic)) ++ underline ++ strike ++ baseline
   end
 
   # A run that says nothing about bold or italic inherits the placeholder's or

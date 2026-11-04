@@ -8,7 +8,7 @@ defmodule Podium.Chart.XmlWriter do
 
   alias Podium.Chart
   alias Podium.Chart.{BubbleChartData, ChartData, ChartType, ComboChart, XyChartData}
-  alias Podium.{Drawing, Pattern}
+  alias Podium.{Drawing, Pattern, Text}
   alias Podium.OPC.Constants
   alias Podium.XML.Builder
 
@@ -38,15 +38,47 @@ defmodule Podium.Chart.XmlWriter do
   @spec to_xml(Podium.Chart.t()) :: String.t()
   @spec to_xml(atom(), struct()) :: String.t()
   def to_xml(%Chart{combo: %ComboChart{}} = chart) do
-    Builder.xml_declaration() <> combo_chart_space_xml(chart)
+    Builder.xml_declaration() <> combo_chart_space_xml(titles_follow_text(chart))
   end
 
   def to_xml(%Chart{} = chart) do
     config = ChartType.config(chart.chart_type)
 
     Builder.xml_declaration() <>
-      chart_space_xml(chart, config)
+      chart_space_xml(titles_follow_text(chart), config)
   end
+
+  # PowerPoint does not apply the chart-wide text style (chartSpace txPr) to
+  # the chart and axis titles, so :text is written into them, under their
+  # own options. Titles keep their own size.
+  defp titles_follow_text(%Chart{text: text} = chart) do
+    case text |> font_opts() |> Keyword.delete(:font_size) do
+      [] ->
+        chart
+
+      defaults ->
+        %{
+          chart
+          | title: title_with_defaults(chart.title, defaults),
+            category_axis: axis_title_with_defaults(chart.category_axis, defaults),
+            value_axis: axis_title_with_defaults(chart.value_axis, defaults),
+            secondary_value_axis: axis_title_with_defaults(chart.secondary_value_axis, defaults)
+        }
+    end
+  end
+
+  defp axis_title_with_defaults(nil, _defaults), do: nil
+
+  defp axis_title_with_defaults(axis_opts, defaults) do
+    case Keyword.get(axis_opts, :title) do
+      nil -> axis_opts
+      title -> Keyword.put(axis_opts, :title, title_with_defaults(title, defaults))
+    end
+  end
+
+  defp title_with_defaults(nil, _defaults), do: nil
+  defp title_with_defaults(title, defaults) when is_binary(title), do: [text: title] ++ defaults
+  defp title_with_defaults(title, defaults), do: Keyword.merge(defaults, title)
 
   def to_xml(chart_type, chart_data) do
     chart = %Chart{chart_type: chart_type, chart_data: chart_data}
@@ -69,7 +101,7 @@ defmodule Podium.Chart.XmlWriter do
       legend_xml(chart.legend) <>
       ~s(<c:dispBlanksAs val="gap"/>) <>
       ~s(</c:chart>) <>
-      txpr_xml() <>
+      chart_text_xml(chart.text) <>
       ~s(<c:externalData r:id="rId1"><c:autoUpdate val="0"/></c:externalData>) <>
       ~s(</c:chartSpace>)
   end
@@ -93,7 +125,7 @@ defmodule Podium.Chart.XmlWriter do
   defp title_xml(opts) when is_list(opts) do
     text = Keyword.fetch!(opts, :text)
     escaped = Builder.escape(text)
-    rpr_xml = font_rpr_xml(opts)
+    rpr_xml = Text.run_properties_xml(font_opts(opts))
 
     ~s(<c:title>) <>
       ~s(<c:tx><c:rich>) <>
@@ -115,38 +147,16 @@ defmodule Podium.Chart.XmlWriter do
   end
 
   defp legend_xml(opts) when is_list(opts) do
-    position = Keyword.fetch!(opts, :position)
-    pos = legend_pos_value(position)
-    font_xml = legend_font_xml(opts)
+    pos = legend_pos_value(Keyword.get(opts, :position, :right))
 
-    ~s(<c:legend><c:legendPos val="#{pos}"/><c:overlay val="0"/>#{font_xml}</c:legend>)
+    ~s(<c:legend><c:legendPos val="#{pos}"/><c:overlay val="0"/>) <>
+      text_props_xml(font_opts(opts)) <> ~s(</c:legend>)
   end
 
   defp legend_pos_value(:left), do: "l"
   defp legend_pos_value(:right), do: "r"
   defp legend_pos_value(:top), do: "t"
   defp legend_pos_value(:bottom), do: "b"
-
-  defp legend_font_xml(opts) do
-    font_size = Keyword.get(opts, :font_size)
-    bold = Keyword.get(opts, :bold)
-    italic = Keyword.get(opts, :italic)
-    color = Keyword.get(opts, :color)
-    font = Keyword.get(opts, :font)
-
-    if font_size || bold || italic || color || font do
-      attrs = font_rpr_attrs(opts)
-      children = font_rpr_children(opts)
-
-      if children == "" do
-        ~s(<c:txPr><a:bodyPr/><a:lstStyle/><a:p><a:pPr><a:defRPr #{attrs}/></a:pPr><a:endParaRPr lang="en-US"/></a:p></c:txPr>)
-      else
-        ~s(<c:txPr><a:bodyPr/><a:lstStyle/><a:p><a:pPr><a:defRPr #{attrs}>#{children}</a:defRPr></a:pPr><a:endParaRPr lang="en-US"/></a:p></c:txPr>)
-      end
-    else
-      ""
-    end
-  end
 
   # -- Date1904 --
 
@@ -250,13 +260,15 @@ defmodule Podium.Chart.XmlWriter do
 
   defp data_labels_xml(labels) when is_list(labels) do
     # Support both simple atom list and keyword opts
-    {show_atoms, position, number_format, font_size, color} = parse_data_labels(labels)
+    {show_atoms, opts} = parse_data_labels(labels)
+    position = Keyword.get(opts, :position)
+    number_format = Keyword.get(opts, :number_format)
 
     # CT_DLbls order: numFmt, spPr, txPr, dLblPos, showLegendKey, showVal,
     # showCatName, showSerName, showPercent
     ~s(<c:dLbls>) <>
       dlbl_num_fmt_xml(number_format) <>
-      dlbl_font_xml(font_size, color) <>
+      text_props_xml(font_opts(opts)) <>
       dlbl_position_xml(position) <>
       dlbl_show_flags_xml(show_atoms) <>
       ~s(</c:dLbls>)
@@ -275,32 +287,14 @@ defmodule Podium.Chart.XmlWriter do
       flag.("showPercent", :percent)
   end
 
+  # A plain list of atoms names what to show. A keyword list carries options,
+  # showing values when it does not say what to show.
   defp parse_data_labels(labels) do
-    if Keyword.keyword?(labels) and Keyword.has_key?(labels, :show) do
-      {Keyword.get(labels, :show, []), Keyword.get(labels, :position),
-       Keyword.get(labels, :number_format), Keyword.get(labels, :font_size),
-       Keyword.get(labels, :color)}
+    if labels != [] and Keyword.keyword?(labels) do
+      {Keyword.get(labels, :show, [:value]), labels}
     else
-      {labels, nil, nil, nil, nil}
+      {labels, []}
     end
-  end
-
-  defp dlbl_font_xml(nil, nil), do: ""
-
-  defp dlbl_font_xml(font_size, color) do
-    sz_attr = if font_size, do: ~s( sz="#{round(font_size * 100)}"), else: ""
-
-    color_xml =
-      if color,
-        do: ~s(<a:solidFill><a:srgbClr val="#{color}"/></a:solidFill>),
-        else: ""
-
-    def_rpr =
-      if color_xml == "",
-        do: ~s(<a:defRPr#{sz_attr}/>),
-        else: ~s(<a:defRPr#{sz_attr}>#{color_xml}</a:defRPr>)
-
-    ~s(<c:txPr><a:bodyPr/><a:lstStyle/><a:p><a:pPr>#{def_rpr}</a:pPr><a:endParaRPr lang="en-US"/></a:p></c:txPr>)
   end
 
   defp dlbl_position_xml(nil), do: ""
@@ -550,6 +544,7 @@ defmodule Podium.Chart.XmlWriter do
     ~s(<c:dLbl>) <>
       ~s(<c:idx val="#{idx}"/>) <>
       dlbl_num_fmt_xml(Keyword.get(opts, :number_format)) <>
+      text_props_xml(font_opts(opts)) <>
       dlbl_position_xml(Keyword.get(opts, :position)) <>
       dlbl_show_flags_xml(Keyword.get(opts, :show, [])) <>
       ~s(</c:dLbl>)
@@ -748,8 +743,6 @@ defmodule Podium.Chart.XmlWriter do
     axis_opts = chart.category_axis || []
     axis_title = Keyword.get(axis_opts, :title)
     crosses = Keyword.get(axis_opts, :crosses, :auto_zero)
-    label_rotation = Keyword.get(axis_opts, :label_rotation)
-    color = Keyword.get(axis_opts, :color)
     line_color = Keyword.get(axis_opts, :line_color)
     reverse = Keyword.get(axis_opts, :reverse, false)
     visible = Keyword.get(axis_opts, :visible, true)
@@ -769,7 +762,7 @@ defmodule Podium.Chart.XmlWriter do
       ~s(<c:minorTickMark val="#{tick_mark_value(minor_tick)}"/>) <>
       ~s(<c:tickLblPos val="nextTo"/>) <>
       line_sppr_xml(line_color) <>
-      tick_label_format_xml(label_rotation, color) <>
+      tick_label_format_xml(axis_opts) <>
       ~s(<c:crossAx val="#{cross_ax_id}"/>) <>
       crosses_xml(crosses) <>
       ~s(<c:auto val="1"/>) <>
@@ -784,8 +777,6 @@ defmodule Podium.Chart.XmlWriter do
     axis_opts = chart.category_axis || []
     axis_title = Keyword.get(axis_opts, :title)
     crosses = Keyword.get(axis_opts, :crosses, :auto_zero)
-    label_rotation = Keyword.get(axis_opts, :label_rotation)
-    color = Keyword.get(axis_opts, :color)
     line_color = Keyword.get(axis_opts, :line_color)
     reverse = Keyword.get(axis_opts, :reverse, false)
     visible = Keyword.get(axis_opts, :visible, true)
@@ -828,7 +819,7 @@ defmodule Podium.Chart.XmlWriter do
       ~s(<c:minorTickMark val="#{tick_mark_value(minor_tick)}"/>) <>
       ~s(<c:tickLblPos val="nextTo"/>) <>
       line_sppr_xml(line_color) <>
-      tick_label_format_xml(label_rotation, color) <>
+      tick_label_format_xml(axis_opts) <>
       ~s(<c:crossAx val="#{cross_ax_id}"/>) <>
       crosses_xml(crosses) <>
       base_xml <>
@@ -867,8 +858,6 @@ defmodule Podium.Chart.XmlWriter do
     major_unit = Keyword.get(axis_opts, :major_unit)
     minor_unit = Keyword.get(axis_opts, :minor_unit)
     crosses = Keyword.get(axis_opts, :crosses, :auto_zero)
-    label_rotation = Keyword.get(axis_opts, :label_rotation)
-    color = Keyword.get(axis_opts, :color)
     line_color = Keyword.get(axis_opts, :line_color)
     reverse = Keyword.get(axis_opts, :reverse, false)
     visible = Keyword.get(axis_opts, :visible, true)
@@ -900,7 +889,7 @@ defmodule Podium.Chart.XmlWriter do
       ~s(<c:minorTickMark val="#{tick_mark_value(minor_tick)}"/>) <>
       ~s(<c:tickLblPos val="nextTo"/>) <>
       line_sppr_xml(line_color) <>
-      tick_label_format_xml(label_rotation, color) <>
+      tick_label_format_xml(axis_opts) <>
       ~s(<c:crossAx val="#{cross_ax_id}"/>) <>
       crosses_xml(crosses) <>
       cross_between_xml <>
@@ -947,7 +936,7 @@ defmodule Podium.Chart.XmlWriter do
   defp axis_title_xml(opts) when is_list(opts) do
     text = Keyword.fetch!(opts, :text)
     escaped = Builder.escape(text)
-    rpr_xml = font_rpr_xml(opts)
+    rpr_xml = Text.run_properties_xml(font_opts(opts))
 
     ~s(<c:title>) <>
       ~s(<c:tx><c:rich>) <>
@@ -978,61 +967,27 @@ defmodule Podium.Chart.XmlWriter do
     ~s(<c:minorGridlines>#{line_sppr_xml(color)}</c:minorGridlines>)
   end
 
-  defp tick_label_format_xml(nil, nil), do: ""
-
-  defp tick_label_format_xml(label_rotation, color) do
+  defp tick_label_format_xml(axis_opts) do
     body_attrs =
-      if label_rotation do
-        rot = round(label_rotation * 60_000)
-        ~s( rot="#{rot}")
-      else
-        ""
+      case Keyword.get(axis_opts, :label_rotation) do
+        nil -> ""
+        degrees -> ~s( rot="#{round(degrees * 60_000)}")
       end
 
-    color_xml =
-      if color,
-        do: ~s(<a:solidFill><a:srgbClr val="#{color}"/></a:solidFill>),
-        else: ""
+    text_props_xml(font_opts(axis_opts), body_attrs)
+  end
 
-    def_rpr =
-      if color_xml == "",
-        do: ~s(<a:defRPr/>),
-        else: ~s(<a:defRPr>#{color_xml}</a:defRPr>)
+  defp font_opts(opts), do: Keyword.take(opts, Text.font_keys())
 
+  # <c:txPr>: the default text formatting of a chart element (or of the
+  # whole chart), with `body_attrs` on its <a:bodyPr>.
+  defp text_props_xml(font, body_attrs \\ "")
+  defp text_props_xml([], ""), do: ""
+
+  defp text_props_xml(font, body_attrs) do
     ~s(<c:txPr><a:bodyPr#{body_attrs}/><a:lstStyle/>) <>
-      ~s(<a:p><a:pPr>#{def_rpr}</a:pPr><a:endParaRPr lang="en-US"/></a:p></c:txPr>)
-  end
-
-  defp font_rpr_xml(opts) do
-    attrs = font_rpr_attrs(opts)
-    children = font_rpr_children(opts)
-
-    if children == "" do
-      ~s(<a:rPr #{attrs}/>)
-    else
-      ~s(<a:rPr #{attrs}>#{children}</a:rPr>)
-    end
-  end
-
-  defp font_rpr_attrs(opts) do
-    attrs = [~s(lang="en-US")]
-    font_size = Keyword.get(opts, :font_size)
-    bold = Keyword.get(opts, :bold)
-    italic = Keyword.get(opts, :italic)
-
-    attrs = if font_size, do: attrs ++ [~s(sz="#{round(font_size * 100)}")], else: attrs
-    attrs = if bold, do: attrs ++ [~s(b="1")], else: attrs
-    attrs = if italic, do: attrs ++ [~s(i="1")], else: attrs
-    attrs = attrs ++ [~s(dirty="0")]
-    Enum.join(attrs, " ")
-  end
-
-  defp font_rpr_children(opts) do
-    color = Keyword.get(opts, :color)
-    font = Keyword.get(opts, :font)
-    color_xml = if color, do: ~s(<a:solidFill><a:srgbClr val="#{color}"/></a:solidFill>), else: ""
-    font_xml = if font, do: ~s(<a:latin typeface="#{Builder.escape(font)}"/>), else: ""
-    color_xml <> font_xml
+      ~s(<a:p><a:pPr>#{Text.default_run_properties_xml(font)}</a:pPr>) <>
+      ~s(<a:endParaRPr lang="en-US"/></a:p></c:txPr>)
   end
 
   defp series_marker_xml(opts) when is_list(opts) do
@@ -1092,7 +1047,7 @@ defmodule Podium.Chart.XmlWriter do
       legend_xml(chart.legend) <>
       ~s(<c:dispBlanksAs val="gap"/>) <>
       ~s(</c:chart>) <>
-      txpr_xml() <>
+      chart_text_xml(chart.text) <>
       ~s(<c:externalData r:id="rId1"><c:autoUpdate val="0"/></c:externalData>) <>
       ~s(</c:chartSpace>)
   end
@@ -1261,8 +1216,6 @@ defmodule Podium.Chart.XmlWriter do
     axis_opts = chart.category_axis || []
     axis_title = Keyword.get(axis_opts, :title)
     crosses = Keyword.get(axis_opts, :crosses, :auto_zero)
-    label_rotation = Keyword.get(axis_opts, :label_rotation)
-    color = Keyword.get(axis_opts, :color)
     line_color = Keyword.get(axis_opts, :line_color)
     reverse = Keyword.get(axis_opts, :reverse, false)
     visible = Keyword.get(axis_opts, :visible, true)
@@ -1283,7 +1236,7 @@ defmodule Podium.Chart.XmlWriter do
       ~s(<c:minorTickMark val="none"/>) <>
       ~s(<c:tickLblPos val="nextTo"/>) <>
       line_sppr_xml(line_color) <>
-      tick_label_format_xml(label_rotation, color) <>
+      tick_label_format_xml(axis_opts) <>
       ~s(<c:crossAx val="#{cross_ax_id}"/>) <>
       crosses_xml(crosses) <>
       ~s(<c:auto val="1"/>) <>
@@ -1306,8 +1259,6 @@ defmodule Podium.Chart.XmlWriter do
     major_unit = Keyword.get(axis_opts, :major_unit)
     minor_unit = Keyword.get(axis_opts, :minor_unit)
     crosses = Keyword.get(axis_opts, :crosses, :auto_zero)
-    label_rotation = Keyword.get(axis_opts, :label_rotation)
-    color = Keyword.get(axis_opts, :color)
     line_color = Keyword.get(axis_opts, :line_color)
     reverse = Keyword.get(axis_opts, :reverse, false)
     visible = Keyword.get(axis_opts, :visible, true)
@@ -1341,7 +1292,7 @@ defmodule Podium.Chart.XmlWriter do
       ~s(<c:minorTickMark val="none"/>) <>
       ~s(<c:tickLblPos val="nextTo"/>) <>
       line_sppr_xml(line_color) <>
-      tick_label_format_xml(label_rotation, color) <>
+      tick_label_format_xml(axis_opts) <>
       ~s(<c:crossAx val="#{cross_ax_id}"/>) <>
       crosses_out <>
       major_unit_xml <>
@@ -1357,14 +1308,9 @@ defmodule Podium.Chart.XmlWriter do
     {@combo_cat_ax_id, @combo_val_ax_id}
   end
 
-  defp txpr_xml do
-    ~s(<c:txPr>) <>
-      ~s(<a:bodyPr/>) <>
-      ~s(<a:lstStyle/>) <>
-      ~s(<a:p>) <>
-      ~s(<a:pPr><a:defRPr sz="1800"/></a:pPr>) <>
-      ~s(<a:endParaRPr lang="en-US"/>) <>
-      ~s(</a:p>) <>
-      ~s(</c:txPr>)
+  # Chart-wide text formatting. Chart text is 18pt unless `:text` gives
+  # another size.
+  defp chart_text_xml(text) do
+    text |> font_opts() |> Keyword.put_new(:font_size, 18) |> text_props_xml()
   end
 end
