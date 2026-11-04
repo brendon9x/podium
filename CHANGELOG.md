@@ -1,12 +1,8 @@
 # Changelog
 
-## Unreleased
+## 0.4.0
 
 ### Added
-
-- `Podium.center_x/2` returns the x that centres a given width on the
-  presentation's slide width, for content placed by hand. It follows a custom
-  `:slide_width` or a template's size.
 
 - Chart text takes the same font options as a text run everywhere it appears:
   the title, axis titles, legend, tick labels and data labels (chart-wide and
@@ -20,6 +16,9 @@
 - Tick labels on any axis take font options directly on the axis keyword list,
   alongside `:label_rotation`.
 - Per-point data labels take font options.
+- Chart titles and axis titles take rich text, in the form a text box takes:
+  several runs, several paragraphs, paragraph alignment and line breaks. Font
+  options given alongside `:text` apply to every run.
 - Chart elements take `:fill` and `:line`: the chart area (`:background`,
   where `:none` makes it transparent), the plot area (`:plot_area`), the title,
   axis titles, the legend, each axis line and data labels (chart-wide and per
@@ -64,47 +63,36 @@
   rest were ignored before. The secondary axis's `:crosses` and
   `:major_gridlines` are honoured.
 - Axis options outside their allowed values raise `ArgumentError`.
-- Chart titles and axis titles take rich text, in the form a text box takes:
-  several runs, several paragraphs, paragraph alignment and line breaks. Font
-  options given alongside `:text` apply to every run.
+- `Podium.center_x/2` returns the x that centres a given width on the
+  presentation's slide width, for content placed by hand. It follows a custom
+  `:slide_width` or a template's size.
 
 ### Changed
 
-- On scatter and bubble charts `:category_axis` now sets the horizontal (X)
-  axis and `:value_axis` the vertical (Y) axis, as python-pptx does. Before,
-  `:value_axis` set both and `:category_axis` was ignored.
-- The series `:pattern` keyword list is replaced by `:fill` with a pattern
-  tuple: `pattern: [type: :dn_diag, foreground: "4472C4"]` becomes
-  `fill: {:pattern, :dn_diag, foreground: "4472C4"}`.
-- A radar line series' `:color` now colours its line, as on a line series,
-  instead of writing a fill that PowerPoint did not show.
+The first five need changes to calling code.
 
 - Axis `:line_color` is replaced by `:line`, which takes any line format:
   `line_color: "AAAAAA"` becomes `line: "AAAAAA"`.
 - Axis `:major_gridlines_color` and `:minor_gridlines_color` are replaced by a
   keyword list on the gridlines option: `major_gridlines_color: "D9D9D9"`
   becomes `major_gridlines: [line: "D9D9D9"]`.
-
+- The series `:pattern` keyword list is replaced by `:fill` with a pattern
+  tuple: `pattern: [type: :dn_diag, foreground: "4472C4"]` becomes
+  `fill: {:pattern, :dn_diag, foreground: "4472C4"}`.
+- On scatter and bubble charts `:category_axis` now sets the horizontal (X)
+  axis and `:value_axis` the vertical (Y) axis, as python-pptx does. Before,
+  `:value_axis` set both and `:category_axis` was ignored.
+- A data label `:position` the chart type does not accept raises
+  `ArgumentError`, at chart, plot, series and point level. PowerPoint repaired
+  files carrying one.
+- A radar line series' `:color` now colours its line, as on a line series,
+  instead of writing a fill that PowerPoint did not show.
 - A legend keyword list no longer needs `:position`; it defaults to `:right`.
 - A data label keyword list without `:show` labels the values instead of
   dropping its options. This includes per-point labels, which showed nothing
   without `:show`.
-- A data label `:position` the chart type does not accept raises
-  `ArgumentError`, at chart, plot, series and point level. PowerPoint repaired
-  files carrying one.
 
 ### Fixed
-
-- `color: :none` on a line series wrote `<a:srgbClr val="none"/>`, which
-  PowerPoint cannot read.
-- A markers-only `:scatter` series given `:color` drew a connecting line. It
-  now draws none, and the colour goes to its markers.
-- `:point_colors` and `:point_formats` on XY and bubble series were silently
-  dropped. They are now written.
-- A point colour or format on a line, scatter or radar series coloured the
-  hidden line segment rather than the marker, so it did not show. It now
-  formats the point's marker, and `point_formats` takes `:marker` for its
-  style and size.
 
 - `<c:dLbls>` and `<c:dLbl>` wrote `<c:txPr>` and `<c:showLegendKey>` after
   the show flags, which the schema does not allow. They now follow the
@@ -118,6 +106,16 @@
 - A bar point coloured through `:point_colors` or `:point_formats` now carries
   `invertIfNegative` set to false, as its series already did. Without it
   PowerPoint painted a negative bar white regardless of the colour given.
+- `color: :none` on a line series wrote `<a:srgbClr val="none"/>`, which
+  PowerPoint cannot read.
+- A markers-only `:scatter` series given `:color` drew a connecting line. It
+  now draws none, and the colour goes to its markers.
+- `:point_colors` and `:point_formats` on XY and bubble series were silently
+  dropped. They are now written.
+- A point colour or format on a line, scatter or radar series coloured the
+  hidden line segment rather than the marker, so it did not show. It now
+  formats the point's marker, and `point_formats` takes `:marker` for its
+  style and size.
 - Fractional font sizes, paragraph spacing and axis label rotations are
   rounded, so `font_size: 10.5` writes `sz="1050"` rather than `sz="1050.0"`.
 - Typefaces given through `:font` are XML-escaped.
