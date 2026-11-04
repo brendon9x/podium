@@ -800,173 +800,82 @@ defmodule Podium.Chart.XmlWriter do
   defp axes_xml(_chart, %{has_axes: false}), do: ""
 
   defp axes_xml(chart, %{element: "c:lineChart"}) do
-    cat_axis_xml(chart, @line_cat_ax_id, @line_val_ax_id) <>
-      val_ax_xml(chart, @line_val_ax_id, @line_cat_ax_id)
+    category_axes_xml(chart, @line_cat_ax_id, @line_val_ax_id)
   end
 
   defp axes_xml(chart, %{element: "c:areaChart"}) do
-    cat_axis_xml(chart, @area_cat_ax_id, @area_val_ax_id) <>
-      val_ax_xml(chart, @area_val_ax_id, @area_cat_ax_id)
+    category_axes_xml(chart, @area_cat_ax_id, @area_val_ax_id)
   end
 
   defp axes_xml(chart, %{element: "c:radarChart"}) do
-    cat_axis_xml(chart, @radar_cat_ax_id, @radar_val_ax_id) <>
-      val_ax_xml(chart, @radar_val_ax_id, @radar_cat_ax_id)
+    category_axes_xml(chart, @radar_cat_ax_id, @radar_val_ax_id)
   end
 
-  defp axes_xml(chart, %{element: "c:scatterChart"}) do
-    val_ax_xml(chart, @scatter_x_ax_id, @scatter_y_ax_id, "b", cross_between: "midCat") <>
-      val_ax_xml(chart, @scatter_y_ax_id, @scatter_x_ax_id, "l", cross_between: "midCat")
-  end
+  # Scatter and bubble charts have two value axes: :category_axis sets the
+  # horizontal (X) one and :value_axis the vertical (Y) one, as python-pptx's
+  # category_axis does.
+  defp axes_xml(chart, %{element: element})
+       when element in ["c:scatterChart", "c:bubbleChart"] do
+    xy_opts = [cross_between: "midCat"]
 
-  defp axes_xml(chart, %{element: "c:bubbleChart"}) do
-    val_ax_xml(chart, @scatter_x_ax_id, @scatter_y_ax_id, "b", cross_between: "midCat") <>
-      val_ax_xml(chart, @scatter_y_ax_id, @scatter_x_ax_id, "l", cross_between: "midCat")
+    value_axis_xml(chart.category_axis, @scatter_x_ax_id, @scatter_y_ax_id, "b", xy_opts) <>
+      value_axis_xml(chart.value_axis, @scatter_y_ax_id, @scatter_x_ax_id, "l", xy_opts)
   end
 
   defp axes_xml(chart, _config) do
-    cat_axis_xml(chart, @cat_ax_id, @val_ax_id) <>
-      val_ax_xml(chart, @val_ax_id, @cat_ax_id)
+    category_axes_xml(chart, @cat_ax_id, @val_ax_id)
   end
 
-  # Dispatch between catAx and dateAx based on category_axis[:type]
-  defp cat_axis_xml(chart, ax_id, cross_ax_id) do
-    axis_opts = chart.category_axis || []
+  defp category_axes_xml(chart, cat_ax_id, val_ax_id) do
+    category_axis_xml(
+      chart.category_axis,
+      cat_ax_id,
+      val_ax_id,
+      ChartType.cat_ax_pos(chart.chart_type)
+    ) <>
+      value_axis_xml(
+        chart.value_axis,
+        val_ax_id,
+        cat_ax_id,
+        ChartType.val_ax_pos(chart.chart_type),
+        []
+      )
+  end
+
+  # A category axis, or a date axis with `type: :date`.
+  defp category_axis_xml(axis_opts, ax_id, cross_ax_id, pos) do
+    axis_opts = axis_opts || []
+    scaling = scaling_xml(axis_opts, false)
 
     case Keyword.get(axis_opts, :type) do
-      :date -> date_ax_xml(chart, ax_id, cross_ax_id)
-      _ -> cat_ax_xml(chart, ax_id, cross_ax_id)
+      :date ->
+        ~s(<c:dateAx>) <>
+          axis_shared_xml(axis_opts, ax_id, cross_ax_id, pos, scaling, false, :auto_zero) <>
+          label_offset_xml(Keyword.get(axis_opts, :label_offset)) <>
+          time_unit_xml("baseTimeUnit", Keyword.get(axis_opts, :base_time_unit)) <>
+          unit_xml("majorUnit", Keyword.get(axis_opts, :major_unit)) <>
+          time_unit_xml("majorTimeUnit", Keyword.get(axis_opts, :major_time_unit)) <>
+          unit_xml("minorUnit", Keyword.get(axis_opts, :minor_unit)) <>
+          time_unit_xml("minorTimeUnit", Keyword.get(axis_opts, :minor_time_unit)) <>
+          ~s(</c:dateAx>)
+
+      _ ->
+        ~s(<c:catAx>) <>
+          axis_shared_xml(axis_opts, ax_id, cross_ax_id, pos, scaling, false, :auto_zero) <>
+          ~s(<c:auto val="1"/>) <>
+          ~s(<c:lblAlgn val="ctr"/>) <>
+          label_offset_xml(Keyword.get(axis_opts, :label_offset, 100)) <>
+          ~s(<c:noMultiLvlLbl val="0"/>) <>
+          ~s(</c:catAx>)
     end
   end
 
-  defp cat_ax_xml(chart, ax_id, cross_ax_id) do
-    pos = ChartType.cat_ax_pos(chart.chart_type)
-    axis_opts = chart.category_axis || []
-    axis_title = Keyword.get(axis_opts, :title)
-    crosses = Keyword.get(axis_opts, :crosses, :auto_zero)
-    reverse = Keyword.get(axis_opts, :reverse, false)
-    visible = Keyword.get(axis_opts, :visible, true)
-    major_tick = Keyword.get(axis_opts, :major_tick_mark, :out)
-    minor_tick = Keyword.get(axis_opts, :minor_tick_mark, :none)
-
-    orientation = if reverse, do: "maxMin", else: "minMax"
-    delete_val = if visible, do: "0", else: "1"
-
-    ~s(<c:catAx>) <>
-      ~s(<c:axId val="#{ax_id}"/>) <>
-      ~s(<c:scaling><c:orientation val="#{orientation}"/></c:scaling>) <>
-      ~s(<c:delete val="#{delete_val}"/>) <>
-      ~s(<c:axPos val="#{pos}"/>) <>
-      category_gridlines_xml(axis_opts) <>
-      axis_title_xml(axis_title) <>
-      ~s(<c:majorTickMark val="#{tick_mark_value(major_tick)}"/>) <>
-      ~s(<c:minorTickMark val="#{tick_mark_value(minor_tick)}"/>) <>
-      ~s(<c:tickLblPos val="nextTo"/>) <>
-      sp_pr_xml(axis_opts) <>
-      tick_label_format_xml(axis_opts) <>
-      ~s(<c:crossAx val="#{cross_ax_id}"/>) <>
-      crosses_xml(crosses) <>
-      ~s(<c:auto val="1"/>) <>
-      ~s(<c:lblAlgn val="ctr"/>) <>
-      ~s(<c:lblOffset val="100"/>) <>
-      ~s(<c:noMultiLvlLbl val="0"/>) <>
-      ~s(</c:catAx>)
-  end
-
-  defp date_ax_xml(chart, ax_id, cross_ax_id) do
-    pos = ChartType.cat_ax_pos(chart.chart_type)
-    axis_opts = chart.category_axis || []
-    axis_title = Keyword.get(axis_opts, :title)
-    crosses = Keyword.get(axis_opts, :crosses, :auto_zero)
-    reverse = Keyword.get(axis_opts, :reverse, false)
-    visible = Keyword.get(axis_opts, :visible, true)
-    major_tick = Keyword.get(axis_opts, :major_tick_mark, :out)
-    minor_tick = Keyword.get(axis_opts, :minor_tick_mark, :none)
-    base_time_unit = Keyword.get(axis_opts, :base_time_unit)
-    major_time_unit = Keyword.get(axis_opts, :major_time_unit)
-    minor_time_unit = Keyword.get(axis_opts, :minor_time_unit)
-    major_unit = Keyword.get(axis_opts, :major_unit)
-    minor_unit = Keyword.get(axis_opts, :minor_unit)
-
-    orientation = if reverse, do: "maxMin", else: "minMax"
-    delete_val = if visible, do: "0", else: "1"
-
-    base_xml =
-      if base_time_unit,
-        do: ~s(<c:baseTimeUnit val="#{time_unit_value(base_time_unit)}"/>),
-        else: ""
-
-    major_time_xml =
-      if major_time_unit,
-        do: ~s(<c:majorTimeUnit val="#{time_unit_value(major_time_unit)}"/>),
-        else: ""
-
-    minor_time_xml =
-      if minor_time_unit,
-        do: ~s(<c:minorTimeUnit val="#{time_unit_value(minor_time_unit)}"/>),
-        else: ""
-
-    major_unit_xml = if major_unit, do: ~s(<c:majorUnit val="#{major_unit}"/>), else: ""
-    minor_unit_xml = if minor_unit, do: ~s(<c:minorUnit val="#{minor_unit}"/>), else: ""
-
-    ~s(<c:dateAx>) <>
-      ~s(<c:axId val="#{ax_id}"/>) <>
-      ~s(<c:scaling><c:orientation val="#{orientation}"/></c:scaling>) <>
-      ~s(<c:delete val="#{delete_val}"/>) <>
-      ~s(<c:axPos val="#{pos}"/>) <>
-      category_gridlines_xml(axis_opts) <>
-      axis_title_xml(axis_title) <>
-      ~s(<c:majorTickMark val="#{tick_mark_value(major_tick)}"/>) <>
-      ~s(<c:minorTickMark val="#{tick_mark_value(minor_tick)}"/>) <>
-      ~s(<c:tickLblPos val="nextTo"/>) <>
-      sp_pr_xml(axis_opts) <>
-      tick_label_format_xml(axis_opts) <>
-      ~s(<c:crossAx val="#{cross_ax_id}"/>) <>
-      crosses_xml(crosses) <>
-      base_xml <>
-      major_unit_xml <>
-      major_time_xml <>
-      minor_unit_xml <>
-      minor_time_xml <>
-      ~s(</c:dateAx>)
-  end
-
-  defp time_unit_value(:days), do: "days"
-  defp time_unit_value(:months), do: "months"
-  defp time_unit_value(:years), do: "years"
-
-  # Standard val_ax_xml using chart_type for axis positions
-  defp val_ax_xml(chart, ax_id, cross_ax_id) do
-    pos = ChartType.val_ax_pos(chart.chart_type)
-    do_val_ax_xml(chart, ax_id, cross_ax_id, pos, [])
-  end
-
-  # Explicit position val_ax_xml for scatter/bubble (two valAx axes)
-  defp val_ax_xml(chart, ax_id, cross_ax_id, pos, opts) do
-    do_val_ax_xml(chart, ax_id, cross_ax_id, pos, opts)
-  end
-
-  defp do_val_ax_xml(chart, ax_id, cross_ax_id, pos, opts) do
-    axis_opts = chart.value_axis || []
-    axis_title = Keyword.get(axis_opts, :title)
-    num_fmt = Keyword.get(axis_opts, :number_format)
-    gridlines = Keyword.get(axis_opts, :major_gridlines, true)
-    minor_gridlines = Keyword.get(axis_opts, :minor_gridlines, false)
-    min_val = Keyword.get(axis_opts, :min)
-    max_val = Keyword.get(axis_opts, :max)
-    major_unit = Keyword.get(axis_opts, :major_unit)
-    minor_unit = Keyword.get(axis_opts, :minor_unit)
-    crosses = Keyword.get(axis_opts, :crosses, :auto_zero)
-    reverse = Keyword.get(axis_opts, :reverse, false)
-    visible = Keyword.get(axis_opts, :visible, true)
-    major_tick = Keyword.get(axis_opts, :major_tick_mark, :out)
-    minor_tick = Keyword.get(axis_opts, :minor_tick_mark, :none)
-
-    scaling_xml = val_scaling_xml(min_val, max_val, reverse)
-    num_fmt_xml = val_num_fmt_xml(num_fmt)
-    major_unit_xml = if major_unit, do: ~s(<c:majorUnit val="#{major_unit}"/>), else: ""
-    minor_unit_xml = if minor_unit, do: ~s(<c:minorUnit val="#{minor_unit}"/>), else: ""
-    delete_val = if visible, do: "0", else: "1"
+  # A value axis. `opts` may give :cross_between, :gridlines (the default for
+  # major gridlines, true) and :crosses (the default crossing, :auto_zero).
+  defp value_axis_xml(axis_opts, ax_id, cross_ax_id, pos, opts) do
+    axis_opts = axis_opts || []
+    gridlines = Keyword.get(opts, :gridlines, true)
+    crosses = Keyword.get(opts, :crosses, :auto_zero)
 
     cross_between_xml =
       case Keyword.get(opts, :cross_between) do
@@ -975,26 +884,73 @@ defmodule Podium.Chart.XmlWriter do
       end
 
     ~s(<c:valAx>) <>
-      ~s(<c:axId val="#{ax_id}"/>) <>
-      scaling_xml <>
+      axis_shared_xml(
+        axis_opts,
+        ax_id,
+        cross_ax_id,
+        pos,
+        scaling_xml(axis_opts, true),
+        gridlines,
+        crosses
+      ) <>
+      cross_between_xml <>
+      unit_xml("majorUnit", Keyword.get(axis_opts, :major_unit)) <>
+      unit_xml("minorUnit", Keyword.get(axis_opts, :minor_unit)) <>
+      ~s(</c:valAx>)
+  end
+
+  # EG_AxShared, in schema order: axId, scaling, delete, axPos, majorGridlines,
+  # minorGridlines, title, numFmt, majorTickMark, minorTickMark, tickLblPos,
+  # spPr, txPr, crossAx, crosses/crossesAt.
+  defp axis_shared_xml(axis_opts, ax_id, cross_ax_id, pos, scaling, gridlines, crosses) do
+    delete_val = if Keyword.get(axis_opts, :visible, true), do: "0", else: "1"
+
+    ~s(<c:axId val="#{ax_id}"/>) <>
+      scaling <>
       ~s(<c:delete val="#{delete_val}"/>) <>
       ~s(<c:axPos val="#{pos}"/>) <>
-      gridlines_xml("majorGridlines", gridlines) <>
-      gridlines_xml("minorGridlines", minor_gridlines) <>
-      axis_title_xml(axis_title) <>
-      num_fmt_xml <>
-      ~s(<c:majorTickMark val="#{tick_mark_value(major_tick)}"/>) <>
-      ~s(<c:minorTickMark val="#{tick_mark_value(minor_tick)}"/>) <>
-      ~s(<c:tickLblPos val="nextTo"/>) <>
+      gridlines_xml("majorGridlines", Keyword.get(axis_opts, :major_gridlines, gridlines)) <>
+      gridlines_xml("minorGridlines", Keyword.get(axis_opts, :minor_gridlines, false)) <>
+      axis_title_xml(Keyword.get(axis_opts, :title)) <>
+      val_num_fmt_xml(Keyword.get(axis_opts, :number_format)) <>
+      ~s(<c:majorTickMark val="#{tick_mark_value(Keyword.get(axis_opts, :major_tick_mark, :out))}"/>) <>
+      ~s(<c:minorTickMark val="#{tick_mark_value(Keyword.get(axis_opts, :minor_tick_mark, :none))}"/>) <>
+      ~s(<c:tickLblPos val="#{tick_label_position_value(Keyword.get(axis_opts, :tick_label_position, :next_to))}"/>) <>
       sp_pr_xml(axis_opts) <>
       tick_label_format_xml(axis_opts) <>
       ~s(<c:crossAx val="#{cross_ax_id}"/>) <>
-      crosses_xml(crosses) <>
-      cross_between_xml <>
-      major_unit_xml <>
-      minor_unit_xml <>
-      ~s(</c:valAx>)
+      crosses_xml(Keyword.get(axis_opts, :crosses, crosses))
   end
+
+  # Category and date axes take no :min or :max.
+  defp scaling_xml(axis_opts, value_axis?) do
+    reverse = Keyword.get(axis_opts, :reverse, false)
+
+    if value_axis? do
+      val_scaling_xml(Keyword.get(axis_opts, :min), Keyword.get(axis_opts, :max), reverse)
+    else
+      orientation = if reverse, do: "maxMin", else: "minMax"
+      ~s(<c:scaling><c:orientation val="#{orientation}"/></c:scaling>)
+    end
+  end
+
+  defp tick_label_position_value(:next_to), do: "nextTo"
+  defp tick_label_position_value(:low), do: "low"
+  defp tick_label_position_value(:high), do: "high"
+  defp tick_label_position_value(:none), do: "none"
+
+  defp label_offset_xml(nil), do: ""
+  defp label_offset_xml(offset), do: ~s(<c:lblOffset val="#{offset}"/>)
+
+  defp unit_xml(_tag, nil), do: ""
+  defp unit_xml(tag, value), do: ~s(<c:#{tag} val="#{value}"/>)
+
+  defp time_unit_xml(_tag, nil), do: ""
+  defp time_unit_xml(tag, unit), do: ~s(<c:#{tag} val="#{time_unit_value(unit)}"/>)
+
+  defp time_unit_value(:days), do: "days"
+  defp time_unit_value(:months), do: "months"
+  defp time_unit_value(:years), do: "years"
 
   defp crosses_xml(:auto_zero), do: ~s(<c:crosses val="autoZero"/>)
   defp crosses_xml(:min), do: ~s(<c:crosses val="min"/>)
@@ -1070,12 +1026,6 @@ defmodule Podium.Chart.XmlWriter do
 
   defp gridlines_xml(tag, opts) when is_list(opts),
     do: ~s(<c:#{tag}>#{sp_pr_xml(opts)}</c:#{tag}>)
-
-  # Category axes draw no gridlines unless asked.
-  defp category_gridlines_xml(axis_opts) do
-    gridlines_xml("majorGridlines", Keyword.get(axis_opts, :major_gridlines, false)) <>
-      gridlines_xml("minorGridlines", Keyword.get(axis_opts, :minor_gridlines, false))
-  end
 
   # <c:spPr> from the :fill and :line in opts, or "" when it has neither.
   defp sp_pr_xml(opts) do
@@ -1348,110 +1298,31 @@ defmodule Podium.Chart.XmlWriter do
   end
 
   defp combo_axes_xml(chart, has_secondary) do
-    cat_ax = combo_cat_ax_xml(chart, @combo_cat_ax_id, @combo_val_ax_id)
+    # The category axis sits where the first plot's chart type puts it
+    cat_pos = ChartType.cat_ax_pos(hd(chart.combo.plots).chart_type)
+
+    cat_ax = category_axis_xml(chart.category_axis, @combo_cat_ax_id, @combo_val_ax_id, cat_pos)
 
     primary_val_ax =
-      combo_val_ax_xml(chart, chart.value_axis, @combo_val_ax_id, @combo_cat_ax_id, "l")
+      value_axis_xml(chart.value_axis, @combo_val_ax_id, @combo_cat_ax_id, "l", [])
 
+    # The secondary axis draws no gridlines and crosses at the maximum by
+    # default, so it sits on the right without crossing the primary.
     secondary_val_ax =
       if has_secondary do
-        combo_val_ax_xml(
-          chart,
+        value_axis_xml(
           chart.secondary_value_axis,
           @combo_secondary_val_ax_id,
           @combo_cat_ax_id,
-          "r"
+          "r",
+          gridlines: false,
+          crosses: :max
         )
       else
         ""
       end
 
     cat_ax <> primary_val_ax <> secondary_val_ax
-  end
-
-  defp combo_cat_ax_xml(chart, ax_id, cross_ax_id) do
-    axis_opts = chart.category_axis || []
-    axis_title = Keyword.get(axis_opts, :title)
-    crosses = Keyword.get(axis_opts, :crosses, :auto_zero)
-    reverse = Keyword.get(axis_opts, :reverse, false)
-    visible = Keyword.get(axis_opts, :visible, true)
-
-    # Determine position from first plot's chart type
-    first_type = hd(chart.combo.plots).chart_type
-    pos = ChartType.cat_ax_pos(first_type)
-    orientation = if reverse, do: "maxMin", else: "minMax"
-    delete_val = if visible, do: "0", else: "1"
-
-    ~s(<c:catAx>) <>
-      ~s(<c:axId val="#{ax_id}"/>) <>
-      ~s(<c:scaling><c:orientation val="#{orientation}"/></c:scaling>) <>
-      ~s(<c:delete val="#{delete_val}"/>) <>
-      ~s(<c:axPos val="#{pos}"/>) <>
-      category_gridlines_xml(axis_opts) <>
-      axis_title_xml(axis_title) <>
-      ~s(<c:majorTickMark val="out"/>) <>
-      ~s(<c:minorTickMark val="none"/>) <>
-      ~s(<c:tickLblPos val="nextTo"/>) <>
-      sp_pr_xml(axis_opts) <>
-      tick_label_format_xml(axis_opts) <>
-      ~s(<c:crossAx val="#{cross_ax_id}"/>) <>
-      crosses_xml(crosses) <>
-      ~s(<c:auto val="1"/>) <>
-      ~s(<c:lblAlgn val="ctr"/>) <>
-      ~s(<c:lblOffset val="100"/>) <>
-      ~s(<c:noMultiLvlLbl val="0"/>) <>
-      ~s(</c:catAx>)
-  end
-
-  defp combo_val_ax_xml(chart, axis_opts, ax_id, cross_ax_id, pos) do
-    axis_opts = axis_opts || []
-    axis_title = Keyword.get(axis_opts, :title)
-    num_fmt = Keyword.get(axis_opts, :number_format)
-    gridlines = Keyword.get(axis_opts, :major_gridlines, pos == "l")
-    minor_gridlines = Keyword.get(axis_opts, :minor_gridlines, false)
-    min_val = Keyword.get(axis_opts, :min)
-    max_val = Keyword.get(axis_opts, :max)
-    major_unit = Keyword.get(axis_opts, :major_unit)
-    minor_unit = Keyword.get(axis_opts, :minor_unit)
-    crosses = Keyword.get(axis_opts, :crosses, :auto_zero)
-    reverse = Keyword.get(axis_opts, :reverse, false)
-    visible = Keyword.get(axis_opts, :visible, true)
-
-    _ = chart
-
-    scaling_xml = val_scaling_xml(min_val, max_val, reverse)
-    num_fmt_xml = val_num_fmt_xml(num_fmt)
-    major_unit_xml = if major_unit, do: ~s(<c:majorUnit val="#{major_unit}"/>), else: ""
-    minor_unit_xml = if minor_unit, do: ~s(<c:minorUnit val="#{minor_unit}"/>), else: ""
-    delete_val = if visible, do: "0", else: "1"
-
-    # Secondary axis crosses at max to avoid overlapping
-    crosses_out =
-      if pos == "r" and crosses == :auto_zero do
-        crosses_xml(:max)
-      else
-        crosses_xml(crosses)
-      end
-
-    ~s(<c:valAx>) <>
-      ~s(<c:axId val="#{ax_id}"/>) <>
-      scaling_xml <>
-      ~s(<c:delete val="#{delete_val}"/>) <>
-      ~s(<c:axPos val="#{pos}"/>) <>
-      gridlines_xml("majorGridlines", gridlines) <>
-      gridlines_xml("minorGridlines", minor_gridlines) <>
-      axis_title_xml(axis_title) <>
-      num_fmt_xml <>
-      ~s(<c:majorTickMark val="out"/>) <>
-      ~s(<c:minorTickMark val="none"/>) <>
-      ~s(<c:tickLblPos val="nextTo"/>) <>
-      sp_pr_xml(axis_opts) <>
-      tick_label_format_xml(axis_opts) <>
-      ~s(<c:crossAx val="#{cross_ax_id}"/>) <>
-      crosses_out <>
-      major_unit_xml <>
-      minor_unit_xml <>
-      ~s(</c:valAx>)
   end
 
   defp combo_axis_ids(%ComboChart.PlotSpec{secondary_axis: true}) do

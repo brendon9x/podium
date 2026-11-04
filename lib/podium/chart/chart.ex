@@ -308,7 +308,50 @@ defmodule Podium.Chart do
   defp validate_axis!(axis_opts, name) do
     title = Keyword.get(axis_opts, :title)
     if keyword_opts?(title), do: validate_layout!(title, "#{inspect(name)} :title", :none)
+
+    validate_choice!(axis_opts, name, :tick_label_position, [:next_to, :low, :high, :none])
+    validate_choice!(axis_opts, name, :major_tick_mark, [:out, :in, :cross, :none])
+    validate_choice!(axis_opts, name, :minor_tick_mark, [:out, :in, :cross, :none])
+    validate_choice!(axis_opts, name, :type, [:date])
+    validate_choice!(axis_opts, name, :base_time_unit, [:days, :months, :years])
+    validate_choice!(axis_opts, name, :major_time_unit, [:days, :months, :years])
+    validate_choice!(axis_opts, name, :minor_time_unit, [:days, :months, :years])
+
+    case Keyword.get(axis_opts, :crosses) do
+      crosses when crosses in [nil, :auto_zero, :min, :max] or is_number(crosses) ->
+        :ok
+
+      other ->
+        raise ArgumentError,
+              "chart #{inspect(name)} :crosses must be :auto_zero, :min, :max or a number, " <>
+                "got: #{inspect(other)}"
+    end
+
+    case Keyword.get(axis_opts, :label_offset) do
+      offset when is_nil(offset) or (is_integer(offset) and offset in 0..1000) ->
+        :ok
+
+      other ->
+        raise ArgumentError,
+              "chart #{inspect(name)} :label_offset must be an integer between 0 and 1000, " <>
+                "got: #{inspect(other)}"
+    end
+
     axis_opts
+  end
+
+  defp validate_choice!(opts, name, key, choices) do
+    case Keyword.get(opts, key) do
+      nil ->
+        :ok
+
+      value ->
+        unless value in choices do
+          raise ArgumentError,
+                "chart #{inspect(name)} #{inspect(key)} must be one of #{inspect(choices)}, " <>
+                  "got: #{inspect(value)}"
+        end
+    end
   end
 
   defp keyword_opts?(value), do: is_list(value) and value != [] and Keyword.keyword?(value)

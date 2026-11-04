@@ -333,6 +333,34 @@ s15 =
     data_labels: [show: [:value], position: :outside_end]
   )
 
+# Slide 16: Axis options - negative values with category labels kept low,
+# alongside the WIP demo's combined formatting: chart-wide text, bar width,
+# a transparent chart area and a placed plot area
+change_data =
+  ChartData.new()
+  |> ChartData.add_categories(["Brand A", "Brand B", "Brand C", "Brand D", "Brand E"])
+  |> ChartData.add_series("Change vs norm", [12, -8, 5, -15, 9],
+    color: "4472C4",
+    point_colors: %{1 => "C00000", 3 => "C00000"},
+    data_labels: [show: [:value], position: :outside_end, number_format: "+0;-0"]
+  )
+
+s16 =
+  Podium.Slide.new()
+  |> Podium.add_chart(:column_clustered, change_data,
+    x: {0.5, :inches},
+    y: {0.5, :inches},
+    width: {12, :inches},
+    height: {6, :inches},
+    title: "Axis Options",
+    text: [font_size: 11],
+    gap_width: 70,
+    background: :none,
+    plot_area: [x: 0.05, y: 0.12, w: 0.9, h: 0.75],
+    category_axis: [tick_label_position: :low, major_tick_mark: :none],
+    value_axis: [min: -20, max: 20, major_unit: 10, major_gridlines: [line: "E7E6E6"]]
+  )
+
 prs
 |> Podium.add_slide(s1)
 |> Podium.add_slide(s2)
@@ -349,6 +377,7 @@ prs
 |> Podium.add_slide(s13)
 |> Podium.add_slide(s14)
 |> Podium.add_slide(s15)
+|> Podium.add_slide(s16)
 |> Podium.save("demos/output/charts.pptx")
 
 IO.puts("Generated demos/output/charts.pptx")
