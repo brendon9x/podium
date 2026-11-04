@@ -28,9 +28,9 @@ s2 =
       {["Finalize Q1 2026 roadmap"], bullet: :number},
       {["Hire two senior engineers"], bullet: :number}
     ],
-    x: {1, :inches},
+    x: Podium.center_x(prs, {11, :inches}),
     y: {0.5, :inches},
-    width: {10, :inches},
+    width: {11, :inches},
     height: {6, :inches}
   )
 
@@ -44,9 +44,9 @@ chart_data =
 s3 =
   Podium.Slide.new()
   |> Podium.add_chart(:column_clustered, chart_data,
-    x: {1, :inches},
+    x: Podium.center_x(prs, {11, :inches}),
     y: {0.5, :inches},
-    width: {10, :inches},
+    width: {11, :inches},
     height: {6, :inches},
     title: "Revenue vs Expenses",
     legend: :bottom,
@@ -59,9 +59,9 @@ s3 =
 s4 =
   Podium.Slide.new()
   |> Podium.add_text_box("Department Summary",
-    x: {1, :inches},
+    x: Podium.center_x(prs, {11, :inches}),
     y: {0.3, :inches},
-    width: {10, :inches},
+    width: {11, :inches},
     height: {0.8, :inches},
     font_size: 28,
     alignment: :center
@@ -79,9 +79,9 @@ s4 =
       ["Sales", "120", "$3,500K", "84%"],
       ["Operations", "65", "$1,800K", "91%"]
     ],
-    x: {1, :inches},
+    x: Podium.center_x(prs, {11, :inches}),
     y: {1.5, :inches},
-    width: {10, :inches},
+    width: {11, :inches},
     height: {4, :inches}
   )
 

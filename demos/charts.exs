@@ -16,7 +16,7 @@ col_data =
 s1 =
   Podium.Slide.new()
   |> Podium.add_chart(:column_clustered, col_data,
-    x: {0.5, :inches},
+    x: Podium.center_x(prs, {12, :inches}),
     y: {0.5, :inches},
     width: {12, :inches},
     height: {6, :inches},
@@ -38,7 +38,7 @@ channel_data =
 s2 =
   Podium.Slide.new()
   |> Podium.add_chart(:bar_stacked, channel_data,
-    x: {0.5, :inches},
+    x: Podium.center_x(prs, {12, :inches}),
     y: {0.5, :inches},
     width: {12, :inches},
     height: {6, :inches},
@@ -56,7 +56,7 @@ trend_data =
 s3 =
   Podium.Slide.new()
   |> Podium.add_chart(:line_markers, trend_data,
-    x: {0.5, :inches},
+    x: Podium.center_x(prs, {12, :inches}),
     y: {0.5, :inches},
     width: {12, :inches},
     height: {6, :inches},
@@ -76,7 +76,7 @@ market_data =
 s4 =
   Podium.Slide.new()
   |> Podium.add_chart(:pie, market_data,
-    x: {2, :inches},
+    x: Podium.center_x(prs, {9, :inches}),
     y: {0.5, :inches},
     width: {9, :inches},
     height: {6, :inches},
@@ -95,7 +95,7 @@ skill_data =
 s5 =
   Podium.Slide.new()
   |> Podium.add_chart(:radar_filled, skill_data,
-    x: {2, :inches},
+    x: Podium.center_x(prs, {9, :inches}),
     y: {0.5, :inches},
     width: {9, :inches},
     height: {6, :inches},
@@ -116,7 +116,7 @@ xy_data =
 s6 =
   Podium.Slide.new()
   |> Podium.add_chart(:scatter, xy_data,
-    x: {0.5, :inches},
+    x: Podium.center_x(prs, {12, :inches}),
     y: {0.5, :inches},
     width: {12, :inches},
     height: {6, :inches},
@@ -137,7 +137,7 @@ bubble_data =
 s7 =
   Podium.Slide.new()
   |> Podium.add_chart(:bubble, bubble_data,
-    x: {0.5, :inches},
+    x: Podium.center_x(prs, {12, :inches}),
     y: {0.5, :inches},
     width: {12, :inches},
     height: {6, :inches},
@@ -163,7 +163,7 @@ pattern_data =
 s8 =
   Podium.Slide.new()
   |> Podium.add_chart(:column_clustered, pattern_data,
-    x: {0.5, :inches},
+    x: Podium.center_x(prs, {12, :inches}),
     y: {0.5, :inches},
     width: {12, :inches},
     height: {6, :inches},
@@ -188,7 +188,7 @@ font_override_data =
 s9 =
   Podium.Slide.new()
   |> Podium.add_chart(:column_clustered, font_override_data,
-    x: {0.5, :inches},
+    x: Podium.center_x(prs, {12, :inches}),
     y: {0.5, :inches},
     width: {12, :inches},
     height: {6, :inches},
@@ -204,7 +204,7 @@ s9 =
 s10 =
   Podium.Slide.new()
   |> Podium.add_chart(:line_markers, font_data,
-    x: {0.5, :inches},
+    x: Podium.center_x(prs, {12, :inches}),
     y: {0.5, :inches},
     width: {12, :inches},
     height: {6, :inches},
@@ -223,7 +223,7 @@ s10 =
 s11 =
   Podium.Slide.new()
   |> Podium.add_chart(:column_clustered, col_data,
-    x: {0.5, :inches},
+    x: Podium.center_x(prs, {12, :inches}),
     y: {0.5, :inches},
     width: {12, :inches},
     height: {6, :inches},
@@ -258,7 +258,7 @@ s12 =
   |> Podium.add_combo_chart(
     score_data,
     [{:column_clustered, series: [0, 1]}, {:line_markers, series: [2]}],
-    x: {0.5, :inches},
+    x: Podium.center_x(prs, {12, :inches}),
     y: {0.5, :inches},
     width: {12, :inches},
     height: {6, :inches},
@@ -270,7 +270,7 @@ s12 =
 s13 =
   Podium.Slide.new()
   |> Podium.add_chart(:column_clustered, font_data,
-    x: {0.5, :inches},
+    x: Podium.center_x(prs, {12, :inches}),
     y: {0.5, :inches},
     width: {12, :inches},
     height: {6, :inches},
@@ -280,10 +280,13 @@ s13 =
   )
 
 # Slide 14: Plot options - bar width and colour by category
+# Two 6in charts with a 0.25in gap, centred as a 12.25in pair
+pair_left = Podium.center_x(prs, {12.25, :inches})
+
 s14 =
   Podium.Slide.new()
   |> Podium.add_chart(:column_clustered, font_data,
-    x: {0.5, :inches},
+    x: pair_left,
     y: {0.5, :inches},
     width: {6, :inches},
     height: {6, :inches},
@@ -297,7 +300,7 @@ s14 =
     ChartData.new()
     |> ChartData.add_categories(["North", "South", "East", "West"])
     |> ChartData.add_series("2026", [52, 58, 44, 63]),
-    x: {6.75, :inches},
+    x: pair_left + Podium.Units.to_emu({6.25, :inches}),
     y: {0.5, :inches},
     width: {6, :inches},
     height: {6, :inches},
@@ -324,7 +327,7 @@ label_data =
 s15 =
   Podium.Slide.new()
   |> Podium.add_chart(:column_clustered, label_data,
-    x: {0.5, :inches},
+    x: Podium.center_x(prs, {12, :inches}),
     y: {0.5, :inches},
     width: {12, :inches},
     height: {6, :inches},
@@ -348,7 +351,7 @@ change_data =
 s16 =
   Podium.Slide.new()
   |> Podium.add_chart(:column_clustered, change_data,
-    x: {0.5, :inches},
+    x: Podium.center_x(prs, {12, :inches}),
     y: {0.5, :inches},
     width: {12, :inches},
     height: {6, :inches},

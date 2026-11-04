@@ -4,6 +4,10 @@
 
 ### Added
 
+- `Podium.center_x/2` returns the x that centres a given width on the
+  presentation's slide width, for content placed by hand. It follows a custom
+  `:slide_width` or a template's size.
+
 - Chart text takes the same font options as a text run everywhere it appears:
   the title, axis titles, legend, tick labels and data labels (chart-wide and
   per point). That adds `:underline`, `:strikethrough`, `:superscript`,

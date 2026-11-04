@@ -10,7 +10,7 @@ s1 =
       {[{"Solid Background", bold: true, font_size: 36, color: "FFFFFF"}], alignment: :center},
       {[{"Dark theme with light text", font_size: 18, color: "CCCCCC"}], alignment: :center}
     ],
-    x: {3, :inches},
+    x: Podium.center_x(prs, {7, :inches}),
     y: {2.5, :inches},
     width: {7, :inches},
     height: {2.5, :inches}
@@ -27,7 +27,7 @@ s2 =
       {[{"Gradient Background", bold: true, font_size: 36, color: "FFFFFF"}], alignment: :center},
       {[{"Deep blue top-to-bottom gradient", font_size: 18, color: "BDD7EE"}], alignment: :center}
     ],
-    x: {3, :inches},
+    x: Podium.center_x(prs, {7, :inches}),
     y: {2.5, :inches},
     width: {7, :inches},
     height: {2.5, :inches}
@@ -46,7 +46,7 @@ s3 =
       {[{"Pattern Background", bold: true, font_size: 36, color: "003366"}], alignment: :center},
       {[{"Light diagonal pattern fill", font_size: 18, color: "666666"}], alignment: :center}
     ],
-    x: {3, :inches},
+    x: Podium.center_x(prs, {7, :inches}),
     y: {2.5, :inches},
     width: {7, :inches},
     height: {2.5, :inches}
@@ -63,7 +63,7 @@ s4 =
       {[{"Annual Conference 2026", bold: true, font_size: 44, color: "FFFFFF"}],
        alignment: :center}
     ],
-    x: {1, :inches},
+    x: Podium.center_x(prs, {11, :inches}),
     y: {2.5, :inches},
     width: {11, :inches},
     height: {2, :inches}

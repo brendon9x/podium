@@ -19,7 +19,7 @@ s1 =
       {:column_clustered, series: [0]},
       {:line_markers, series: [1]}
     ],
-    x: {0.5, :inches},
+    x: Podium.center_x(prs, {12, :inches}),
     y: {0.5, :inches},
     width: {12, :inches},
     height: {6, :inches},
@@ -43,7 +43,7 @@ s2 =
       {:column_stacked, series: [0, 1]},
       {:line_markers, series: [2]}
     ],
-    x: {0.5, :inches},
+    x: Podium.center_x(prs, {12, :inches}),
     y: {0.5, :inches},
     width: {12, :inches},
     height: {6, :inches},
@@ -67,7 +67,7 @@ s3 =
       {:area, series: [0, 1]},
       {:line_markers, series: [2], secondary_axis: true}
     ],
-    x: {0.5, :inches},
+    x: Podium.center_x(prs, {12, :inches}),
     y: {0.5, :inches},
     width: {12, :inches},
     height: {6, :inches},
@@ -93,7 +93,7 @@ s4 =
       {:column_clustered, series: [1], secondary_axis: true, gap_width: 250},
       {:line_markers, series: [2], data_labels: [show: [:value], position: :top]}
     ],
-    x: {0.5, :inches},
+    x: Podium.center_x(prs, {12, :inches}),
     y: {0.5, :inches},
     width: {12, :inches},
     height: {6, :inches},

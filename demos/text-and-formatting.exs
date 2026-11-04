@@ -17,9 +17,9 @@ s1 =
         {"red italic", italic: true, color: "CC0000"}
       ]
     ],
-    x: {1, :inches},
+    x: Podium.center_x(prs, {11, :inches}),
     y: {1, :inches},
-    width: {10, :inches},
+    width: {11, :inches},
     height: {3, :inches}
   )
 
@@ -39,9 +39,9 @@ s2 =
       {["Identify growth opportunities"], bullet: :number},
       {["Present findings to board"], bullet: :number}
     ],
-    x: {1, :inches},
+    x: Podium.center_x(prs, {11, :inches}),
     y: {0.5, :inches},
-    width: {10, :inches},
+    width: {11, :inches},
     height: {6, :inches}
   )
 
@@ -55,9 +55,9 @@ s3 =
       [{"E = mc", font_size: 18}, {"2", font_size: 12, superscript: true}],
       [{"H", font_size: 18}, {"2", font_size: 12, subscript: true}, {"O", font_size: 18}]
     ],
-    x: {1, :inches},
+    x: Podium.center_x(prs, {11, :inches}),
     y: {0.5, :inches},
-    width: {10, :inches},
+    width: {11, :inches},
     height: {2.5, :inches}
   )
   |> Podium.add_text_box(
@@ -75,9 +75,9 @@ s3 =
         {"Dashed", underline: :dash, font_size: 16}
       ]
     ],
-    x: {1, :inches},
+    x: Podium.center_x(prs, {11, :inches}),
     y: {3.5, :inches},
-    width: {10, :inches},
+    width: {11, :inches},
     height: {2.5, :inches}
   )
 
@@ -89,7 +89,7 @@ s4 =
       {[{"Q4 2025 Summary", bold: true, font_size: 28, color: "003366"}],
        alignment: :center, space_after: 12}
     ],
-    x: {0.5, :inches},
+    x: Podium.center_x(prs, {12, :inches}),
     y: {0.3, :inches},
     width: {12, :inches},
     height: {0.8, :inches},
@@ -107,7 +107,7 @@ s4 =
       {["Launch self-service portal"], bullet: :number},
       {["Target 95% satisfaction by Q2"], bullet: :number}
     ],
-    x: {0.5, :inches},
+    x: Podium.center_x(prs, {12, :inches}),
     y: {1.5, :inches},
     width: {12, :inches},
     height: {5, :inches}

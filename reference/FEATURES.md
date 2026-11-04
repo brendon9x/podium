@@ -10,7 +10,7 @@ Comprehensive list of Podium's features. Podium uses [python-pptx](https://githu
 | Presentation from template | `Podium.from_template/2` builds on any slide-less pptx/potx (path or binary): keeps its masters, layouts, theme, media, notes master, slide size and notes size; no coordinate scaling |
 | Template inspection | `Podium.Template.inspect/1` reports slide size, masters, and per layout its name, type, master and placeholders with `{type, idx}`, shape name and box resolved through master inheritance |
 | Save | To file or to memory (binary) |
-| Slide dimensions | 16:9 default, configurable width/height in any unit |
+| Slide dimensions | 16:9 default, configurable width/height in any unit; `center_x/2` centres a width on the presentation's slide width |
 | Slide layouts | All 11: blank, title_slide, title_content, section_header, two_content, comparison, title_only, content_caption, picture_caption, title_vertical_text, vertical_title_text; also `:layout_index` for arbitrary index |
 | Slide background | Solid, gradient, pattern, picture fill via `:background` option on `add_slide/2` |
 | Speaker notes | `set_notes/2` with auto-created notes slide and notes master; visible in Presenter View |

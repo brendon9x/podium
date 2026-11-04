@@ -2,18 +2,25 @@ File.mkdir_p!("demos/output")
 
 prs = Podium.new()
 
+# Offsets from the left edge of a centred row
+alias Podium.Units
+
+# Each row of shapes is centred as a block
+top_left = Podium.center_x(prs, {12.3, :inches})
+bottom_left = Podium.center_x(prs, {10.5, :inches})
+
 # Slide 1: Shape gallery -- rectangle, oval, diamond, arrows, stars
 s1 =
   Podium.Slide.new()
   |> Podium.add_text_box(
     [{[{"Shape Gallery", bold: true, font_size: 28, color: "003366"}], alignment: :center}],
-    x: {0.5, :inches},
+    x: Podium.center_x(prs, {12, :inches}),
     y: {0.3, :inches},
     width: {12, :inches},
     height: {0.7, :inches}
   )
   |> Podium.add_auto_shape(:rectangle,
-    x: {0.5, :inches},
+    x: top_left,
     y: {1.5, :inches},
     width: {2, :inches},
     height: {1.5, :inches},
@@ -21,7 +28,7 @@ s1 =
     text: [{[{"Rectangle", font_size: 14, color: "FFFFFF"}], alignment: :center}]
   )
   |> Podium.add_auto_shape(:oval,
-    x: {3, :inches},
+    x: top_left + Units.to_emu({2.5, :inches}),
     y: {1.5, :inches},
     width: {2, :inches},
     height: {1.5, :inches},
@@ -29,7 +36,7 @@ s1 =
     text: [{[{"Oval", font_size: 14, color: "FFFFFF"}], alignment: :center}]
   )
   |> Podium.add_auto_shape(:diamond,
-    x: {5.5, :inches},
+    x: top_left + Units.to_emu({5, :inches}),
     y: {1.5, :inches},
     width: {2, :inches},
     height: {1.5, :inches},
@@ -37,7 +44,7 @@ s1 =
     text: [{[{"Diamond", font_size: 14, color: "FFFFFF"}], alignment: :center}]
   )
   |> Podium.add_auto_shape(:right_arrow,
-    x: {8, :inches},
+    x: top_left + Units.to_emu({7.5, :inches}),
     y: {1.5, :inches},
     width: {2.5, :inches},
     height: {1.5, :inches},
@@ -45,7 +52,7 @@ s1 =
     text: [{[{"Arrow", font_size: 14, color: "FFFFFF"}], alignment: :center}]
   )
   |> Podium.add_auto_shape(:star_5_point,
-    x: {11, :inches},
+    x: top_left + Units.to_emu({10.5, :inches}),
     y: {1.5, :inches},
     width: {1.8, :inches},
     height: {1.8, :inches},
@@ -53,14 +60,14 @@ s1 =
     text: [{[{"Star", font_size: 14, color: "FFFFFF"}], alignment: :center}]
   )
   |> Podium.add_auto_shape(:hexagon,
-    x: {0.5, :inches},
+    x: bottom_left,
     y: {4, :inches},
     width: {2, :inches},
     height: {2, :inches},
     fill: "5B9BD5"
   )
   |> Podium.add_auto_shape(:rounded_rectangle,
-    x: {3, :inches},
+    x: bottom_left + Units.to_emu({2.5, :inches}),
     y: {4, :inches},
     width: {2.5, :inches},
     height: {1.5, :inches},
@@ -68,14 +75,14 @@ s1 =
     text: "Rounded"
   )
   |> Podium.add_auto_shape(:chevron,
-    x: {6, :inches},
+    x: bottom_left + Units.to_emu({5.5, :inches}),
     y: {4, :inches},
     width: {2.5, :inches},
     height: {1.5, :inches},
     fill: "E74C3C"
   )
   |> Podium.add_auto_shape(:flowchart_decision,
-    x: {9, :inches},
+    x: bottom_left + Units.to_emu({8.5, :inches}),
     y: {4, :inches},
     width: {2, :inches},
     height: {2, :inches},
@@ -83,18 +90,21 @@ s1 =
     text: "Decision"
   )
 
+# Two rows of three 3.5in boxes, 0.5in apart
+fills_left = Podium.center_x(prs, {11.5, :inches})
+
 # Slide 2: Fill showcase -- solid, gradient, pattern fills side-by-side
 s2 =
   Podium.Slide.new()
   |> Podium.add_text_box(
     [{[{"Fill Types", bold: true, font_size: 28, color: "003366"}], alignment: :center}],
-    x: {0.5, :inches},
+    x: Podium.center_x(prs, {12, :inches}),
     y: {0.3, :inches},
     width: {12, :inches},
     height: {0.7, :inches}
   )
   |> Podium.add_auto_shape(:rounded_rectangle,
-    x: {0.5, :inches},
+    x: fills_left,
     y: {1.5, :inches},
     width: {3.5, :inches},
     height: {2.5, :inches},
@@ -102,7 +112,7 @@ s2 =
     text: [{[{"Solid Fill", bold: true, color: "FFFFFF", font_size: 18}], alignment: :center}]
   )
   |> Podium.add_auto_shape(:rounded_rectangle,
-    x: {4.5, :inches},
+    x: fills_left + Units.to_emu({4, :inches}),
     y: {1.5, :inches},
     width: {3.5, :inches},
     height: {2.5, :inches},
@@ -110,7 +120,7 @@ s2 =
     text: [{[{"Gradient Fill", bold: true, color: "FFFFFF", font_size: 18}], alignment: :center}]
   )
   |> Podium.add_auto_shape(:rounded_rectangle,
-    x: {8.5, :inches},
+    x: fills_left + Units.to_emu({8, :inches}),
     y: {1.5, :inches},
     width: {3.5, :inches},
     height: {2.5, :inches},
@@ -118,7 +128,7 @@ s2 =
     text: [{[{"Pattern Fill", bold: true, color: "003366", font_size: 18}], alignment: :center}]
   )
   |> Podium.add_auto_shape(:rectangle,
-    x: {0.5, :inches},
+    x: fills_left,
     y: {4.5, :inches},
     width: {3.5, :inches},
     height: {2, :inches},
@@ -126,7 +136,7 @@ s2 =
     text: [{[{"Tomato Solid", color: "FFFFFF", font_size: 14}], alignment: :center}]
   )
   |> Podium.add_auto_shape(:rectangle,
-    x: {4.5, :inches},
+    x: fills_left + Units.to_emu({4, :inches}),
     y: {4.5, :inches},
     width: {3.5, :inches},
     height: {2, :inches},
@@ -136,7 +146,7 @@ s2 =
     ]
   )
   |> Podium.add_auto_shape(:rectangle,
-    x: {8.5, :inches},
+    x: fills_left + Units.to_emu({8, :inches}),
     y: {4.5, :inches},
     width: {3.5, :inches},
     height: {2, :inches},
@@ -146,18 +156,21 @@ s2 =
     ]
   )
 
+lines_top_left = Podium.center_x(prs, {11.5, :inches})
+lines_bottom_left = Podium.center_x(prs, {11, :inches})
+
 # Slide 3: Line styles -- solid, dashed, gradient line on different shapes
 s3 =
   Podium.Slide.new()
   |> Podium.add_text_box(
     [{[{"Line Styles", bold: true, font_size: 28, color: "003366"}], alignment: :center}],
-    x: {0.5, :inches},
+    x: Podium.center_x(prs, {12, :inches}),
     y: {0.3, :inches},
     width: {12, :inches},
     height: {0.7, :inches}
   )
   |> Podium.add_auto_shape(:rectangle,
-    x: {0.5, :inches},
+    x: lines_top_left,
     y: {1.5, :inches},
     width: {3.5, :inches},
     height: {2, :inches},
@@ -165,7 +178,7 @@ s3 =
     text: [{[{"Solid Line", font_size: 14}], alignment: :center}]
   )
   |> Podium.add_auto_shape(:oval,
-    x: {4.5, :inches},
+    x: lines_top_left + Units.to_emu({4, :inches}),
     y: {1.5, :inches},
     width: {3.5, :inches},
     height: {2, :inches},
@@ -173,7 +186,7 @@ s3 =
     text: [{[{"Dashed Line", font_size: 14}], alignment: :center}]
   )
   |> Podium.add_auto_shape(:rounded_rectangle,
-    x: {8.5, :inches},
+    x: lines_top_left + Units.to_emu({8, :inches}),
     y: {1.5, :inches},
     width: {3.5, :inches},
     height: {2, :inches},
@@ -184,7 +197,7 @@ s3 =
     text: [{[{"Gradient Line", font_size: 14}], alignment: :center}]
   )
   |> Podium.add_auto_shape(:diamond,
-    x: {0.5, :inches},
+    x: lines_bottom_left,
     y: {4.2, :inches},
     width: {3.5, :inches},
     height: {2.5, :inches},
@@ -192,7 +205,7 @@ s3 =
     text: [{[{"Dotted Line", font_size: 14}], alignment: :center}]
   )
   |> Podium.add_auto_shape(:hexagon,
-    x: {4.5, :inches},
+    x: lines_bottom_left + Units.to_emu({4, :inches}),
     y: {4.2, :inches},
     width: {3.5, :inches},
     height: {2.5, :inches},
@@ -200,13 +213,16 @@ s3 =
     text: [{[{"Long Dash", font_size: 14}], alignment: :center}]
   )
   |> Podium.add_auto_shape(:star_5_point,
-    x: {9, :inches},
+    x: lines_bottom_left + Units.to_emu({8.5, :inches}),
     y: {4.2, :inches},
     width: {2.5, :inches},
     height: {2.5, :inches},
     fill: "FFC000",
     line: [color: "CC9900", width: {2, :pt}, dash_style: :dash_dot]
   )
+
+rich_top_left = Podium.center_x(prs, {11, :inches})
+rich_bottom_left = Podium.center_x(prs, {10, :inches})
 
 # Slide 4: Shape with rich text inside + rotation
 s4 =
@@ -216,13 +232,13 @@ s4 =
       {[{"Text in Shapes & Rotation", bold: true, font_size: 28, color: "003366"}],
        alignment: :center}
     ],
-    x: {0.5, :inches},
+    x: Podium.center_x(prs, {12, :inches}),
     y: {0.3, :inches},
     width: {12, :inches},
     height: {0.7, :inches}
   )
   |> Podium.add_auto_shape(:rounded_rectangle,
-    x: {1, :inches},
+    x: rich_top_left,
     y: {1.5, :inches},
     width: {4, :inches},
     height: {2, :inches},
@@ -235,7 +251,7 @@ s4 =
     ]
   )
   |> Podium.add_auto_shape(:cross,
-    x: {7, :inches},
+    x: rich_top_left + Units.to_emu({6, :inches}),
     y: {1.5, :inches},
     width: {2.5, :inches},
     height: {2.5, :inches},
@@ -243,7 +259,7 @@ s4 =
     rotation: 45
   )
   |> Podium.add_auto_shape(:rectangle,
-    x: {10, :inches},
+    x: rich_top_left + Units.to_emu({9, :inches}),
     y: {1.5, :inches},
     width: {2, :inches},
     height: {2, :inches},
@@ -252,7 +268,7 @@ s4 =
     text: [{[{"Tilted", bold: true, color: "FFFFFF"}], alignment: :center}]
   )
   |> Podium.add_auto_shape(:oval,
-    x: {1, :inches},
+    x: rich_bottom_left,
     y: {4.5, :inches},
     width: {5, :inches},
     height: {2.5, :inches},
@@ -263,7 +279,7 @@ s4 =
     ]
   )
   |> Podium.add_auto_shape(:star_5_point,
-    x: {8, :inches},
+    x: rich_bottom_left + Units.to_emu({7, :inches}),
     y: {4, :inches},
     width: {3, :inches},
     height: {3, :inches},
