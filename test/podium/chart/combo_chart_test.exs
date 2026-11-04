@@ -573,6 +573,31 @@ defmodule Podium.Chart.ComboChartTest do
     end
   end
 
+  describe "series fill and line" do
+    test "combo series take :line, :fill and :invert_if_negative" do
+      data =
+        ChartData.new()
+        |> ChartData.add_categories(["A", "B"])
+        |> ChartData.add_series("Bars", [10, -5],
+          fill: {:pattern, :lt_horz, foreground: "4472C4"},
+          line: "000000",
+          invert_if_negative: true
+        )
+        |> ChartData.add_series("Norm", [6, 7], line: :none, marker: [style: :dash])
+
+      xml =
+        data
+        |> ComboChart.new([{:column_clustered, series: [0]}, {:line_markers, series: [1]}])
+        |> Podium.Chart.new_combo(x: 0, y: 0, width: 100, height: 100)
+        |> Podium.Chart.XmlWriter.to_xml()
+
+      assert xml =~ ~s(<c:spPr><a:pattFill prst="ltHorz">)
+      assert xml =~ ~s(</a:pattFill><a:ln><a:solidFill><a:srgbClr val="000000"/>)
+      assert xml =~ ~s(<c:invertIfNegative val="1"/>)
+      assert xml =~ ~s(<c:spPr><a:ln><a:noFill/></a:ln></c:spPr><c:marker><c:symbol val="dash"/>)
+    end
+  end
+
   describe "schema order" do
     test "combo axes write txPr between spPr and crossAx" do
       data = sample_chart_data()

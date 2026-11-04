@@ -30,14 +30,16 @@ defmodule Podium.Chart.BubbleChartData do
       :name,
       :index,
       :color,
-      :pattern,
+      :fill,
+      :line,
       :marker,
       x_values: [],
       y_values: [],
       bubble_sizes: [],
       point_colors: %{},
       point_formats: %{},
-      data_labels: nil
+      data_labels: nil,
+      invert_if_negative: false
     ]
   end
 
@@ -49,8 +51,11 @@ defmodule Podium.Chart.BubbleChartData do
   Adds a bubble series with X values, Y values, and bubble sizes.
 
   ## Options
-    * `:color` - series color (hex RGB string)
-    * `:pattern` - pattern fill keyword list
+    * `:color` - bubble fill colour (hex or `:none`)
+    * `:fill` - any fill for the bubbles (see "Fill types" in `Podium`), in place of `:color`
+    * `:line` - bubble outline: hex, keyword list with `:color`, `:width` and
+      `:dash_style`, or `:none`
+    * `:invert_if_negative` - `true` to draw negative bubbles in inverted colours
     * `:marker` - marker options keyword list
     * `:point_colors` - `%{index => color}` map for per-point colors
     * `:point_formats` - `%{index => opts}` map for per-point formatting
@@ -83,7 +88,9 @@ defmodule Podium.Chart.BubbleChartData do
       y_values: y_values,
       bubble_sizes: bubble_sizes,
       color: Keyword.get(opts, :color),
-      pattern: Keyword.get(opts, :pattern),
+      fill: Keyword.get(opts, :fill),
+      line: Keyword.get(opts, :line),
+      invert_if_negative: Keyword.get(opts, :invert_if_negative, false),
       marker: Keyword.get(opts, :marker),
       point_colors: Keyword.get(opts, :point_colors, %{}),
       point_formats: Keyword.get(opts, :point_formats, %{}),

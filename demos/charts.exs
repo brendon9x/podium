@@ -150,7 +150,7 @@ pattern_data =
   ChartData.new()
   |> ChartData.add_categories(["Q1", "Q2", "Q3", "Q4"])
   |> ChartData.add_series("Email", [250, 230, 210, 200],
-    pattern: [type: :dn_diag, foreground: "4472C4", background: "FFFFFF"]
+    fill: {:pattern, :dn_diag, foreground: "4472C4", background: "FFFFFF"}
   )
   |> ChartData.add_series("Revenue", [42, 28, 18, 35],
     color: "ED7D31",
@@ -236,6 +236,36 @@ s11 =
     data_labels: [show: [:value], position: :inside_end, fill: "FFFFFF", line: "4472C4", font_size: 9]
   )
 
+# Slide 12: Series lines - outlined bars and a markers-only norm line
+score_data =
+  ChartData.new()
+  |> ChartData.add_categories(["Ad A", "Ad B", "Ad C", "Ad D", "Ad E"])
+  |> ChartData.add_series("Score", [72, 58, 64, 81, 49],
+    color: "4472C4",
+    point_colors: %{3 => "70AD47", 4 => "C00000"}
+  )
+  |> ChartData.add_series("Target", [70, 70, 70, 70, 70],
+    color: :none,
+    line: [color: "404040", width: {1.5, :pt}, dash_style: :dash]
+  )
+  |> ChartData.add_series("Norm", [62, 60, 61, 63, 59],
+    line: :none,
+    marker: [style: :dash, size: 20, fill: "ED7D31", line: "ED7D31"]
+  )
+
+s12 =
+  Podium.Slide.new()
+  |> Podium.add_combo_chart(
+    score_data,
+    [{:column_clustered, series: [0, 1]}, {:line_markers, series: [2]}],
+    x: {0.5, :inches},
+    y: {0.5, :inches},
+    width: {12, :inches},
+    height: {6, :inches},
+    title: "Series Lines",
+    legend: :bottom
+  )
+
 prs
 |> Podium.add_slide(s1)
 |> Podium.add_slide(s2)
@@ -248,6 +278,7 @@ prs
 |> Podium.add_slide(s9)
 |> Podium.add_slide(s10)
 |> Podium.add_slide(s11)
+|> Podium.add_slide(s12)
 |> Podium.save("demos/output/charts.pptx")
 
 IO.puts("Generated demos/output/charts.pptx")

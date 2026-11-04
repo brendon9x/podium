@@ -31,12 +31,14 @@ defmodule Podium.Chart.ChartData do
       :name,
       :index,
       :color,
-      :pattern,
+      :fill,
+      :line,
       :marker,
       values: [],
       point_colors: %{},
       point_formats: %{},
-      data_labels: nil
+      data_labels: nil,
+      invert_if_negative: false
     ]
   end
 
@@ -56,6 +58,27 @@ defmodule Podium.Chart.ChartData do
 
   @doc """
   Adds a series with a name and numeric values.
+
+  ## Options
+
+    * `:color` - the series colour, a hex string or `:none`. It fills bars, areas,
+      slices and filled radar shapes, and colours the line of line and radar series
+    * `:fill` - any fill (see "Fill types" in `Podium`), in place of `:color` for the
+      fill: a gradient, a pattern such as `{:pattern, :dn_diag, foreground: "4472C4"}`,
+      or `:none`
+    * `:line` - the series line, or the outline of bars, areas and slices: a hex
+      colour, a keyword list with `:color`, `:width` and `:dash_style`, or `:none`
+      for a line or radar series drawn as markers only
+    * `:marker` - marker options for line and radar series: `:style`, `:size`,
+      `:fill`, `:line`
+    * `:invert_if_negative` - `true` to draw negative bars in inverted colours
+      (default `false`)
+    * `:point_colors` - `%{index => fill}` map for per-point fills. On line and radar
+      series the colour fills and outlines the point's marker
+    * `:point_formats` - `%{index => [fill: ..., line: ...]}` map for per-point formatting.
+      On line and radar series these format the point's marker, and `:marker` sets
+      its `:style` and `:size`
+    * `:data_labels` - `%{index => opts}` map for per-point data labels
   """
   @spec add_series(t(), String.t(), [number()], keyword()) :: t()
   def add_series(%__MODULE__{} = data, name, values, opts \\ []) when is_list(values) do
@@ -72,7 +95,9 @@ defmodule Podium.Chart.ChartData do
       index: length(data.series),
       values: values,
       color: Keyword.get(opts, :color),
-      pattern: Keyword.get(opts, :pattern),
+      fill: Keyword.get(opts, :fill),
+      line: Keyword.get(opts, :line),
+      invert_if_negative: Keyword.get(opts, :invert_if_negative, false),
       marker: Keyword.get(opts, :marker),
       point_colors: Keyword.get(opts, :point_colors, %{}),
       point_formats: Keyword.get(opts, :point_formats, %{}),

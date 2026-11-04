@@ -25,11 +25,24 @@
 - `:none` is a fill and a line everywhere one is accepted, shapes included,
   and a line keyword list may give only `:width` or `:dash_style`. An invalid
   fill or line raises `ArgumentError` naming the accepted forms.
+- Series take `:line` on category, XY and bubble data: the line of line,
+  scatter and radar series (`:none` draws markers only), or the outline of
+  bars, areas, slices and bubbles. Fill and line share one `<c:spPr>`.
+- Series take `:fill`, any fill a shape takes (gradient, pattern, `:none`),
+  in place of `:color` for the fill. `color: :none` leaves a series unfilled.
+- `:invert_if_negative` on bar and bubble series draws negative values in
+  inverted colours. It stays off by default.
 - Chart titles and axis titles take rich text, in the form a text box takes:
   several runs, several paragraphs, paragraph alignment and line breaks. Font
   options given alongside `:text` apply to every run.
 
 ### Changed
+
+- The series `:pattern` keyword list is replaced by `:fill` with a pattern
+  tuple: `pattern: [type: :dn_diag, foreground: "4472C4"]` becomes
+  `fill: {:pattern, :dn_diag, foreground: "4472C4"}`.
+- A radar line series' `:color` now colours its line, as on a line series,
+  instead of writing a fill that PowerPoint did not show.
 
 - Axis `:line_color` is replaced by `:line`, which takes any line format:
   `line_color: "AAAAAA"` becomes `line: "AAAAAA"`.
@@ -42,6 +55,17 @@
   dropping its options.
 
 ### Fixed
+
+- `color: :none` on a line series wrote `<a:srgbClr val="none"/>`, which
+  PowerPoint cannot read.
+- A markers-only `:scatter` series given `:color` drew a connecting line. It
+  now draws none, and the colour goes to its markers.
+- `:point_colors` and `:point_formats` on XY and bubble series were silently
+  dropped. They are now written.
+- A point colour or format on a line, scatter or radar series coloured the
+  hidden line segment rather than the marker, so it did not show. It now
+  formats the point's marker, and `point_formats` takes `:marker` for its
+  style and size.
 
 - `<c:dLbls>` and `<c:dLbl>` wrote `<c:txPr>` and `<c:showLegendKey>` after
   the show flags, which the schema does not allow. They now follow the

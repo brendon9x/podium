@@ -8,7 +8,7 @@ defmodule Podium.Chart.XmlWriter do
 
   alias Podium.Chart
   alias Podium.Chart.{BubbleChartData, ChartData, ChartType, ComboChart, XyChartData}
-  alias Podium.{Drawing, Pattern, Text}
+  alias Podium.{Drawing, Text}
   alias Podium.OPC.Constants
   alias Podium.XML.Builder
 
@@ -325,9 +325,9 @@ defmodule Podium.Chart.XmlWriter do
   defp single_series_xml(config, %ChartData{} = chart_data, series) do
     marker_xml = cat_marker_xml(config, series)
     smooth_xml = cat_smooth_xml(config)
-    invert_xml = invert_if_negative_xml(config)
+    invert_xml = invert_if_negative_xml(config, series)
     explosion_xml = explosion_xml(config)
-    color_xml = series_color_xml(config, series)
+    color_xml = series_sp_pr_xml(config, series)
     dpt_xml = data_points_xml(config, series)
     series_dlbls_xml = series_data_labels_xml(series.data_labels)
 
@@ -350,8 +350,8 @@ defmodule Podium.Chart.XmlWriter do
   defp single_series_xml(config, %XyChartData{} = chart_data, series) do
     marker_xml = xy_marker_xml(config, series)
     smooth_xml = xy_smooth_xml(config)
-    no_line_xml = no_line_xml(config, series)
-    color_xml = series_color_xml(config, series)
+    color_xml = series_sp_pr_xml(config, series)
+    dpt_xml = data_points_xml(config, series)
     series_dlbls_xml = series_data_labels_xml(series.data_labels)
 
     ~s(<c:ser>) <>
@@ -359,8 +359,8 @@ defmodule Podium.Chart.XmlWriter do
       ~s(<c:order val="#{series.index}"/>) <>
       tx_xml(chart_data, series) <>
       color_xml <>
-      no_line_xml <>
       marker_xml <>
+      dpt_xml <>
       series_dlbls_xml <>
       x_val_xml(chart_data, series) <>
       y_val_xml(chart_data, series) <>
@@ -369,7 +369,8 @@ defmodule Podium.Chart.XmlWriter do
   end
 
   defp single_series_xml(config, %BubbleChartData{} = chart_data, series) do
-    color_xml = series_color_xml(config, series)
+    color_xml = series_sp_pr_xml(config, series)
+    dpt_xml = data_points_xml(config, series)
     series_dlbls_xml = series_data_labels_xml(series.data_labels)
     bubble_3d_val = if config[:bubble_3d], do: "1", else: "0"
 
@@ -378,7 +379,8 @@ defmodule Podium.Chart.XmlWriter do
       ~s(<c:order val="#{series.index}"/>) <>
       tx_xml(chart_data, series) <>
       color_xml <>
-      ~s(<c:invertIfNegative val="0"/>) <>
+      invert_if_negative_xml(config, series) <>
+      dpt_xml <>
       series_dlbls_xml <>
       x_val_xml(chart_data, series) <>
       y_val_xml(chart_data, series) <>
@@ -412,9 +414,20 @@ defmodule Podium.Chart.XmlWriter do
   # -- Marker/smooth helpers for XY charts --
 
   defp xy_marker_xml(config, series) do
+    # A markers-only scatter series draws no line, so its colour goes to the
+    # markers, under any fill or line the marker sets itself.
+    marker =
+      if config[:no_line] and is_binary(series.color) do
+        (series.marker || [])
+        |> Keyword.put_new(:fill, series.color)
+        |> Keyword.put_new(:line, series.color)
+      else
+        series.marker
+      end
+
     cond do
-      series.marker ->
-        series_marker_xml(series.marker)
+      marker ->
+        series_marker_xml(marker)
 
       config[:hide_marker] == true ->
         ~s(<c:marker><c:symbol val="none"/></c:marker>)
@@ -427,46 +440,47 @@ defmodule Podium.Chart.XmlWriter do
   defp xy_smooth_xml(%{scatter_style: "smoothMarker"}), do: ~s(<c:smooth val="1"/>)
   defp xy_smooth_xml(_), do: ~s(<c:smooth val="0"/>)
 
-  defp no_line_xml(%{no_line: true}, %{color: nil, pattern: nil}) do
-    ~s(<c:spPr><a:ln><a:noFill/></a:ln></c:spPr>)
-  end
-
-  defp no_line_xml(_, _), do: ""
-
   # -- Invert/explosion helpers --
 
-  defp invert_if_negative_xml(%{element: "c:barChart"}),
-    do: ~s(<c:invertIfNegative val="0"/>)
+  # Bar and bubble series (and their points) state invertIfNegative: the
+  # schema default is true, which paints a negative bar white.
+  defp invert_if_negative_xml(%{element: element}, series)
+       when element in ["c:barChart", "c:bubbleChart"] do
+    val = if Map.get(series, :invert_if_negative), do: "1", else: "0"
+    ~s(<c:invertIfNegative val="#{val}"/>)
+  end
 
-  defp invert_if_negative_xml(_), do: ""
+  defp invert_if_negative_xml(_config, _series), do: ""
 
   defp explosion_xml(%{explosion: val}) when is_integer(val),
     do: ~s(<c:explosion val="#{val}"/>)
 
   defp explosion_xml(_), do: ""
 
-  defp series_color_xml(_config, %{color: nil, pattern: nil}), do: ""
+  # The series <c:spPr>, holding its fill and its line. On a line, scatter or
+  # (unfilled) radar series :color is the line colour, and a markers-only
+  # scatter series draws no line; elsewhere :color is the fill and :line the
+  # outline. :fill and :line override :color.
+  defp series_sp_pr_xml(config, series) do
+    if line_series?(config) do
+      line =
+        cond do
+          series.line -> series.line
+          config[:no_line] -> :none
+          true -> series.color
+        end
 
-  defp series_color_xml(_config, %{pattern: pattern}) when not is_nil(pattern) do
-    prst = Pattern.preset(pattern[:type])
-    fg = Keyword.get(pattern, :foreground, "000000")
-    bg = Keyword.get(pattern, :background, "FFFFFF")
-
-    ~s(<c:spPr>) <>
-      ~s(<a:pattFill prst="#{prst}">) <>
-      ~s(<a:fgClr><a:srgbClr val="#{fg}"/></a:fgClr>) <>
-      ~s(<a:bgClr><a:srgbClr val="#{bg}"/></a:bgClr>) <>
-      ~s(</a:pattFill>) <>
-      ~s(</c:spPr>)
+      sp_pr_xml(fill: series.fill, line: line)
+    else
+      sp_pr_xml(fill: series.fill || series.color, line: series.line)
+    end
   end
 
-  defp series_color_xml(%{element: "c:lineChart"}, %{color: color}) do
-    ~s(<c:spPr><a:ln><a:solidFill><a:srgbClr val="#{color}"/></a:solidFill></a:ln></c:spPr>)
-  end
+  defp line_series?(%{element: element}) when element in ["c:lineChart", "c:scatterChart"],
+    do: true
 
-  defp series_color_xml(_config, %{color: color}) do
-    ~s(<c:spPr><a:solidFill><a:srgbClr val="#{color}"/></a:solidFill></c:spPr>)
-  end
+  defp line_series?(%{element: "c:radarChart", radar_style: "marker"}), do: true
+  defp line_series?(_config), do: false
 
   # -- Per-point formatting --
 
@@ -474,16 +488,25 @@ defmodule Podium.Chart.XmlWriter do
        when pc == %{} and pf == %{},
        do: ""
 
-  defp data_points_xml(config, %{point_colors: point_colors, point_formats: point_formats}) do
+  defp data_points_xml(
+         config,
+         %{point_colors: point_colors, point_formats: point_formats} = series
+       ) do
     # A bar point without its own invertIfNegative falls back to the schema
     # default of true, and PowerPoint paints a negative bar white whatever
     # fill the point was given. State it on every bar point, as on the series.
-    invert_xml = invert_if_negative_xml(config)
+    invert_xml = invert_if_negative_xml(config, series)
 
     # Merge point_colors (shorthand) and point_formats into a unified map
     merged =
       Enum.reduce(point_colors, %{}, fn {idx, color}, acc ->
-        Map.put(acc, idx, Keyword.merge(Map.get(acc, idx, []), fill: color))
+        # On a line-type series the colour fills and outlines the marker
+        color_opts =
+          if line_series?(config) and is_binary(color),
+            do: [fill: color, line: color],
+            else: [fill: color]
+
+        Map.put(acc, idx, Keyword.merge(Map.get(acc, idx, []), color_opts))
       end)
 
     merged =
@@ -494,19 +517,31 @@ defmodule Podium.Chart.XmlWriter do
     merged
     |> Enum.sort_by(fn {idx, _} -> idx end)
     |> Enum.map(fn {idx, opts} ->
-      fill_val = Keyword.get(opts, :fill)
-      line_val = Keyword.get(opts, :line)
-
-      fill_xml = if fill_val, do: Drawing.fill_xml(fill_val), else: ""
-      line_xml = if line_val, do: Drawing.line_xml(line_val), else: ""
-
+      # CT_DPt order: idx, invertIfNegative, marker, bubble3D, explosion, spPr
       ~s(<c:dPt>) <>
         ~s(<c:idx val="#{idx}"/>) <>
         invert_xml <>
-        ~s(<c:spPr>#{fill_xml}#{line_xml}</c:spPr>) <>
+        point_shape_xml(config, opts) <>
         ~s(</c:dPt>)
     end)
     |> Enum.join()
+  end
+
+  # On a line, scatter or (unfilled) radar series the visible part of a point
+  # is its marker, so the point's fill and line format the marker; :marker
+  # sets its style and size. Elsewhere they format the bar, slice or bubble.
+  defp point_shape_xml(config, opts) do
+    if line_series?(config) do
+      marker =
+        Keyword.merge(
+          Keyword.take(opts, [:fill, :line]),
+          Keyword.get(opts, :marker, [])
+        )
+
+      if marker == [], do: "", else: series_marker_xml(marker)
+    else
+      sp_pr_xml(Keyword.take(opts, [:fill, :line]))
+    end
   end
 
   # -- Per-point data label overrides --
@@ -1183,8 +1218,8 @@ defmodule Podium.Chart.XmlWriter do
   defp combo_series_xml(config, chart_data, series, global_idx) do
     marker_xml = cat_marker_xml(config, series)
     smooth_xml = cat_smooth_xml(config)
-    invert_xml = invert_if_negative_xml(config)
-    color_xml = series_color_xml(config, series)
+    invert_xml = invert_if_negative_xml(config, series)
+    color_xml = series_sp_pr_xml(config, series)
     dpt_xml = data_points_xml(config, series)
     series_dlbls_xml = series_data_labels_xml(series.data_labels)
 
