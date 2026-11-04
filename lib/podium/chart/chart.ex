@@ -63,11 +63,11 @@ defmodule Podium.Chart do
       y: Units.to_emu(Keyword.fetch!(opts, :y)),
       width: Units.to_emu(Keyword.fetch!(opts, :width)),
       height: Units.to_emu(Keyword.fetch!(opts, :height)),
-      title: Keyword.get(opts, :title),
-      legend: Keyword.get(opts, :legend),
+      title: validate_title!(Keyword.get(opts, :title)),
+      legend: validate_legend!(Keyword.get(opts, :legend)),
       data_labels: Keyword.get(opts, :data_labels, []),
-      category_axis: Keyword.get(opts, :category_axis, []),
-      value_axis: Keyword.get(opts, :value_axis, []),
+      category_axis: validate_axis!(Keyword.get(opts, :category_axis, []), :category_axis),
+      value_axis: validate_axis!(Keyword.get(opts, :value_axis, []), :value_axis),
       text: Keyword.get(opts, :text, []),
       background: validate_background!(Keyword.get(opts, :background)),
       plot_area: validate_plot_area!(Keyword.get(opts, :plot_area, []))
@@ -88,12 +88,13 @@ defmodule Podium.Chart do
       y: Units.to_emu(Keyword.fetch!(opts, :y)),
       width: Units.to_emu(Keyword.fetch!(opts, :width)),
       height: Units.to_emu(Keyword.fetch!(opts, :height)),
-      title: Keyword.get(opts, :title),
-      legend: Keyword.get(opts, :legend),
+      title: validate_title!(Keyword.get(opts, :title)),
+      legend: validate_legend!(Keyword.get(opts, :legend)),
       data_labels: Keyword.get(opts, :data_labels, []),
-      category_axis: Keyword.get(opts, :category_axis, []),
-      value_axis: Keyword.get(opts, :value_axis, []),
-      secondary_value_axis: Keyword.get(opts, :secondary_value_axis, []),
+      category_axis: validate_axis!(Keyword.get(opts, :category_axis, []), :category_axis),
+      value_axis: validate_axis!(Keyword.get(opts, :value_axis, []), :value_axis),
+      secondary_value_axis:
+        validate_axis!(Keyword.get(opts, :secondary_value_axis, []), :secondary_value_axis),
       text: Keyword.get(opts, :text, []),
       background: validate_background!(Keyword.get(opts, :background)),
       plot_area: validate_plot_area!(Keyword.get(opts, :plot_area, []))
@@ -111,10 +112,74 @@ defmodule Podium.Chart do
             "got: #{inspect(other)}"
   end
 
-  defp validate_plot_area!(opts) when is_list(opts), do: opts
+  defp validate_plot_area!(opts) when is_list(opts) do
+    validate_layout!(opts, ":plot_area", :required)
+
+    case Keyword.get(opts, :target, :inner) do
+      target when target in [:inner, :outer] ->
+        opts
+
+      other ->
+        raise ArgumentError,
+              "chart :plot_area :target must be :inner or :outer, got: #{inspect(other)}"
+    end
+  end
 
   defp validate_plot_area!(other) do
     raise ArgumentError, "chart :plot_area must be a keyword list, got: #{inspect(other)}"
+  end
+
+  defp validate_title!(title) do
+    if keyword_opts?(title), do: validate_layout!(title, ":title", :none)
+    title
+  end
+
+  defp validate_legend!(legend) do
+    if keyword_opts?(legend), do: validate_layout!(legend, ":legend", :optional)
+    legend
+  end
+
+  defp validate_axis!(axis_opts, name) do
+    title = Keyword.get(axis_opts, :title)
+    if keyword_opts?(title), do: validate_layout!(title, "#{inspect(name)} :title", :none)
+    axis_opts
+  end
+
+  defp keyword_opts?(value), do: is_list(value) and value != [] and Keyword.keyword?(value)
+
+  # Manual layout fractions of the chart frame. :x and :y go together; :w and
+  # :h go together, and `size` says whether they are :required, :optional or
+  # not taken (:none).
+  defp validate_layout!(opts, name, size) do
+    position = Enum.map([:x, :y], &Keyword.get(opts, &1))
+    dimensions = Enum.map([:w, :h], &Keyword.get(opts, &1))
+    given = Enum.reject(position ++ dimensions, &is_nil/1)
+
+    cond do
+      given == [] ->
+        :ok
+
+      Enum.any?(position, &is_nil/1) ->
+        raise ArgumentError, "chart #{name} needs :x and :y together, got: #{inspect(opts)}"
+
+      size == :none and dimensions != [nil, nil] ->
+        raise ArgumentError, "chart #{name} takes :x and :y only, got: #{inspect(opts)}"
+
+      size == :required and Enum.any?(dimensions, &is_nil/1) ->
+        raise ArgumentError,
+              "chart #{name} needs all of :x, :y, :w and :h together, got: #{inspect(opts)}"
+
+      size == :optional and Enum.count(dimensions, &is_nil/1) == 1 ->
+        raise ArgumentError, "chart #{name} needs :w and :h together, got: #{inspect(opts)}"
+
+      not Enum.all?(given, &(is_number(&1) and &1 >= 0 and &1 <= 1)) ->
+        raise ArgumentError,
+              "chart #{name} :x, :y, :w and :h must be fractions between 0 and 1, " <>
+                "got: #{inspect(opts)}"
+
+      true ->
+        :ok
+    end
   end
 
   @doc """

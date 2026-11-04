@@ -62,6 +62,7 @@ Comprehensive list of Podium's features. Podium uses [python-pptx](https://githu
 | Category axis | title, gridlines (off by default, line formatting), number_format, label_rotation, tick marks, reverse order, visibility, tick label font options, axis line (any line format) |
 | Value axis | title, gridlines (line formatting), number_format, min/max, major/minor unit, crosses, tick marks, reverse order, visibility, tick label font options, axis line (any line format) |
 | Chart and plot area | `background` (`:none`, any fill, or fill and line) on the chart area; `plot_area` fill and line |
+| Manual layout | Plot area (x/y/w/h, inner or outer target), legend (x/y, optional w/h) and chart and axis titles (x/y) as fractions of the chart frame; `overlay` on legend and titles |
 | Element fill and line | Titles, axis titles, legend and data labels take `fill` and `line`; `:none` everywhere a fill or line is accepted, shapes included |
 | Date axis | `type: :date` with base/major/minor time units |
 | Series formatting | Colour (`:none` for unfilled or undrawn), any fill via `fill` (solid, gradient, pattern), line control (`:none` for markers only, colour, width, dash), outlines on bars/areas/slices/bubbles, invert_if_negative; per-point colours and fill/line formats; markers (10 symbols with size/fill/line); the same options on category, XY and bubble series |

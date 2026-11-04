@@ -448,6 +448,31 @@ Podium.add_chart(slide, :column_clustered, data,
 
 ![Chart with a shaded plot area, dashed gridlines, a boxed legend and boxed data labels](assets/core/charts/fill-and-line.png)
 
+## Layout
+
+PowerPoint lays out the title, legend and plot area automatically. To place one
+yourself, give its position as fractions of the chart frame, from 0 to 1: `:x`
+and `:y` for its top-left corner, and `:w` and `:h` for its size.
+
+| Element | Takes | Notes |
+|---------|-------|-------|
+| Plot area | `plot_area: [x:, y:, w:, h:]` | All four. `target: :outer` sizes the area including tick labels (default `:inner`, the area the axes enclose) |
+| Legend | `legend: [x:, y:]`, optionally `w:` and `h:` | |
+| Chart title, axis titles | `title: [text: "...", x:, y:]` | PowerPoint sizes titles to their text |
+
+`overlay: true` on the legend or title lets it sit over the plot area instead of
+taking space from it.
+
+```elixir
+Podium.add_chart(slide, :column_clustered, data,
+  x: {0.5, :inches}, y: {1, :inches}, width: {12, :inches}, height: {5, :inches},
+  title: [text: "Revenue", x: 0.02, y: 0.02],
+  legend: [x: 0.82, y: 0.15, w: 0.16, h: 0.3],
+  plot_area: [x: 0.06, y: 0.15, w: 0.72, h: 0.72])
+```
+
+![Chart with the title top-left, the plot area on the left and the legend to its right](assets/core/charts/manual-layout.png)
+
 ## Series Formatting
 
 ### Colors

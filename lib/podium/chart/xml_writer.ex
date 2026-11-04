@@ -100,6 +100,7 @@ defmodule Podium.Chart.XmlWriter do
       ~s(<c:chart>) <>
       title_xml(chart.title) <>
       ~s(<c:plotArea>) <>
+      plot_area_layout_xml(chart.plot_area) <>
       plot_xml(chart, config) <>
       axes_xml(chart, config) <>
       sp_pr_xml(chart.plot_area) <>
@@ -118,7 +119,44 @@ defmodule Podium.Chart.XmlWriter do
   defp title_xml(nil), do: ~s(<c:autoTitleDeleted val="1"/>)
 
   defp title_xml(title) do
-    ~s(<c:title>#{title_text_xml(title)}<c:overlay val="0"/>#{title_sp_pr_xml(title)}</c:title>)
+    opts = if is_list(title) and Keyword.keyword?(title), do: title, else: []
+
+    ~s(<c:title>) <>
+      title_text_xml(title) <>
+      manual_layout_xml(opts) <>
+      overlay_xml(opts) <>
+      title_sp_pr_xml(title) <>
+      ~s(</c:title>)
+  end
+
+  defp overlay_xml(opts) do
+    val = if Keyword.get(opts, :overlay, false), do: "1", else: "0"
+    ~s(<c:overlay val="#{val}"/>)
+  end
+
+  # A manual position as fractions of the chart frame: :x and :y place the
+  # element's top-left corner, :w and :h size it. With no :x it is laid out
+  # automatically.
+  defp manual_layout_xml(opts, target \\ nil) do
+    case Keyword.get(opts, :x) do
+      nil ->
+        ""
+
+      _ ->
+        target_xml =
+          if target, do: ~s(<c:layoutTarget val="#{target}"/>), else: ""
+
+        size_xml =
+          case {Keyword.get(opts, :w), Keyword.get(opts, :h)} do
+            {nil, nil} -> ""
+            {w, h} -> ~s(<c:w val="#{w}"/><c:h val="#{h}"/>)
+          end
+
+        ~s(<c:layout><c:manualLayout>#{target_xml}) <>
+          ~s(<c:xMode val="edge"/><c:yMode val="edge"/>) <>
+          ~s(<c:x val="#{Keyword.fetch!(opts, :x)}"/><c:y val="#{Keyword.fetch!(opts, :y)}"/>) <>
+          size_xml <> ~s(</c:manualLayout></c:layout>)
+    end
   end
 
   # -- Legend --
@@ -134,7 +172,9 @@ defmodule Podium.Chart.XmlWriter do
   defp legend_xml(opts) when is_list(opts) do
     pos = legend_pos_value(Keyword.get(opts, :position, :right))
 
-    ~s(<c:legend><c:legendPos val="#{pos}"/><c:overlay val="0"/>) <>
+    ~s(<c:legend><c:legendPos val="#{pos}"/>) <>
+      manual_layout_xml(opts) <>
+      overlay_xml(opts) <>
       sp_pr_xml(opts) <> text_props_xml(font_opts(opts)) <> ~s(</c:legend>)
   end
 
@@ -940,9 +980,7 @@ defmodule Podium.Chart.XmlWriter do
 
   defp axis_title_xml(nil), do: ""
 
-  defp axis_title_xml(title) do
-    ~s(<c:title>#{title_text_xml(title)}<c:overlay val="0"/>#{title_sp_pr_xml(title)}</c:title>)
-  end
+  defp axis_title_xml(title), do: title_xml(title)
 
   defp title_sp_pr_xml(title) when is_list(title) and title != [] do
     if Keyword.keyword?(title), do: sp_pr_xml(title), else: ""
@@ -1087,6 +1125,7 @@ defmodule Podium.Chart.XmlWriter do
       ~s(<c:chart>) <>
       title_xml(chart.title) <>
       ~s(<c:plotArea>) <>
+      plot_area_layout_xml(chart.plot_area) <>
       combo_plots_xml(chart) <>
       combo_axes_xml(chart, has_secondary) <>
       sp_pr_xml(chart.plot_area) <>
@@ -1351,6 +1390,13 @@ defmodule Podium.Chart.XmlWriter do
 
   defp combo_axis_ids(%ComboChart.PlotSpec{secondary_axis: false}) do
     {@combo_cat_ax_id, @combo_val_ax_id}
+  end
+
+  # The plot area's manual layout positions its inner rectangle (the area the
+  # axes enclose) unless :target says :outer (including the tick labels).
+  defp plot_area_layout_xml(opts) do
+    target = if Keyword.get(opts, :target, :inner) == :outer, do: "outer", else: "inner"
+    manual_layout_xml(opts, target)
   end
 
   # The chart area: transparent with :none, a fill, or [fill: ..., line: ...].
