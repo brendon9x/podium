@@ -576,4 +576,46 @@ defmodule Podium.Integration.ChartGalleryTest do
       assert fill_count >= 3
     end
   end
+
+  describe "negative bars with per-point colours" do
+    test "coloured negative bars keep their colour" do
+      chart_data =
+        ChartData.new()
+        |> ChartData.add_categories(["Brand A", "Brand B", "Brand C", "Brand D"])
+        |> ChartData.add_series("Change", [12, -8, 5, -15],
+          color: "4472C4",
+          point_colors: %{1 => "C00000", 3 => "C00000"},
+          point_formats: %{2 => [fill: "70AD47", line: "375623"]}
+        )
+
+      slide =
+        Podium.Slide.new()
+        |> Podium.add_text_box(
+          "Expect: Brand B and Brand D bars point down and are red, not white; " <>
+            "Brand C green with a dark green outline; axis labels at value 0 near the middle",
+          x: {0.5, :inches},
+          y: {0.2, :inches},
+          width: {12.33, :inches},
+          height: {1, :inches},
+          font_size: 14
+        )
+        |> Podium.add_chart(:column_clustered, chart_data,
+          x: {0.5, :inches},
+          y: {1.4, :inches},
+          width: {12, :inches},
+          height: {5.6, :inches},
+          value_axis: [min: -20, max: 20]
+        )
+
+      prs = Podium.add_slide(Podium.new(), slide)
+      output_path = Path.join(@output_dir, "chart_negative_point_colors.pptx")
+      assert :ok = Podium.save(prs, output_path)
+
+      {:ok, binary} = Podium.save_to_memory(prs)
+      chart_xml = PptxHelpers.unzip_pptx_binary(binary)["ppt/charts/chart1.xml"]
+
+      assert [_, _, _] =
+               Regex.scan(~r/<c:dPt><c:idx val="\d"\/><c:invertIfNegative val="0"\/>/, chart_xml)
+    end
+  end
 end

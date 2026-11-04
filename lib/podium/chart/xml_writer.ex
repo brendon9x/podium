@@ -252,38 +252,27 @@ defmodule Podium.Chart.XmlWriter do
     # Support both simple atom list and keyword opts
     {show_atoms, position, number_format, font_size, color} = parse_data_labels(labels)
 
-    show_val =
-      if :value in show_atoms, do: ~s(<c:showVal val="1"/>), else: ~s(<c:showVal val="0"/>)
-
-    show_cat =
-      if :category in show_atoms,
-        do: ~s(<c:showCatName val="1"/>),
-        else: ~s(<c:showCatName val="0"/>)
-
-    show_ser =
-      if :series in show_atoms,
-        do: ~s(<c:showSerName val="1"/>),
-        else: ~s(<c:showSerName val="0"/>)
-
-    show_pct =
-      if :percent in show_atoms,
-        do: ~s(<c:showPercent val="1"/>),
-        else: ~s(<c:showPercent val="0"/>)
-
-    pos_xml = dlbl_position_xml(position)
-    num_fmt_xml = dlbl_num_fmt_xml(number_format)
-    font_xml = dlbl_font_xml(font_size, color)
-
+    # CT_DLbls order: numFmt, spPr, txPr, dLblPos, showLegendKey, showVal,
+    # showCatName, showSerName, showPercent
     ~s(<c:dLbls>) <>
-      num_fmt_xml <>
-      pos_xml <>
-      show_val <>
-      show_cat <>
-      show_ser <>
-      show_pct <>
-      ~s(<c:showLegendKey val="0"/>) <>
-      font_xml <>
+      dlbl_num_fmt_xml(number_format) <>
+      dlbl_font_xml(font_size, color) <>
+      dlbl_position_xml(position) <>
+      dlbl_show_flags_xml(show_atoms) <>
       ~s(</c:dLbls>)
+  end
+
+  defp dlbl_show_flags_xml(show_atoms) do
+    flag = fn name, atom ->
+      val = if atom in show_atoms, do: "1", else: "0"
+      ~s(<c:#{name} val="#{val}"/>)
+    end
+
+    ~s(<c:showLegendKey val="0"/>) <>
+      flag.("showVal", :value) <>
+      flag.("showCatName", :category) <>
+      flag.("showSerName", :series) <>
+      flag.("showPercent", :percent)
   end
 
   defp parse_data_labels(labels) do
@@ -299,7 +288,7 @@ defmodule Podium.Chart.XmlWriter do
   defp dlbl_font_xml(nil, nil), do: ""
 
   defp dlbl_font_xml(font_size, color) do
-    sz_attr = if font_size, do: ~s( sz="#{font_size * 100}"), else: ""
+    sz_attr = if font_size, do: ~s( sz="#{round(font_size * 100)}"), else: ""
 
     color_xml =
       if color,
@@ -359,7 +348,7 @@ defmodule Podium.Chart.XmlWriter do
     invert_xml = invert_if_negative_xml(config)
     explosion_xml = explosion_xml(config)
     color_xml = series_color_xml(config, series)
-    dpt_xml = data_points_xml(series)
+    dpt_xml = data_points_xml(config, series)
     series_dlbls_xml = series_data_labels_xml(series.data_labels)
 
     ~s(<c:ser>) <>
@@ -501,11 +490,16 @@ defmodule Podium.Chart.XmlWriter do
 
   # -- Per-point formatting --
 
-  defp data_points_xml(%{point_colors: pc, point_formats: pf})
+  defp data_points_xml(_config, %{point_colors: pc, point_formats: pf})
        when pc == %{} and pf == %{},
        do: ""
 
-  defp data_points_xml(%{point_colors: point_colors, point_formats: point_formats}) do
+  defp data_points_xml(config, %{point_colors: point_colors, point_formats: point_formats}) do
+    # A bar point without its own invertIfNegative falls back to the schema
+    # default of true, and PowerPoint paints a negative bar white whatever
+    # fill the point was given. State it on every bar point, as on the series.
+    invert_xml = invert_if_negative_xml(config)
+
     # Merge point_colors (shorthand) and point_formats into a unified map
     merged =
       Enum.reduce(point_colors, %{}, fn {idx, color}, acc ->
@@ -528,6 +522,7 @@ defmodule Podium.Chart.XmlWriter do
 
       ~s(<c:dPt>) <>
         ~s(<c:idx val="#{idx}"/>) <>
+        invert_xml <>
         ~s(<c:spPr>#{fill_xml}#{line_xml}</c:spPr>) <>
         ~s(</c:dPt>)
     end)
@@ -546,44 +541,17 @@ defmodule Podium.Chart.XmlWriter do
       |> Enum.map(fn {idx, opts} -> single_dlbl_xml(idx, opts) end)
       |> Enum.join()
 
-    ~s(<c:dLbls>#{entries}</c:dLbls>)
+    # CT_DLbls requires the group of show flags (or <c:delete>) after the
+    # <c:dLbl> entries. All off leaves the other points unlabelled.
+    ~s(<c:dLbls>#{entries}#{dlbl_show_flags_xml([])}</c:dLbls>)
   end
 
   defp single_dlbl_xml(idx, opts) do
-    show_atoms = Keyword.get(opts, :show, [])
-    position = Keyword.get(opts, :position)
-    number_format = Keyword.get(opts, :number_format)
-
-    num_fmt_xml = dlbl_num_fmt_xml(number_format)
-    pos_xml = dlbl_position_xml(position)
-
-    show_val =
-      if :value in show_atoms, do: ~s(<c:showVal val="1"/>), else: ~s(<c:showVal val="0"/>)
-
-    show_cat =
-      if :category in show_atoms,
-        do: ~s(<c:showCatName val="1"/>),
-        else: ~s(<c:showCatName val="0"/>)
-
-    show_ser =
-      if :series in show_atoms,
-        do: ~s(<c:showSerName val="1"/>),
-        else: ~s(<c:showSerName val="0"/>)
-
-    show_pct =
-      if :percent in show_atoms,
-        do: ~s(<c:showPercent val="1"/>),
-        else: ~s(<c:showPercent val="0"/>)
-
     ~s(<c:dLbl>) <>
       ~s(<c:idx val="#{idx}"/>) <>
-      num_fmt_xml <>
-      pos_xml <>
-      show_val <>
-      show_cat <>
-      show_ser <>
-      show_pct <>
-      ~s(<c:showLegendKey val="0"/>) <>
+      dlbl_num_fmt_xml(Keyword.get(opts, :number_format)) <>
+      dlbl_position_xml(Keyword.get(opts, :position)) <>
+      dlbl_show_flags_xml(Keyword.get(opts, :show, [])) <>
       ~s(</c:dLbl>)
   end
 
@@ -801,13 +769,13 @@ defmodule Podium.Chart.XmlWriter do
       ~s(<c:minorTickMark val="#{tick_mark_value(minor_tick)}"/>) <>
       ~s(<c:tickLblPos val="nextTo"/>) <>
       line_sppr_xml(line_color) <>
+      tick_label_format_xml(label_rotation, color) <>
       ~s(<c:crossAx val="#{cross_ax_id}"/>) <>
       crosses_xml(crosses) <>
       ~s(<c:auto val="1"/>) <>
       ~s(<c:lblAlgn val="ctr"/>) <>
       ~s(<c:lblOffset val="100"/>) <>
       ~s(<c:noMultiLvlLbl val="0"/>) <>
-      tick_label_format_xml(label_rotation, color) <>
       ~s(</c:catAx>)
   end
 
@@ -860,6 +828,7 @@ defmodule Podium.Chart.XmlWriter do
       ~s(<c:minorTickMark val="#{tick_mark_value(minor_tick)}"/>) <>
       ~s(<c:tickLblPos val="nextTo"/>) <>
       line_sppr_xml(line_color) <>
+      tick_label_format_xml(label_rotation, color) <>
       ~s(<c:crossAx val="#{cross_ax_id}"/>) <>
       crosses_xml(crosses) <>
       base_xml <>
@@ -867,7 +836,6 @@ defmodule Podium.Chart.XmlWriter do
       major_time_xml <>
       minor_unit_xml <>
       minor_time_xml <>
-      tick_label_format_xml(label_rotation, color) <>
       ~s(</c:dateAx>)
   end
 
@@ -932,12 +900,12 @@ defmodule Podium.Chart.XmlWriter do
       ~s(<c:minorTickMark val="#{tick_mark_value(minor_tick)}"/>) <>
       ~s(<c:tickLblPos val="nextTo"/>) <>
       line_sppr_xml(line_color) <>
+      tick_label_format_xml(label_rotation, color) <>
       ~s(<c:crossAx val="#{cross_ax_id}"/>) <>
       crosses_xml(crosses) <>
       cross_between_xml <>
       major_unit_xml <>
       minor_unit_xml <>
-      tick_label_format_xml(label_rotation, color) <>
       ~s(</c:valAx>)
   end
 
@@ -952,7 +920,8 @@ defmodule Podium.Chart.XmlWriter do
     orientation = if reverse, do: "maxMin", else: "minMax"
     min_xml = if min_val, do: ~s(<c:min val="#{min_val}"/>), else: ""
     max_xml = if max_val, do: ~s(<c:max val="#{max_val}"/>), else: ""
-    ~s(<c:scaling><c:orientation val="#{orientation}"/>#{min_xml}#{max_xml}</c:scaling>)
+    # CT_Scaling order: logBase, orientation, max, min
+    ~s(<c:scaling><c:orientation val="#{orientation}"/>#{max_xml}#{min_xml}</c:scaling>)
   end
 
   defp val_num_fmt_xml(nil), do: ""
@@ -1014,7 +983,7 @@ defmodule Podium.Chart.XmlWriter do
   defp tick_label_format_xml(label_rotation, color) do
     body_attrs =
       if label_rotation do
-        rot = label_rotation * 60_000
+        rot = round(label_rotation * 60_000)
         ~s( rot="#{rot}")
       else
         ""
@@ -1051,7 +1020,7 @@ defmodule Podium.Chart.XmlWriter do
     bold = Keyword.get(opts, :bold)
     italic = Keyword.get(opts, :italic)
 
-    attrs = if font_size, do: attrs ++ [~s(sz="#{font_size * 100}")], else: attrs
+    attrs = if font_size, do: attrs ++ [~s(sz="#{round(font_size * 100)}")], else: attrs
     attrs = if bold, do: attrs ++ [~s(b="1")], else: attrs
     attrs = if italic, do: attrs ++ [~s(i="1")], else: attrs
     attrs = attrs ++ [~s(dirty="0")]
@@ -1062,7 +1031,7 @@ defmodule Podium.Chart.XmlWriter do
     color = Keyword.get(opts, :color)
     font = Keyword.get(opts, :font)
     color_xml = if color, do: ~s(<a:solidFill><a:srgbClr val="#{color}"/></a:solidFill>), else: ""
-    font_xml = if font, do: ~s(<a:latin typeface="#{font}"/>), else: ""
+    font_xml = if font, do: ~s(<a:latin typeface="#{Builder.escape(font)}"/>), else: ""
     color_xml <> font_xml
   end
 
@@ -1248,7 +1217,7 @@ defmodule Podium.Chart.XmlWriter do
     smooth_xml = cat_smooth_xml(config)
     invert_xml = invert_if_negative_xml(config)
     color_xml = series_color_xml(config, series)
-    dpt_xml = data_points_xml(series)
+    dpt_xml = data_points_xml(config, series)
     series_dlbls_xml = series_data_labels_xml(series.data_labels)
 
     ~s(<c:ser>) <>
@@ -1314,13 +1283,13 @@ defmodule Podium.Chart.XmlWriter do
       ~s(<c:minorTickMark val="none"/>) <>
       ~s(<c:tickLblPos val="nextTo"/>) <>
       line_sppr_xml(line_color) <>
+      tick_label_format_xml(label_rotation, color) <>
       ~s(<c:crossAx val="#{cross_ax_id}"/>) <>
       crosses_xml(crosses) <>
       ~s(<c:auto val="1"/>) <>
       ~s(<c:lblAlgn val="ctr"/>) <>
       ~s(<c:lblOffset val="100"/>) <>
       ~s(<c:noMultiLvlLbl val="0"/>) <>
-      tick_label_format_xml(label_rotation, color) <>
       ~s(</c:catAx>)
   end
 
@@ -1372,11 +1341,11 @@ defmodule Podium.Chart.XmlWriter do
       ~s(<c:minorTickMark val="none"/>) <>
       ~s(<c:tickLblPos val="nextTo"/>) <>
       line_sppr_xml(line_color) <>
+      tick_label_format_xml(label_rotation, color) <>
       ~s(<c:crossAx val="#{cross_ax_id}"/>) <>
       crosses_out <>
       major_unit_xml <>
       minor_unit_xml <>
-      tick_label_format_xml(label_rotation, color) <>
       ~s(</c:valAx>)
   end
 

@@ -4,6 +4,8 @@ defmodule Podium.Chart.ComboChartTest do
   alias Podium.Chart.{ChartData, ComboChart}
   alias Podium.Test.PptxHelpers
 
+  import SweetXml, only: [sigil_x: 2]
+
   defp sample_chart_data do
     ChartData.new()
     |> ChartData.add_categories(["Q1", "Q2", "Q3", "Q4"])
@@ -418,6 +420,44 @@ defmodule Podium.Chart.ComboChartTest do
       chart2 = parts["ppt/charts/chart2.xml"]
       assert chart2 =~ "c:barChart"
       assert chart2 =~ "c:lineChart"
+    end
+  end
+
+  describe "schema order" do
+    test "combo axes write txPr between spPr and crossAx" do
+      data = sample_chart_data()
+
+      combo =
+        ComboChart.new(data, [
+          {:column_clustered, series: [0, 1]},
+          {:line_markers, series: [2], secondary_axis: true}
+        ])
+
+      chart =
+        Podium.Chart.new_combo(combo,
+          x: 0,
+          y: 0,
+          width: 100,
+          height: 100,
+          category_axis: [label_rotation: 45, line_color: "000000"],
+          value_axis: [color: "FF0000", line_color: "000000"],
+          secondary_value_axis: [color: "00FF00", line_color: "000000"]
+        )
+
+      elements =
+        chart |> Podium.Chart.XmlWriter.to_xml() |> SweetXml.parse() |> SweetXml.xpath(~x"//*"l)
+
+      axes = Enum.filter(elements, &(elem(&1, 1) in [:"c:catAx", :"c:valAx"]))
+      assert length(axes) == 3
+
+      for axis <- axes do
+        names =
+          for {:xmlElement, name, _, _, _, _, _, _, _, _, _, _} <- elem(axis, 8),
+              name in [:"c:spPr", :"c:txPr", :"c:crossAx"],
+              do: name
+
+        assert names == [:"c:spPr", :"c:txPr", :"c:crossAx"]
+      end
     end
   end
 end

@@ -156,10 +156,10 @@ defmodule Podium.Text do
   end
 
   defp space_before_xml(nil), do: ""
-  defp space_before_xml(pts), do: ~s(<a:spcBef><a:spcPts val="#{pts * 100}"/></a:spcBef>)
+  defp space_before_xml(pts), do: ~s(<a:spcBef><a:spcPts val="#{round(pts * 100)}"/></a:spcBef>)
 
   defp space_after_xml(nil), do: ""
-  defp space_after_xml(pts), do: ~s(<a:spcAft><a:spcPts val="#{pts * 100}"/></a:spcAft>)
+  defp space_after_xml(pts), do: ~s(<a:spcAft><a:spcPts val="#{round(pts * 100)}"/></a:spcAft>)
 
   defp bullet_xml(nil), do: ""
   defp bullet_xml(false), do: ""
@@ -233,7 +233,7 @@ defmodule Podium.Text do
 
     attrs =
       if font_size = Keyword.get(opts, :font_size) do
-        attrs ++ [~s(sz="#{font_size * 100}")]
+        attrs ++ [~s(sz="#{round(font_size * 100)}")]
       else
         attrs
       end
@@ -283,7 +283,7 @@ defmodule Podium.Text do
   defp color_child_xml(color), do: ~s(<a:solidFill><a:srgbClr val="#{color}"/></a:solidFill>)
 
   defp font_child_xml(nil), do: ""
-  defp font_child_xml(font), do: ~s(<a:latin typeface="#{font}"/>)
+  defp font_child_xml(font), do: ~s(<a:latin typeface="#{Builder.escape(font)}"/>)
 
   defp hyperlink_child_xml(nil, _rids), do: ""
 

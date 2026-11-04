@@ -1,5 +1,25 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- `<c:dLbls>` and `<c:dLbl>` wrote `<c:txPr>` and `<c:showLegendKey>` after
+  the show flags, which the schema does not allow. They now follow the
+  CT_DLbls order. A series given only per-point labels now closes its
+  `<c:dLbls>` with the show flags the schema requires, all off.
+- Axis tick label formatting (`<c:txPr>`) was written at the end of the axis
+  instead of before `<c:crossAx>`. It now sits where the schema puts it on
+  category, date and value axes, in plain and combo charts.
+- A value axis given both `:min` and `:max` wrote `<c:min>` before `<c:max>`,
+  the reverse of the schema order.
+- A bar point coloured through `:point_colors` or `:point_formats` now carries
+  `invertIfNegative` set to false, as its series already did. Without it
+  PowerPoint painted a negative bar white regardless of the colour given.
+- Fractional font sizes, paragraph spacing and axis label rotations are
+  rounded, so `font_size: 10.5` writes `sz="1050"` rather than `sz="1050.0"`.
+- Typefaces given through `:font` are XML-escaped.
+
 ## 0.3.0
 
 ### Added
