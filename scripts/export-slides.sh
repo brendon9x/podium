@@ -42,6 +42,7 @@ SLIDES=(
   "charts|12|core/charts|series-lines"
   "charts|13|core/charts|manual-layout"
   "charts|14|core/charts|plot-options"
+  "charts|15|core/charts|series-data-labels"
 
   "combo-charts|1|advanced/combo-charts|column-line-overlay"
   "combo-charts|2|advanced/combo-charts|stacked-column-line"

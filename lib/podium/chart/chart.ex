@@ -81,6 +81,7 @@ defmodule Podium.Chart do
       plot_area: validate_plot_area!(Keyword.get(opts, :plot_area, []))
     }
     |> put_plot_options(opts, [chart_type])
+    |> validate_chart_labels!()
   end
 
   @doc """
@@ -109,6 +110,101 @@ defmodule Podium.Chart do
       plot_area: validate_plot_area!(Keyword.get(opts, :plot_area, []))
     }
     |> put_plot_options(opts, Enum.map(combo.plots, & &1.chart_type))
+    |> validate_chart_labels!()
+  end
+
+  defp validate_chart_labels!(%__MODULE__{combo: nil} = chart) do
+    validate_data_labels!(chart.data_labels, chart.chart_type, "chart :data_labels")
+    validate_series_labels!(chart.chart_data.series, chart.chart_type)
+    chart
+  end
+
+  defp validate_chart_labels!(%__MODULE__{combo: combo} = chart) do
+    Enum.each(combo.plots, fn plot ->
+      labels = if is_nil(plot.data_labels), do: chart.data_labels, else: plot.data_labels
+      where = "#{inspect(plot.chart_type)} plot :data_labels"
+      validate_data_labels!(labels, plot.chart_type, where)
+
+      plot.series_indices
+      |> Enum.map(&Enum.at(combo.chart_data.series, &1))
+      |> validate_series_labels!(plot.chart_type)
+    end)
+
+    chart
+  end
+
+  defp validate_series_labels!(series_list, chart_type) do
+    Enum.each(series_list, fn series ->
+      validate_data_labels!(
+        series.data_labels,
+        chart_type,
+        "series #{inspect(series.name)} :data_labels"
+      )
+    end)
+  end
+
+  @label_contents [:value, :category, :series, :percent, :legend_key, :bubble_size]
+
+  @doc false
+  # Validates data labels (chart-level, plot, series or per-point) for a chart
+  # type: what they show, and a position the chart type accepts.
+  @spec validate_data_labels!(term(), atom(), String.t()) :: :ok
+  def validate_data_labels!(labels, _chart_type, _where) when labels in [nil, [], %{}], do: :ok
+
+  def validate_data_labels!(points, chart_type, where) when is_map(points) do
+    Enum.each(points, fn {idx, opts} ->
+      validate_data_labels!(opts, chart_type, "#{where} point #{inspect(idx)}")
+    end)
+  end
+
+  def validate_data_labels!(labels, chart_type, where) when is_list(labels) do
+    {show, opts} =
+      if Keyword.keyword?(labels),
+        do: {Keyword.get(labels, :show, [:value]), labels},
+        else: {labels, []}
+
+    case show -- @label_contents do
+      [] ->
+        :ok
+
+      unknown ->
+        raise ArgumentError,
+              "#{where} cannot show #{inspect(unknown)}; " <>
+                "choose from #{inspect(@label_contents)}"
+    end
+
+    case Keyword.get(opts, :position) do
+      nil ->
+        :ok
+
+      position ->
+        allowed = Podium.Chart.ChartType.label_positions(chart_type)
+
+        unless position in allowed do
+          raise ArgumentError,
+                "#{where} position #{inspect(position)} is not available on " <>
+                  "#{inspect(chart_type)} charts; " <>
+                  if(allowed == [],
+                    do: "they take no label position",
+                    else: "choose from #{inspect(allowed)}"
+                  )
+        end
+    end
+
+    case Keyword.get(opts, :separator) do
+      separator when is_nil(separator) or is_binary(separator) ->
+        :ok
+
+      other ->
+        raise ArgumentError, "#{where} :separator must be a string, got: #{inspect(other)}"
+    end
+
+    validate_data_labels!(Keyword.get(opts, :points), chart_type, where)
+  end
+
+  def validate_data_labels!(other, _chart_type, where) do
+    raise ArgumentError,
+          "#{where} must be a list or a map of point index to options, got: #{inspect(other)}"
   end
 
   @plot_option_keys [:gap_width, :overlap, :vary_by_categories, :bubble_scale]

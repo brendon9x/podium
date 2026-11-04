@@ -325,9 +325,12 @@ data_labels: [show: [:value], position: :outside_end, number_format: "$#,##0"]
 data_labels: [show: [:value], color: "FFFFFF"]
 ```
 
-Available label content: `:value`, `:category`, `:series`, `:percent`. A keyword
-list without `:show` labels the values. Labels take any of the font options under
-[Chart Text](#chart-text), such as `:color` for labels on dark bars.
+Available label content: `:value`, `:category`, `:series`, `:percent`,
+`:legend_key` (the series' legend swatch beside the label) and `:bubble_size`. A
+keyword list without `:show` labels the values. `:separator` sets the text between
+several pieces of content, such as `"; "` or `"\n"`. Labels take any of the font
+options under [Chart Text](#chart-text), such as `:color` for labels on dark bars,
+and `:fill` and `:line` under [Fill and Line](#fill-and-line).
 
 | Position | Description |
 |----------|-------------|
@@ -340,6 +343,19 @@ list without `:show` labels the values. Labels take any of the font options unde
 | `:left` | Left of the point |
 | `:right` | Right of the point |
 | `:best_fit` | PowerPoint chooses the position |
+
+Each chart type takes only some positions, and any other raises `ArgumentError`,
+since PowerPoint would repair the file:
+
+| Chart type | Positions |
+|------------|-----------|
+| Clustered bar and column | `:center`, `:inside_end`, `:inside_base`, `:outside_end` |
+| Stacked bar and column | `:center`, `:inside_end`, `:inside_base` |
+| Line, scatter, bubble | `:center`, `:left`, `:right`, `:top`, `:bottom` |
+| Pie | `:center`, `:inside_end`, `:outside_end`, `:best_fit` |
+| Area, doughnut, radar | none |
+
+In a combo chart each plot takes its own `:data_labels` (see the Combo Charts guide).
 
 ## Category Axis
 
@@ -603,9 +619,35 @@ ChartData.add_series(data, "Revenue", [42, 28, 18, 35, 22],
   })
 ```
 
+### Series Data Labels
+
+Labels cascade: chart-level labels (or a combo plot's), then a series' labels, then
+a point's. Each level gives only what it changes and takes the rest from the level
+above, so a point override that sets `bold: true` keeps the chart's position and
+colour.
+
+A keyword list (or a list of atoms) on `:data_labels` labels the whole series, with
+the same options as chart-level labels. `:points` overrides single points:
+
+```elixir
+ChartData.add_series(data, "Score", [72, 58, 64, 81],
+  data_labels: [
+    show: [:value],
+    position: :inside_end,
+    color: "FFFFFF",
+    points: %{3 => [show: [:value, :category], bold: true]}
+  ])
+
+# Leave one series unlabelled when the chart labels every series
+ChartData.add_series(data, "Target", [70, 70, 70, 70], data_labels: [show: []])
+```
+
+![Series labels inside the bars, one point with a bold override, an unlabelled target series](assets/core/charts/series-data-labels.png)
+
 ### Per-Point Data Labels
 
-Show data labels on specific points only:
+A map overrides specific points. With no chart-level labels, only those points are
+labelled:
 
 ```elixir
 ChartData.add_series(data, "Revenue ($K)", [42, 28, 18, 35, 22],
@@ -615,8 +657,8 @@ ChartData.add_series(data, "Revenue ($K)", [42, 28, 18, 35, 22],
   })
 ```
 
-A point label takes the font options under [Chart Text](#chart-text) as well,
-for example `2 => [show: [:value], bold: true, color: "C00000"]`.
+A point label takes the same options as chart-level labels, including font
+options, for example `2 => [show: [:value], bold: true, color: "C00000"]`.
 
 ## XY (Scatter) Charts
 

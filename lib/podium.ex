@@ -346,11 +346,13 @@ defmodule Podium do
       to hide, or keyword list with `:position` (default `:right`), a manual position
       `:x`, `:y` and optional `:w`, `:h` (fractions of the chart frame), `:overlay`,
       `:fill`, `:line` and font options
-    * `:data_labels` - list of atoms to show (`:value`, `:category`, `:series`, `:percent`)
-      or keyword list with `:show` (list, default `[:value]`), `:position` (`:center`,
-      `:inside_end`, `:inside_base`, `:outside_end`, `:top`, `:bottom`, `:left`, `:right`,
-      `:best_fit`), `:number_format` (Excel format string), `:fill`, `:line` and font
-      options
+    * `:data_labels` - list of atoms to show (`:value`, `:category`, `:series`, `:percent`,
+      `:legend_key`, `:bubble_size`) or keyword list with `:show` (list, default
+      `[:value]`), `:position` (`:center`, `:inside_end`, `:inside_base`, `:outside_end`,
+      `:top`, `:bottom`, `:left`, `:right`, `:best_fit`; each chart type accepts some of
+      these and raises on others), `:number_format` (Excel format string), `:separator`,
+      `:fill`, `:line` and font options. Series take the same options for their own
+      labels through `Podium.Chart.ChartData.add_series/4`
     * `:background` - chart area: `:none` for transparent with no border, a fill, or a
       keyword list with `:fill` and `:line`
     * `:gap_width` - bar and column charts: space between bar groups as a percentage

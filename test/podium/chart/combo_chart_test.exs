@@ -732,6 +732,95 @@ defmodule Podium.Chart.ComboChartTest do
     end
   end
 
+  describe "data label validation" do
+    test "chart-level labels must suit every plot that takes them" do
+      combo =
+        ComboChart.new(sample_chart_data(), [
+          {:column_clustered, series: [0, 1]},
+          {:line, series: [2]}
+        ])
+
+      assert_raise ArgumentError, ~r/:line plot :data_labels position :outside_end/, fn ->
+        Podium.Chart.new_combo(combo,
+          x: 0,
+          y: 0,
+          width: 1,
+          height: 1,
+          data_labels: [position: :outside_end]
+        )
+      end
+
+      combo =
+        ComboChart.new(sample_chart_data(), [
+          {:column_clustered, series: [0, 1]},
+          {:line, series: [2], data_labels: [position: :top]}
+        ])
+
+      assert Podium.Chart.new_combo(combo,
+               x: 0,
+               y: 0,
+               width: 1,
+               height: 1,
+               data_labels: [position: :outside_end]
+             )
+    end
+
+    test "series labels in a combo are checked against their plot" do
+      data =
+        ChartData.new()
+        |> ChartData.add_categories(["A", "B"])
+        |> ChartData.add_series("Bars", [1, 2], data_labels: [position: :outside_end])
+        |> ChartData.add_series("Line", [3, 4], data_labels: [position: :outside_end])
+
+      combo = ComboChart.new(data, [{:column_clustered, series: [0]}, {:line, series: [1]}])
+
+      assert_raise ArgumentError, ~r/series "Line" :data_labels position :outside_end/, fn ->
+        Podium.Chart.new_combo(combo, x: 0, y: 0, width: 1, height: 1)
+      end
+    end
+
+    test "a combo series' point overrides keep its plot's labels" do
+      data =
+        ChartData.new()
+        |> ChartData.add_categories(["A", "B"])
+        |> ChartData.add_series("Bars", [1, 2], data_labels: %{1 => [bold: true]})
+        |> ChartData.add_series("Line", [3, 4])
+
+      xml =
+        data
+        |> ComboChart.new([
+          {:column_clustered, series: [0], data_labels: [position: :inside_end]},
+          {:line, series: [1]}
+        ])
+        |> Podium.Chart.new_combo(x: 0, y: 0, width: 1, height: 1)
+        |> Podium.Chart.XmlWriter.to_xml()
+
+      [bar_series | _] = Regex.scan(~r{<c:ser>.*?</c:ser>}s, xml) |> List.flatten()
+      assert bar_series =~ ~r{<c:dLbl>.*<c:dLblPos val="inEnd"/>.*</c:dLbl>}s
+
+      assert bar_series =~
+               ~r{</c:dLbl>.*<c:dLblPos val="inEnd"/><c:showLegendKey val="0"/><c:showVal val="1"/>}s
+    end
+
+    test "combo series take whole-series labels" do
+      data =
+        ChartData.new()
+        |> ChartData.add_categories(["A", "B"])
+        |> ChartData.add_series("Bars", [1, 2],
+          data_labels: [show: [:value], position: :inside_end]
+        )
+        |> ChartData.add_series("Line", [3, 4])
+
+      xml =
+        data
+        |> ComboChart.new([{:column_clustered, series: [0]}, {:line, series: [1]}])
+        |> Podium.Chart.new_combo(x: 0, y: 0, width: 1, height: 1)
+        |> Podium.Chart.XmlWriter.to_xml()
+
+      assert xml =~ ~r{<c:ser>.*<c:dLbls>.*<c:dLblPos val="inEnd"/>.*</c:ser>}s
+    end
+  end
+
   describe "schema order" do
     test "combo axes write txPr between spPr and crossAx" do
       data = sample_chart_data()

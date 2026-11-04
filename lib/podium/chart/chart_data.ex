@@ -78,7 +78,11 @@ defmodule Podium.Chart.ChartData do
     * `:point_formats` - `%{index => [fill: ..., line: ...]}` map for per-point formatting.
       On line and radar series these format the point's marker, and `:marker` sets
       its `:style` and `:size`
-    * `:data_labels` - `%{index => opts}` map for per-point data labels
+    * `:data_labels` - labels for this series: a keyword list (or list of atoms) with
+      the options of chart-level `:data_labels` labels every point, with per-point
+      overrides under `:points`; a `%{index => opts}` map overrides those points.
+      Each level takes what it does not set from the level above (chart, series,
+      point). `show: []` leaves the series unlabelled under chart-level labels
   """
   @spec add_series(t(), String.t(), [number()], keyword()) :: t()
   def add_series(%__MODULE__{} = data, name, values, opts \\ []) when is_list(values) do

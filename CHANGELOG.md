@@ -43,6 +43,15 @@
 - Each plot of a combo chart takes its own `:gap_width`, `:overlap`,
   `:vary_by_categories` and `:data_labels`, falling back to the chart-level
   option. Bar-only options on a non-bar plot raise `ArgumentError`.
+- A series' `:data_labels` takes a keyword list (or list of atoms) labelling
+  the whole series, with the options of chart-level labels and per-point
+  overrides under `:points`. `show: []` leaves a series unlabelled under
+  chart-level labels. XY and bubble series take it too.
+- Data labels show `:legend_key` and `:bubble_size`, and take a `:separator`.
+- Data labels cascade from the chart (or combo plot) to the series to the
+  point, each level giving only what it changes. A point override no longer
+  hides the chart's labels on the series' other points, and keeps the
+  position and font it does not set.
 - Chart titles and axis titles take rich text, in the form a text box takes:
   several runs, several paragraphs, paragraph alignment and line breaks. Font
   options given alongside `:text` apply to every run.
@@ -63,7 +72,11 @@
 
 - A legend keyword list no longer needs `:position`; it defaults to `:right`.
 - A data label keyword list without `:show` labels the values instead of
-  dropping its options.
+  dropping its options. This includes per-point labels, which showed nothing
+  without `:show`.
+- A data label `:position` the chart type does not accept raises
+  `ArgumentError`, at chart, plot, series and point level. PowerPoint repaired
+  files carrying one.
 
 ### Fixed
 

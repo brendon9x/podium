@@ -286,34 +286,44 @@ defmodule Podium.Chart.XmlWriter do
   defp data_labels_xml([]), do: ""
 
   defp data_labels_xml(labels) when is_list(labels) do
-    # Support both simple atom list and keyword opts
-    {show_atoms, opts} = parse_data_labels(labels)
-    position = Keyword.get(opts, :position)
-    number_format = Keyword.get(opts, :number_format)
-
-    # CT_DLbls order: numFmt, spPr, txPr, dLblPos, showLegendKey, showVal,
-    # showCatName, showSerName, showPercent
-    ~s(<c:dLbls>) <>
-      dlbl_num_fmt_xml(number_format) <>
-      sp_pr_xml(opts) <>
-      text_props_xml(font_opts(opts)) <>
-      dlbl_position_xml(position) <>
-      dlbl_show_flags_xml(show_atoms) <>
-      ~s(</c:dLbls>)
+    ~s(<c:dLbls>#{dlbls_group_xml(labels)}</c:dLbls>)
   end
 
-  defp dlbl_show_flags_xml(show_atoms) do
+  # The formatting and show flags of a <c:dLbls> or <c:dLbl>, in the CT_DLbls
+  # order: numFmt, spPr, txPr, dLblPos, showLegendKey, showVal, showCatName,
+  # showSerName, showPercent, showBubbleSize, separator.
+  defp dlbls_group_xml(labels) do
+    {show, opts} = parse_data_labels(labels)
+
+    dlbl_num_fmt_xml(Keyword.get(opts, :number_format)) <>
+      sp_pr_xml(opts) <>
+      text_props_xml(font_opts(opts)) <>
+      dlbl_position_xml(Keyword.get(opts, :position)) <>
+      dlbl_show_flags_xml(show) <>
+      dlbl_separator_xml(Keyword.get(opts, :separator))
+  end
+
+  defp dlbl_show_flags_xml(show) do
     flag = fn name, atom ->
-      val = if atom in show_atoms, do: "1", else: "0"
+      val = if atom in show, do: "1", else: "0"
       ~s(<c:#{name} val="#{val}"/>)
     end
 
-    ~s(<c:showLegendKey val="0"/>) <>
+    # showBubbleSize is left out unless asked for, as it always has been
+    bubble_xml = if :bubble_size in show, do: flag.("showBubbleSize", :bubble_size), else: ""
+
+    flag.("showLegendKey", :legend_key) <>
       flag.("showVal", :value) <>
       flag.("showCatName", :category) <>
       flag.("showSerName", :series) <>
-      flag.("showPercent", :percent)
+      flag.("showPercent", :percent) <>
+      bubble_xml
   end
+
+  defp dlbl_separator_xml(nil), do: ""
+
+  defp dlbl_separator_xml(separator),
+    do: ~s(<c:separator>#{Builder.escape(separator)}</c:separator>)
 
   # A plain list of atoms names what to show. A keyword list carries options,
   # showing values when it does not say what to show.
@@ -369,7 +379,7 @@ defmodule Podium.Chart.XmlWriter do
   # -- Series --
 
   defp series_xml(chart) do
-    config = ChartType.config(chart.chart_type)
+    config = chart.chart_type |> ChartType.config() |> Map.put(:plot_labels, chart.data_labels)
     chart_data = chart.chart_data
 
     chart_data.series
@@ -384,7 +394,7 @@ defmodule Podium.Chart.XmlWriter do
     explosion_xml = explosion_xml(config)
     color_xml = series_sp_pr_xml(config, series)
     dpt_xml = data_points_xml(config, series)
-    series_dlbls_xml = series_data_labels_xml(series.data_labels)
+    series_dlbls_xml = series_data_labels_xml(series.data_labels, config[:plot_labels])
 
     ~s(<c:ser>) <>
       ~s(<c:idx val="#{series.index}"/>) <>
@@ -407,7 +417,7 @@ defmodule Podium.Chart.XmlWriter do
     smooth_xml = xy_smooth_xml(config)
     color_xml = series_sp_pr_xml(config, series)
     dpt_xml = data_points_xml(config, series)
-    series_dlbls_xml = series_data_labels_xml(series.data_labels)
+    series_dlbls_xml = series_data_labels_xml(series.data_labels, config[:plot_labels])
 
     ~s(<c:ser>) <>
       ~s(<c:idx val="#{series.index}"/>) <>
@@ -426,7 +436,7 @@ defmodule Podium.Chart.XmlWriter do
   defp single_series_xml(config, %BubbleChartData{} = chart_data, series) do
     color_xml = series_sp_pr_xml(config, series)
     dpt_xml = data_points_xml(config, series)
-    series_dlbls_xml = series_data_labels_xml(series.data_labels)
+    series_dlbls_xml = series_data_labels_xml(series.data_labels, config[:plot_labels])
     bubble_3d_val = if config[:bubble_3d], do: "1", else: "0"
 
     ~s(<c:ser>) <>
@@ -601,30 +611,44 @@ defmodule Podium.Chart.XmlWriter do
 
   # -- Per-point data label overrides --
 
-  defp series_data_labels_xml(nil), do: ""
-  defp series_data_labels_xml(dl) when dl == %{}, do: ""
+  # A series' labels. Labels cascade: the plot's labels (chart-level, or a
+  # combo plot's own), then the series', then each point's, each level giving
+  # only what it changes. PowerPoint does not inherit between these levels, so
+  # each is written in full. A map of point index to options overrides those
+  # points; a list also sets the series' own labels, with point overrides
+  # under :points.
+  defp series_data_labels_xml(labels, _plot_labels) when labels in [nil, [], %{}], do: ""
 
-  defp series_data_labels_xml(data_labels) when is_map(data_labels) do
-    entries =
-      data_labels
+  defp series_data_labels_xml(labels, plot_labels) do
+    plot = label_opts(plot_labels)
+
+    {series, points} =
+      if is_map(labels) do
+        {plot, labels}
+      else
+        own = label_opts(labels)
+        {Keyword.merge(plot, Keyword.delete(own, :points)), Keyword.get(own, :points, %{})}
+      end
+
+    point_xml =
+      points
       |> Enum.sort_by(fn {idx, _} -> idx end)
-      |> Enum.map(fn {idx, opts} -> single_dlbl_xml(idx, opts) end)
-      |> Enum.join()
+      |> Enum.map_join(fn {idx, opts} ->
+        merged = Keyword.merge(series, label_opts(opts))
+        ~s(<c:dLbl><c:idx val="#{idx}"/>#{dlbls_group_xml(merged)}</c:dLbl>)
+      end)
 
     # CT_DLbls requires the group of show flags (or <c:delete>) after the
-    # <c:dLbl> entries. All off leaves the other points unlabelled.
-    ~s(<c:dLbls>#{entries}#{dlbl_show_flags_xml([])}</c:dLbls>)
+    # <c:dLbl> entries; with no labels above the series they are all off.
+    ~s(<c:dLbls>#{point_xml}#{dlbls_group_xml(series)}</c:dLbls>)
   end
 
-  defp single_dlbl_xml(idx, opts) do
-    ~s(<c:dLbl>) <>
-      ~s(<c:idx val="#{idx}"/>) <>
-      dlbl_num_fmt_xml(Keyword.get(opts, :number_format)) <>
-      sp_pr_xml(opts) <>
-      text_props_xml(font_opts(opts)) <>
-      dlbl_position_xml(Keyword.get(opts, :position)) <>
-      dlbl_show_flags_xml(Keyword.get(opts, :show, [])) <>
-      ~s(</c:dLbl>)
+  # Label options as a keyword list: an atom list is what to show.
+  defp label_opts(nil), do: []
+  defp label_opts([]), do: []
+
+  defp label_opts(labels) when is_list(labels) do
+    if Keyword.keyword?(labels), do: labels, else: [show: labels]
   end
 
   # -- tx_xml dispatches on data type --
@@ -1212,7 +1236,12 @@ defmodule Podium.Chart.XmlWriter do
       series_list
       |> Enum.zip(global_indices)
       |> Enum.map(fn {series, global_idx} ->
-        combo_series_xml(config, chart_data, series, global_idx)
+        combo_series_xml(
+          Map.put(config, :plot_labels, plot_opts.data_labels),
+          chart_data,
+          series,
+          global_idx
+        )
       end)
       |> Enum.join()
 
@@ -1242,7 +1271,12 @@ defmodule Podium.Chart.XmlWriter do
       series_list
       |> Enum.zip(global_indices)
       |> Enum.map(fn {series, global_idx} ->
-        combo_series_xml(config, chart_data, series, global_idx)
+        combo_series_xml(
+          Map.put(config, :plot_labels, plot_opts.data_labels),
+          chart_data,
+          series,
+          global_idx
+        )
       end)
       |> Enum.join()
 
@@ -1271,7 +1305,12 @@ defmodule Podium.Chart.XmlWriter do
       series_list
       |> Enum.zip(global_indices)
       |> Enum.map(fn {series, global_idx} ->
-        combo_series_xml(config, chart_data, series, global_idx)
+        combo_series_xml(
+          Map.put(config, :plot_labels, plot_opts.data_labels),
+          chart_data,
+          series,
+          global_idx
+        )
       end)
       |> Enum.join()
 
@@ -1291,7 +1330,7 @@ defmodule Podium.Chart.XmlWriter do
     invert_xml = invert_if_negative_xml(config, series)
     color_xml = series_sp_pr_xml(config, series)
     dpt_xml = data_points_xml(config, series)
-    series_dlbls_xml = series_data_labels_xml(series.data_labels)
+    series_dlbls_xml = series_data_labels_xml(series.data_labels, config[:plot_labels])
 
     ~s(<c:ser>) <>
       ~s(<c:idx val="#{global_idx}"/>) <>
