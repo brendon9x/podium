@@ -140,6 +140,35 @@ All position and size options throughout Podium accept these unit formats --
 | 4:3 | `{10, :inches}` | `{7.5, :inches}` |
 | 16:10 | `{13.333, :inches}` | `{8.333, :inches}` |
 
+### Centring Content
+
+A 16:9 slide is 13.333in wide, so whole-inch content placed by hand rarely sits
+in the middle. `Podium.center_x/2` returns the x that centres a given width on the
+presentation's own slide width, whatever its size:
+
+```elixir
+prs = Podium.new()
+
+Podium.add_chart(slide, :column_clustered, data,
+  x: Podium.center_x(prs, {12, :inches}), y: {1, :inches},
+  width: {12, :inches}, height: {5, :inches})
+```
+
+For a row of shapes, centre the row's total width and step from its left edge:
+
+```elixir
+left = Podium.center_x(prs, {11, :inches})
+
+slide
+|> Podium.add_auto_shape(:rounded_rectangle, x: left, y: {2, :inches},
+  width: {3, :inches}, height: {1, :inches})
+|> Podium.add_auto_shape(:rounded_rectangle, x: left + Podium.Units.to_emu({4, :inches}),
+  y: {2, :inches}, width: {3, :inches}, height: {1, :inches})
+```
+
+A 12in-wide element centred on a 16:9 slide leaves 0.667in each side, the same
+margin as the bundled template's title and body placeholders.
+
 ## Creating Slides
 
 Create slides with `Podium.Slide.new/1`. By default it uses the `:blank` layout.

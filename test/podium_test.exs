@@ -140,4 +140,26 @@ defmodule PodiumTest do
       assert hd(prs.slides).layout_index == 1
     end
   end
+
+  describe "center_x/2" do
+    test "centres a width on the default 16:9 slide" do
+      prs = Podium.new()
+
+      # 13.333in slide, 12in wide: 2/3in each side
+      assert Podium.center_x(prs, {12, :inches}) == 609_600
+      assert Podium.center_x(prs, {10, :inches}) == 1_524_000
+      assert Podium.center_x(prs, 12_192_000) == 0
+    end
+
+    test "follows a custom slide width" do
+      prs = Podium.new(slide_width: {10, :inches}, slide_height: {7.5, :inches})
+      assert Podium.center_x(prs, {8, :inches}) == 914_400
+    end
+
+    test "leaves equal margins" do
+      prs = Podium.new()
+      x = Podium.center_x(prs, {7, :inches})
+      assert prs.slide_width - x - Podium.Units.to_emu({7, :inches}) == x
+    end
+  end
 end

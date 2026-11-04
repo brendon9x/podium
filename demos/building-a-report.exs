@@ -24,9 +24,9 @@ s2 =
   Podium.Slide.new()
   |> Podium.add_text_box(
     [{[{"Executive Summary", bold: true, font_size: 28, color: white}], alignment: :center}],
-    x: {0.5, :inches},
+    x: Podium.center_x(prs, {12, :inches}),
     y: {0.3, :inches},
-    width: {11, :inches},
+    width: {12, :inches},
     height: {0.7, :inches},
     fill: {:gradient, [{0, "001133"}, {100_000, accent1}], angle: 5_400_000}
   )
@@ -47,9 +47,9 @@ s2 =
          {"Increase APAC investment by 30% in H1 2026", bold: true, font_size: 16}
        ], space_before: 12}
     ],
-    x: {0.5, :inches},
+    x: Podium.center_x(prs, {12, :inches}),
     y: {1.3, :inches},
-    width: {11, :inches},
+    width: {12, :inches},
     height: {5, :inches}
   )
 
@@ -64,9 +64,9 @@ revenue_data =
 s3 =
   Podium.Slide.new()
   |> Podium.add_chart(:column_clustered, revenue_data,
-    x: {0.5, :inches},
+    x: Podium.center_x(prs, {12, :inches}),
     y: {0.5, :inches},
-    width: {11, :inches},
+    width: {12, :inches},
     height: {6, :inches},
     title: [text: "Quarterly Revenue vs Expenses", font_size: 18, bold: true, color: primary],
     legend: [position: :bottom, font_size: 10],
@@ -93,9 +93,9 @@ market_data =
 s4 =
   Podium.Slide.new()
   |> Podium.add_chart(:pie, market_data,
-    x: {1.5, :inches},
+    x: Podium.center_x(prs, {10, :inches}),
     y: {0.5, :inches},
-    width: {9, :inches},
+    width: {10, :inches},
     height: {6, :inches},
     title: [text: "Revenue by Region", font_size: 18, bold: true, color: primary],
     legend: :right,
@@ -110,9 +110,9 @@ s5 =
       {[{"Department Performance", bold: true, font_size: 24, color: primary}],
        alignment: :center}
     ],
-    x: {0.5, :inches},
+    x: Podium.center_x(prs, {12, :inches}),
     y: {0.3, :inches},
-    width: {11, :inches},
+    width: {12, :inches},
     height: {0.7, :inches}
   )
   |> Podium.add_table(
@@ -147,9 +147,9 @@ s5 =
       ["Sales", "120", "$3,500K", "$21,800K", "84%"],
       ["Operations", "65", "$1,800K", "$5,300K", "91%"]
     ],
-    x: {0.5, :inches},
+    x: Podium.center_x(prs, {12, :inches}),
     y: {1.2, :inches},
-    width: {11, :inches},
+    width: {12, :inches},
     height: {4.5, :inches}
   )
 
@@ -173,9 +173,9 @@ trend_data =
 s6 =
   Podium.Slide.new()
   |> Podium.add_chart(:line_markers, trend_data,
-    x: {0.5, :inches},
+    x: Podium.center_x(prs, {12, :inches}),
     y: {0.5, :inches},
-    width: {11, :inches},
+    width: {12, :inches},
     height: {6, :inches},
     title: [
       text: "Monthly Active Users (H2 2025)",

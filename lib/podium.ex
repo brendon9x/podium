@@ -145,7 +145,7 @@ defmodule Podium do
           | :bubble_3d
   @type connector_type :: :straight | :elbow | :curved
 
-  alias Podium.{Presentation, Slide}
+  alias Podium.{Presentation, Slide, Units}
 
   @doc """
   Creates a new presentation from the bundled template.
@@ -233,6 +233,29 @@ defmodule Podium do
   @spec add_slide(Podium.Presentation.t(), Podium.Slide.t()) :: Podium.Presentation.t()
   def add_slide(prs, slide) do
     Presentation.add_slide(prs, slide)
+  end
+
+  @doc """
+  Returns the x position that centres something `width` wide on the
+  presentation's slides, in EMU.
+
+  It reads the presentation's own slide width, so it holds for 16:9, 4:3, a
+  custom `:slide_width` or a template's size. Pass the result as `:x`; for a
+  row of shapes, centre the row's total width and step from there.
+
+  ## Example
+
+      prs = Podium.new()
+
+      Podium.add_chart(slide, :column_clustered, data,
+        x: Podium.center_x(prs, {12, :inches}),
+        y: {1, :inches},
+        width: {12, :inches},
+        height: {5, :inches})
+  """
+  @spec center_x(Podium.Presentation.t(), dimension()) :: integer()
+  def center_x(%Presentation{slide_width: slide_width}, width) do
+    div(slide_width - Units.to_emu(width), 2)
   end
 
   @doc """

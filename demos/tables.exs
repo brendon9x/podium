@@ -2,12 +2,15 @@ File.mkdir_p!("demos/output")
 
 prs = Podium.new()
 
+# Offsets from the left edge of a centred row
+alias Podium.Units
+
 # Slide 1: Basic table with header fills and borders
 s1 =
   Podium.Slide.new()
   |> Podium.add_text_box(
     [{[{"Basic Table", bold: true, font_size: 28, color: "003366"}], alignment: :center}],
-    x: {0.5, :inches},
+    x: Podium.center_x(prs, {12, :inches}),
     y: {0.3, :inches},
     width: {12, :inches},
     height: {0.7, :inches}
@@ -26,18 +29,21 @@ s1 =
       ["Marketing", "85", "$2,100K"],
       ["Sales", "120", "$3,500K"]
     ],
-    x: {1, :inches},
+    x: Podium.center_x(prs, {11, :inches}),
     y: {1.5, :inches},
     width: {11, :inches},
     height: {3, :inches}
   )
 
 # Slide 2: Cell merging -- horizontal merge title row + vertical merge column
+# Two 5.5in tables, 0.5in apart, centred as an 11.5in row
+tables_left = Podium.center_x(prs, {11.5, :inches})
+
 s2 =
   Podium.Slide.new()
   |> Podium.add_text_box(
     [{[{"Cell Merging", bold: true, font_size: 28, color: "003366"}], alignment: :center}],
-    x: {0.5, :inches},
+    x: Podium.center_x(prs, {12, :inches}),
     y: {0.3, :inches},
     width: {12, :inches},
     height: {0.7, :inches}
@@ -49,7 +55,7 @@ s2 =
       ["North America", "$12.5M", "+18%"],
       ["Europe", "$8.2M", "+12%"]
     ],
-    x: {0.5, :inches},
+    x: tables_left,
     y: {1.3, :inches},
     width: {5.5, :inches},
     height: {3, :inches}
@@ -64,7 +70,7 @@ s2 =
       [:merge, "Backend", "58"],
       ["Marketing", "Digital", "85"]
     ],
-    x: {6.5, :inches},
+    x: tables_left + Units.to_emu({6, :inches}),
     y: {1.3, :inches},
     width: {5.5, :inches},
     height: {2.5, :inches}
@@ -75,7 +81,7 @@ s3 =
   Podium.Slide.new()
   |> Podium.add_text_box(
     [{[{"Cell Formatting", bold: true, font_size: 28, color: "003366"}], alignment: :center}],
-    x: {0.5, :inches},
+    x: Podium.center_x(prs, {12, :inches}),
     y: {0.3, :inches},
     width: {12, :inches},
     height: {0.7, :inches}
@@ -100,7 +106,7 @@ s3 =
          anchor: :middle}
       ]
     ],
-    x: {0.5, :inches},
+    x: Podium.center_x(prs, {12, :inches}),
     y: {1.3, :inches},
     width: {12, :inches},
     height: {4, :inches}
@@ -157,7 +163,7 @@ s4 =
         {"84%", borders: [bottom: "CCCCCC"]}
       ]
     ],
-    x: {0.5, :inches},
+    x: Podium.center_x(prs, {12, :inches}),
     y: {1, :inches},
     width: {12, :inches},
     height: {4.5, :inches}

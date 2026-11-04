@@ -13,7 +13,7 @@ s2 =
   Podium.Slide.new(:blank, background: "1A1A2E")
   |> Podium.add_text_box(
     [{[{"Dark Theme Slide", font_size: 36, color: "FFFFFF"}], alignment: :center}],
-    x: {3, :inches},
+    x: Podium.center_x(prs, {7, :inches}),
     y: {3, :inches},
     width: {7, :inches},
     height: {1.5, :inches}
@@ -26,7 +26,7 @@ s3 =
   )
   |> Podium.add_text_box(
     [{[{"Gradient Background", bold: true, font_size: 36, color: "FFFFFF"}], alignment: :center}],
-    x: {2, :inches},
+    x: Podium.center_x(prs, {9, :inches}),
     y: {3, :inches},
     width: {9, :inches},
     height: {1.5, :inches}
@@ -43,7 +43,7 @@ s4 =
        alignment: :center, space_after: 12},
       {[{"This slide uses a diagonal pattern fill as its background."}], alignment: :center}
     ],
-    x: {2, :inches},
+    x: Podium.center_x(prs, {9, :inches}),
     y: {2.5, :inches},
     width: {9, :inches},
     height: {2.5, :inches}
@@ -82,6 +82,8 @@ entries =
 
 {:ok, {_name, skeleton}} = :zip.create(~c"skeleton.pptx", entries, [:memory])
 
+template_prs = Podium.from_template(skeleton, title: "Skeleton Report", author: "Podium")
+
 # Layouts are addressed by their index in the template: 2 is its "Content"
 # layout, 3 its "Blank". Charts and tables need explicit positions, because the
 # name-based placeholder helpers only know the bundled template.
@@ -89,16 +91,16 @@ t1 =
   Podium.Slide.new(2)
   |> Podium.add_text_box(
     [[{"Rendered into a customer template", bold: true, font_size: 36}]],
-    x: {0.75, :inches},
+    x: Podium.center_x(template_prs, {11, :inches}),
     y: {0.5, :inches},
-    width: {10, :inches},
+    width: {11, :inches},
     height: {1, :inches}
   )
   |> Podium.add_text_box(
     "The accent bar and logo come from the template's own master and theme.",
-    x: {0.75, :inches},
+    x: Podium.center_x(template_prs, {11, :inches}),
     y: {2, :inches},
-    width: {10, :inches},
+    width: {11, :inches},
     height: {1, :inches},
     font_size: 20
   )
@@ -108,14 +110,13 @@ t2 =
   Podium.Slide.new(3)
   |> Podium.add_text_box(
     [{[{"Thank you", font_size: 44}], alignment: :center}],
-    x: {1, :inches},
+    x: Podium.center_x(template_prs, {11, :inches}),
     y: {2.8, :inches},
-    width: {11.3, :inches},
+    width: {11, :inches},
     height: {1.5, :inches}
   )
 
-skeleton
-|> Podium.from_template(title: "Skeleton Report", author: "Podium")
+template_prs
 |> Podium.add_slide(t1)
 |> Podium.add_slide(t2)
 |> Podium.save("demos/output/presentation-from-template.pptx")
